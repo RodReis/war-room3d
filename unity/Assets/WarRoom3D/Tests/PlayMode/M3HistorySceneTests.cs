@@ -15,6 +15,10 @@ namespace WarRoom3D.Tests
 {
     public sealed class M3HistorySceneTests
     {
+        private static string Snapshot(int sequence) =>
+            "{\"schemaVersion\":\"1.0\",\"mode\":\"live\",\"revision\":1,\"streamSequence\":" + sequence +
+            ",\"projects\":[],\"roomPlacements\":[],\"sessions\":[],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[]}";
+
         [UnityTest]
         public IEnumerator DemoSceneDoesNotExposeOperationalHistory()
         {
@@ -88,6 +92,7 @@ namespace WarRoom3D.Tests
                 var history = UnityEngine.Object.FindAnyObjectByType<HistoryHudPresenter>();
                 var root = UnityEngine.Object.FindAnyObjectByType<UIDocument>().rootVisualElement;
                 client.Configure($"http://127.0.0.1:{port}", token);
+                client.AcceptSnapshot(Snapshot(1));
                 history.SendMessage("Open");
                 var deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-metrics").text.Contains("Tempo decorrido")) yield return null;
@@ -98,8 +103,17 @@ namespace WarRoom3D.Tests
                 while (Time.realtimeSinceStartup < deadline && root.Q<VisualElement>("history-mask").style.display.value != DisplayStyle.Flex) yield return null;
                 Assert.That(root.Q<Label>("history-seal").text, Does.StartWith("REPRODUÇÃO"));
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("sequência 1"));
+                Assert.That(root.Q<Label>("effect-banner").style.display.value, Is.EqualTo(DisplayStyle.None));
                 history.SendMessage("ExitReplay");
                 Assert.That(root.Q<VisualElement>("history-mask").style.display.value, Is.EqualTo(DisplayStyle.None));
+                client.AcceptSnapshot(Snapshot(2));
+                deadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < deadline && root.Q<Label>("effect-banner").style.display.value != DisplayStyle.Flex) yield return null;
+                Assert.That(root.Q<Label>("effect-banner").text, Does.Contain("PR mergeado"));
+                client.AcceptSnapshot(Snapshot(3));
+                deadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("effect-banner").text.Contains("CI falhou")) yield return null;
+                Assert.That(root.Q<Label>("effect-banner").text, Does.Contain("CI falhou"));
             }
             finally
             {
@@ -125,7 +139,11 @@ namespace WarRoom3D.Tests
                     while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
                         if (line == "Authorization: Bearer " + token) authorized = true;
                     var status = authorized ? "200 OK" : "401 Unauthorized";
-                    var body = first != null && first.Contains("/v1/history/replay?") ?
+                    var body = first != null && first.Contains("/v1/history/replay?cursor=2") ?
+                        "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
+                        first != null && first.Contains("/v1/history/replay?cursor=1") ?
+                        "{\"viewMode\":\"replay\",\"fromSequence\":1,\"throughSequence\":2,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":2,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"merge-2\",\"effectType\":\"merge.celebration\",\"ingestionMode\":\"live\",\"durationMs\":8000}]}]}" :
+                        first != null && first.Contains("/v1/history/replay?") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":0,\"throughSequence\":1,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":1,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\",\"effects\":[]}]}" :
                         "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2},\"milestones\":[],\"incidentMarkers\":[]}";
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");

@@ -40,7 +40,9 @@ namespace WarRoom3D
             root.Q<Button>("resource-project-button").clicked += () => SetResourceFilter(true);
             root.Q<Button>("angle-button").clicked += () => orbit.Orbit(180f, 0);
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
-            gameObject.AddComponent<HistoryHudPresenter>().Configure(root, client);
+            var history = gameObject.AddComponent<HistoryHudPresenter>();
+            history.Configure(root, client);
+            gameObject.AddComponent<EffectDirector>().Configure(root, client, history);
             client.SnapshotChanged += Render;
             client.ConnectionChanged += OnConnection;
             if (client.Snapshot != null) Render(client.Snapshot);

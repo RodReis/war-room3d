@@ -34,3 +34,6 @@
 .history-timeline Label { white-space: normal; margin-top: 8px; font-size: 13px; }
 .history-replay-controls { display: none; flex-direction: row; justify-content: space-between; }
 .history-replay-controls Button { flex-grow: 1; margin-right: 5px; height: 34px; }
+.effects-toggle { display: none; }
+.effect-banner { display: none; position: absolute; top: 111px; left: 360px; right: 275px; min-height: 44px; padding: 10px 14px; background-color: rgba(8, 49, 58, 0.95); border-left-width: 3px; border-left-color: rgb(54, 198, 213); color: rgb(225, 241, 245); -unity-font-style: bold; white-space: normal; }
+.effect-alarm { background-color: rgba(73, 33, 21, 0.97); border-left-color: rgb(255, 185, 92); }

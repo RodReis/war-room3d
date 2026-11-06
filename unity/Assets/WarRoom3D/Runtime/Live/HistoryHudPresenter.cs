@@ -26,6 +26,8 @@ namespace WarRoom3D
         private long currentPageCursor;
         private readonly Stack<long> previousPageCursors = new Stack<long>();
         private bool replaying;
+        public bool IsReplaying => replaying;
+        public event Action<bool> ReplayChanged;
 
         public void Configure(VisualElement documentRoot, LiveStateClient liveClient)
         {
@@ -139,6 +141,7 @@ namespace WarRoom3D
             currentPageCursor = cursor;
             replayIndex = backward ? Math.Max(0, page.events.Length - 1) : 0;
             replaying = true;
+            ReplayChanged?.Invoke(true);
             mask.style.display = DisplayStyle.Flex;
             seal.text = "REPRODUÇÃO · HISTÓRICO DE EVENTOS";
             root.Q<VisualElement>("history-replay-controls").style.display = DisplayStyle.Flex;
@@ -186,6 +189,7 @@ namespace WarRoom3D
         private void ExitReplay()
         {
             replaying = false;
+            ReplayChanged?.Invoke(false);
             page = null;
             previousPageCursors.Clear();
             mask.style.display = DisplayStyle.None;
@@ -235,6 +239,7 @@ namespace WarRoom3D
     {
         public string viewMode;
         public long fromSequence;
+        public long throughSequence;
         public long nextCursor;
         public bool hasMore;
         public HistoryReplayItem[] events;
@@ -244,7 +249,8 @@ namespace WarRoom3D
             HistoryReplayPage value;
             try { value = JsonUtility.FromJson<HistoryReplayPage>(json); }
             catch (Exception) { throw new ArgumentException("Replay inválido"); }
-            if (value == null || value.viewMode != "replay" || value.events == null || (value.hasMore && value.nextCursor <= value.fromSequence))
+            if (value == null || value.viewMode != "replay" || value.events == null || value.throughSequence < value.fromSequence ||
+                (value.hasMore && value.nextCursor <= value.fromSequence))
                 throw new ArgumentException("Contrato replay incompatível");
             return value;
         }
@@ -262,5 +268,13 @@ namespace WarRoom3D
         public long streamSequence;
         public HistoryEffect[] effects;
     }
-    [Serializable] public sealed class HistoryEffect { public string effectType; public string ingestionMode; }
+    [Serializable] public sealed class HistoryEffect
+    {
+        public string causationId;
+        public string effectType;
+        public string projectId;
+        public string occurredAt;
+        public string ingestionMode;
+        public int durationMs;
+    }
 }

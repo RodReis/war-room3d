@@ -23,12 +23,24 @@ namespace WarRoom3D.Tests
         [Test]
         public void ReplayPageRequiresPersistentReplayModeAndAdvancingCursor()
         {
-            const string json = "{\"viewMode\":\"replay\",\"fromSequence\":12,\"nextCursor\":13,\"hasMore\":true," +
+            const string json = "{\"viewMode\":\"replay\",\"fromSequence\":12,\"throughSequence\":13,\"nextCursor\":13,\"hasMore\":true," +
                 "\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":13,\"ingestionMode\":\"backfill\",\"effects\":[{\"effectType\":\"merge.celebration\"}]}]}";
             var page = HistoryReplayPage.Parse(json);
             Assert.That(page.events[0].effects[0].effectType, Is.EqualTo("merge.celebration"));
             Assert.Throws<ArgumentException>(() => HistoryReplayPage.Parse(json.Replace("\"replay\"", "\"live\"")));
             Assert.Throws<ArgumentException>(() => HistoryReplayPage.Parse(json.Replace("\"nextCursor\":13", "\"nextCursor\":12")));
+        }
+
+        [Test]
+        public void OnlyPersistedLiveEffectsCanAnimate()
+        {
+            var effect = new HistoryEffect { causationId = "merge-1", effectType = "merge.celebration", ingestionMode = "live" };
+            Assert.That(EffectDirector.IsLiveEffect(effect), Is.True);
+            effect.ingestionMode = "backfill";
+            Assert.That(EffectDirector.IsLiveEffect(effect), Is.False);
+            effect.ingestionMode = "live";
+            effect.effectType = "unknown";
+            Assert.That(EffectDirector.IsLiveEffect(effect), Is.False);
         }
 
         [Test]

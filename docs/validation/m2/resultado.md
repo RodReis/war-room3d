@@ -11,6 +11,7 @@ Issue [#3](https://github.com/RodReis/war-room3d/issues/3), [PR #9](https://gith
 | Build Windows x64 | `pass` — 172.230.310 bytes, live após revisão | `M2LiveProjectSetup.BuildWindowsM2Live`, Unity batch; executável local em `unity/Builds/WarRoom3D-M2-Live/` |
 | Ensaio Docker real | `pass` pontual | Proxy separado e sonda em loopback, 401/404 de recusa, um contêiner do checkout autorizado, leitura persistida no SQLite temporário; [evidência e limites](docker-proxy.md) |
 | Escopos adicionais de laboratório | `pass` pontual para metadata Docker | Dois checkouts autorizados observados por proxy em escopos exatos: servidor parado/sem porta; banco com healthcheck Docker saudável. Sem SQL ou HTTP de aplicação; [limites](laboratorio.md) |
+| Sonda PostgreSQL | `pass` sintético | Consulta fixa em transação de leitura, timeout, erro ocioso e falha de coleta testados; serviço 42/42 com typecheck. Nenhuma conexão SQL real; [prova](database-probe.md) |
 | Snapshot HTTP/SSE | `pass` sintético | Contrato validado, autenticação, cursor, replay e migração em SQLite temporário; [prova e limites](transport.md) |
 | UI live HTTP/SSE | `pass` sintético | Cena sem fixture, snapshot degradado, aviso SSE e novo snapshot saudável; [evidência](unity-live.md) |
 | Ensaio de API HTTP e banco SQL reais | `not_run` | O servidor autorizado está parado e não expõe HTTP de saúde; healthcheck Docker do banco não substitui papel de monitoração e consulta SQL aprovada |

@@ -1,6 +1,6 @@
 # M2 — primeira fatia: inventário, saúde e data center demonstrativo
 
-Issue [#3](https://github.com/RodReis/war-room3d/issues/3). Branch `feat/m2-infra-core` sobre a PR M1 [#8](https://github.com/RodReis/war-room3d/pull/8), HEAD base `abb61b4`. Data: 06/11/2026. Windows x64; Node.js 24.15.0; Unity 6000.3.27f1.
+Issue [#3](https://github.com/RodReis/war-room3d/issues/3), [PR #9](https://github.com/RodReis/war-room3d/pull/9) aberta com código em `0420578bd98f0124a1f30178ff0a938da933b2a7`, empilhada sobre a PR M1 [#8](https://github.com/RodReis/war-room3d/pull/8), HEAD base `abb61b4`. Data: 06/11/2026. Windows x64; Node.js 24.15.0; Unity 6000.3.27f1.
 
 | Prova | Resultado | Evidência |
 |---|---|---|

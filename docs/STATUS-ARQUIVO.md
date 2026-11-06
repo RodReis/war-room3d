@@ -24,9 +24,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - Adaptadores reais, HTTP/SSE, Unity live, build M1 e p95 serviço→HUD não executados. Nenhuma sessão pessoal ou ativo de `docs/arte` foi publicado.
 - Aceite funcional do PI pendente; a issue continua aberta.
 
-## 06/11/2026 — Primeira fatia M2 em validação local
+## 06/11/2026 — Primeira fatia M2 em revisão
 
-- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); branch local `feat/m2-infra-core` criada sobre a PR #8, sem merge.
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #9](https://github.com/RodReis/war-room3d/pull/9) aberta a partir de `0420578bd98f0124a1f30178ff0a938da933b2a7` sobre a PR #8, sem merge.
 - Contratos 8/8, serviço 28/28 e typecheck, Unity EditMode 6/6, PlayMode 3/3 e build Windows x64 concluídos. [Resultado e limites](validation/m2/resultado.md).
 - Data center Unity usa fixture ilustrativa; a sonda host leu memória local pontualmente no teste, HTTP usou fake e Docker/banco permanecem desativados. O [levantamento](validation/m2/laboratorio.md) documenta a falta de proxy mínimo e papel de monitoração.
 - Aceite funcional do PI pendente; a issue continua aberta.

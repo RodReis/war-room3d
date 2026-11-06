@@ -40,6 +40,7 @@ namespace WarRoom3D
             root.Q<Button>("resource-project-button").clicked += () => SetResourceFilter(true);
             root.Q<Button>("angle-button").clicked += () => orbit.Orbit(180f, 0);
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
+            gameObject.AddComponent<HistoryHudPresenter>().Configure(root, client);
             client.SnapshotChanged += Render;
             client.ConnectionChanged += OnConnection;
             if (client.Snapshot != null) Render(client.Snapshot);
@@ -305,7 +306,8 @@ namespace WarRoom3D
         {
             if (root == null || root.panel == null) return false;
             Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
-            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point);
+            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
+                Contains("history-panel", point) || Contains("history-mask", point);
         }
 
         private bool Contains(string name, Vector2 point)

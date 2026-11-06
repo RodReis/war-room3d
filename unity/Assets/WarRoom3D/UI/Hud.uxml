@@ -49,7 +49,26 @@
             <ui:Label text="CÂMERA" class="eyebrow" />
             <ui:Button name="angle-button" text="Outro ângulo" />
             <ui:Button name="reset-button" text="Restaurar câmera" />
+            <ui:Button name="history-button" text="Meu dia / histórico" class="history-button" />
             <ui:Label text="Mouse direito: girar  ·  Roda: zoom" class="hint" />
+        </ui:VisualElement>
+        <ui:VisualElement name="history-mask" class="history-mask" />
+        <ui:VisualElement name="history-panel" class="history-panel">
+            <ui:Label name="history-seal" text="MEU DIA · LEITURA" class="history-seal" />
+            <ui:Label text="Meu dia" class="history-title" />
+            <ui:TextField name="history-date" label="Data (AAAA-MM-DD)" />
+            <ui:TextField name="history-zone" label="Fuso IANA" />
+            <ui:Button name="history-load" text="Consultar dia" class="primary-button" />
+            <ui:Label name="history-metrics" text="Selecione data e fuso." class="activity" />
+            <ui:Label name="history-coverage" text="Cobertura ainda não consultada." class="hint" />
+            <ui:ScrollView name="history-timeline" class="history-timeline" />
+            <ui:Button name="history-replay" text="Abrir histórico completo" class="primary-button" />
+            <ui:VisualElement name="history-replay-controls" class="history-replay-controls">
+                <ui:Button name="history-previous" text="Anterior" />
+                <ui:Button name="history-next" text="Próximo" />
+                <ui:Button name="history-live" text="Voltar ao vivo" />
+            </ui:VisualElement>
+            <ui:Button name="history-close" text="Fechar" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

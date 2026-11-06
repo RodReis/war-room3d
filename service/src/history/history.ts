@@ -101,7 +101,7 @@ export class HistoryStore {
     }
   }
 
-  replay(cursor: number, limit = 500): { viewMode: 'replay'; fromSequence: number; throughSequence: number; events: unknown[]; nextCursor: number | null } {
+  replay(cursor: number, limit = 500): { viewMode: 'replay'; fromSequence: number; throughSequence: number; events: unknown[]; nextCursor: number | null; hasMore: boolean } {
     if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw new Error('Cursor de replay inválido');
     const events = this.db.prepare('SELECT event_id, stream_sequence, event_json FROM events WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as EventRow[];
     const milestones = this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode,stream_sequence FROM history_milestones WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string;stream_sequence:number}[];
@@ -114,7 +114,7 @@ export class HistoryStore {
       ...milestones.map(r => ({ sequence:r.stream_sequence, item:{kind:'github.milestone',repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode,effects:effectsBySequence.get(r.stream_sequence)??[],streamSequence:r.stream_sequence,viewMode:'replay'} }))
     ].sort((a,b)=>a.sequence-b.sequence);
     const page=items.slice(0,limit);
-    return { viewMode:'replay',fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null };
+    return { viewMode:'replay',fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };
   }
 
   daySummary(date: string, timeZone: string): Record<string, unknown> {
@@ -132,7 +132,8 @@ export class HistoryStore {
     const sessionUnion = sessions === null ? null : unionDuration(sessions);
     const agentMs = agents === null ? null : agents.reduce((sum, x) => sum + x.end - x.start, 0);
     const dayEvents = events.filter(e => { const t = Date.parse(String(e.observedAt)); return t >= dayStart && t < dayEnd; });
-    return { date, timeZone, elapsedDurationMs: sessionUnion, agentHours: agentMs === null ? null : agentMs / 3600000,
+    return { date, timeZone, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
+      agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
       coverage: { status: dayEvents.length ? 'unknown' : 'none', observedEventCount: dayEvents.length, reason: 'expected_collection_windows_not_recorded', gaps: dayEvents.length ? null : [{ start: new Date(dayStart).toISOString(), end: new Date(dayEnd).toISOString(), reason: 'no_observations' }] },
       milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[]).map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
       incidentMarkers: (this.db.prepare('SELECT incident_id,repository_id,project_id,workflow_id,run_id,ref,head_sha,opened_at,resolved_at,last_attempt,evidence_url FROM history_incidents WHERE (opened_at>=? AND opened_at<?) OR (resolved_at>=? AND resolved_at<?) ORDER BY opened_at').all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString(),new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {incident_id:string;repository_id:string;project_id:string;workflow_id:number;run_id:number;ref:string;head_sha:string;opened_at:string;resolved_at:string|null;last_attempt:number;evidence_url:string}[]).map(r=>({incidentId:r.incident_id,repositoryId:r.repository_id,projectId:r.project_id,workflowId:r.workflow_id,runId:r.run_id,ref:r.ref,headSha:r.head_sha,openedAt:r.opened_at,resolvedAt:r.resolved_at,lastAttempt:r.last_attempt,evidenceUrl:r.evidence_url})), costs: null };

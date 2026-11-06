@@ -59,5 +59,26 @@ namespace WarRoom3D.Editor
             }
             finally { PlayerSettings.productName = priorProductName; }
         }
+
+        [MenuItem("War-Room3D/Build Windows M3 histórico")]
+        public static void BuildWindowsM3History()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) CreateScene();
+            var priorProductName = PlayerSettings.productName;
+            try
+            {
+                PlayerSettings.productName = "War-Room3D M3 Histórico";
+                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                    scenes = new[] { ScenePath },
+                    locationPathName = "Builds/WarRoom3D-M3-History/WarRoom3D.exe",
+                    target = BuildTarget.StandaloneWindows64,
+                    options = BuildOptions.Development
+                });
+                if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                    throw new System.Exception("Build Windows M3 histórico falhou: " + report.summary.result);
+                Debug.Log("Build Windows M3 histórico concluído: " + report.summary.totalSize + " bytes");
+            }
+            finally { PlayerSettings.productName = priorProductName; }
+        }
     }
 }

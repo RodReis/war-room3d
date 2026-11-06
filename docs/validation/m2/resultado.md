@@ -19,6 +19,7 @@ Issue [#3](https://github.com/RodReis/war-room3d/issues/3) reaberta em 06/11/202
 | Capturas visuais e frame time do executável | `not_run` | O controlador Computer Use retornou `native pipe is unavailable` em duas tentativas; não houve sessão visual do Player conectado a uma fonte operacional autorizada |
 | CI no HEAD | `not_run` | Nenhum workflow versionado para estas provas |
 | Ativação local de coleta | `pass` sintético na nova fatia | Configuração explícita de host/HTTP, API sintética em loopback, incidente, recuperação e snapshot sem sessões; [evidência e limites](monitoring-local.md) |
+| Laboratório ContaIA local | `pass` pontual de leitura e sonda HTTP | Checkout e Compose vinculados ao projeto `contaia`; API e Web responderam `200`; workers e dublês com healthcheck Docker saudável; Vault inicializado e selado. A sonda M2 classificou API como `saudavel` e Vault como `degradado` em chamadas únicas. O contêiner da API está parado, mas um processo Node local do mesmo checkout atende a rota. Sem SQL, coleta contínua ou Player; [evidência e limites](contaia-local.md) |
 
 A primeira tentativa de EditMode no novo worktree não gerou XML: o Unity caiu na importação inicial com asserção de thread. Após o cache de importação ficar pronto, a repetição produziu XML `Passed` 9/9. Essa falha inicial não foi contada como `pass`. A execução PlayMode seguinte produziu XML `Passed` 7/7. O build confirmou sucesso no log do Editor; os arquivos gerados ficam ignorados pelo Git.
 

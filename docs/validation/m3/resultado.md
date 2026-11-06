@@ -7,12 +7,12 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 | Prova | Estado | Evidência |
 |---|---|---|
 | TypeScript estrito do serviço | `pass` | `cd service; npm run typecheck` |
-| Testes do serviço | `pass` | `cd service; npm test`; 60/60, Node 24.15.0 |
+| Testes do serviço | `pass` | `cd service; npm test`; 63/63, Node 24.15.0 |
 | Contratos compartilhados | `pass` | `cd contracts; npm test`; 8/8 |
 | Repositório explicitamente vinculado | `pass` | Teste sintético usa ID opaco do GitHub; nome igual não cria associação |
 | Deduplicação de marco importado | `pass` | Chave por repositório/entidade/transição; desvincular preserva marco histórico |
 | Repositório compartilhado | `pass` | Dois projetos vinculados ao mesmo ID recebem marcos e efeitos próprios no teste sintético |
-| Paginação e proteção de credencial | `pass` | HTTP fake cobre páginas, `304`, token recusado e bloqueio de link para outra origem |
+| Paginação e proteção de credencial | `pass` | HTTP fake cobre páginas, `ETag`/`304` por página, token recusado, bloqueio de link para outra origem, nova associação de projeto e invalidação de cache após falha parcial |
 | Cadastro GitHub sem sonda M2 | `pass` | Configuração local ignorada pelo Git; SQLite em memória retornou um projeto `contaia` e repositório `1371493574` |
 | Meu dia | `partial` | União temporal de sessões sobrepostas e fuso IANA; sessão aberta sem encerramento retorna duração indisponível e perda da fonte encerra o intervalo observado. Tempo de agente derivado de eventos; cobertura fica `unknown` enquanto janelas esperadas não forem persistidas |
 | Replay HTTP | `partial` | Endpoint autenticado pagina eventos M1 e marcos/efeitos GitHub por cursor, rotula `viewMode=replay`; `POST /v1/commands` retorna `405` |
@@ -30,6 +30,7 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 - Celebração de merge (8s) e alarme CI (5s) ficam persistidos com causa. `EffectDirector` apresenta banner breve no live, com redução de duração, prioridade de alarme e sem disparar backfill/replay; Unity também exibe texto equivalente no replay. Efeitos 3D, retenção persistida, snapshots temporais e lacunas explícitas do replay ainda faltam.
 - Meu dia não afirma cobertura completa, custos ou produção de tokens. O store atual não persiste janelas esperadas de coleta.
 - Limite da API GitHub usa `Retry-After` em segundos e pausa a rodada seguinte; o agendador mantém o prazo em memória durante o processo. Entrada HTTP de dia com data/fuso inválidos recebe `400`.
+- `ETag` de páginas fica em memória durante o processo. Reinício relê a API e deduplica pelo SQLite; cursor remoto persistido por entidade ainda falta.
 - Não houve polling com token, captura visual nem aceite funcional do PI. O checkout ContaIA foi apenas inspecionado por metadados Git e permanece com mudanças locais próprias preservadas.
 
 Primeira tentativa EditMode encontrou `ref` reservado em C#; corrigida, a repetição passou. Primeiro PlayMode encontrou máscara visível no início por estilo inline UXML; corrigido por USS/estado explícito, a repetição passou. Um teste PlayMode posterior encontrou `Object` ambíguo após import de `System`; corrigido e repetido com 10/10. Recriação das cenas durante build gerou IDs e reserialização sem mudança de escopo; arquivos gerados foram restaurados antes do stage seletivo.

@@ -36,7 +36,12 @@ export class HistoryStore {
   }
 
   hasSuccessfulPoll(repositoryId: string): boolean {
-    return Boolean(this.db.prepare('SELECT 1 FROM github_poll_state WHERE repository_id=?').get(repositoryId));
+    return this.lastSuccessfulPollAt(repositoryId) !== null;
+  }
+
+  lastSuccessfulPollAt(repositoryId: string): string | null {
+    const row=this.db.prepare('SELECT last_success_at FROM github_poll_state WHERE repository_id=?').get(repositoryId) as {last_success_at:string}|undefined;
+    return row?.last_success_at??null;
   }
 
   markPollSuccess(repositoryId: string, at = new Date().toISOString()): void {

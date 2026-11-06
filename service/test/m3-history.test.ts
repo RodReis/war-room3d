@@ -194,6 +194,63 @@ test('limite GitHub converte Retry-After em segundos e não marca coleta como co
   assert.equal(store.history.hasSuccessfulPoll('42'),false);
 });
 
+test('ETag por página evita reprocessar respostas 304 e preserva próxima página',async()=>{
+  const requests: {url:string;etag:string|undefined}[]=[];
+  const client=new GitHubClient('',async (input,init)=>{
+    const url=String(input);
+    const etag=(init?.headers as Record<string,string> | undefined)?.['If-None-Match'];
+    requests.push({url,etag});
+    if(etag) return new Response(null,{status:304});
+    return new Response(JSON.stringify([{id:url.endsWith('/first')?1:2}]),{status:200,headers:{etag:url.endsWith('/first')?'"first"':'"second"',
+      ...(url.endsWith('/first')?{link:'<https://api.github.test/second>; rel="next"'}:{})}});
+  },'https://api.github.test');
+  assert.deepEqual(await client.getAllPages<{id:number}>('/first'),[{id:1},{id:2}]);
+  assert.deepEqual(await client.getAllPages<{id:number}>('/first'),[]);
+  assert.deepEqual(requests.map(x=>x.etag),[undefined,undefined,'"first"','"second"']);
+});
+
+test('novo projeto vinculado recebe backfill mesmo após ETag 304 de outro projeto',async t=>{
+  const store=storeFor(t);
+  store.registerProject({projectId:'p2',name:'Segundo',canonicalPath:'C:\\Projects\\second'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'},'2026-11-06T00:00:00Z');
+  let conditional=0;
+  const client=new GitHubClient('',async (input,init)=>{
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/same')) return new Response(JSON.stringify({id:42}),{status:200});
+    if((init?.headers as Record<string,string>)['If-None-Match']) {conditional++;return new Response(null,{status:304});}
+    if(url.includes('/pulls?')) return new Response(JSON.stringify([{id:11,number:5,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/owner-a/same/pull/5'}]),{status:200,headers:{etag:'"prs"'}});
+    return new Response(JSON.stringify({workflow_runs:[]}),{status:200,headers:{etag:'"runs"'}});
+  });
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,0);
+  assert.equal(conditional,2);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p2'},new Date(Date.now()+1000).toISOString());
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
+  const day=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {milestones:{projectId:string;ingestionMode:string}[]};
+  assert.deepEqual(day.milestones.map(x=>[x.projectId,x.ingestionMode]).sort(),[['p1','backfill'],['p2','backfill']]);
+});
+
+test('erro em workflows invalida ETag de PR antes da gravação parcial',async t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  let fail=true; let conditionalPr=false;
+  const client=new GitHubClient('',async (input,init)=>{
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/same')) return new Response(JSON.stringify({id:42}),{status:200});
+    if(url.includes('/pulls?')) {
+      conditionalPr=conditionalPr || Boolean((init?.headers as Record<string,string>)['If-None-Match']);
+      return new Response(JSON.stringify([{id:11,number:5,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/owner-a/same/pull/5'}]),{status:200,headers:{etag:'"prs"'}});
+    }
+    if(fail) return new Response('{}',{status:503});
+    return new Response(JSON.stringify({workflow_runs:[]}),{status:200});
+  });
+  assert.equal((await pollLinkedRepositories(store,client)).errors.length,1);
+  assert.equal(store.history.hasSuccessfulPoll('42'),false);
+  fail=false;
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
+  assert.equal(conditionalPr,false);
+});
+
 test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados no backend',async t=>{
   const store=storeFor(t); const token=randomBytes(32).toString('hex');
   const {server,url}=await startReadOnlyServer(store,token); t.after(()=>server.close());

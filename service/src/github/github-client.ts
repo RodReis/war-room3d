@@ -13,12 +13,15 @@ export class GitHubClient {
   private readonly token: string;
   private readonly fetcher: FetchLike;
   private readonly base: string;
+  private readonly pageCache = new Map<string,{etag:string;next:string|null}>();
   constructor(token = '', fetcher: FetchLike = fetch, base = 'https://api.github.com') {
     this.token = token;
     this.fetcher = fetcher;
     this.base = base;
     if (token && Buffer.byteLength(token) < 20) throw new Error('Token GitHub inválido');
   }
+
+  clearPageCache(): void { this.pageCache.clear(); }
 
   async get(url: string, etag?: string): Promise<GitHubResponse> {
     const headers: Record<string,string> = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
@@ -45,12 +48,22 @@ export class GitHubClient {
     const result: T[] = [];
     for (let page = 0; next && page < 100; page++) {
       if (new URL(next).origin !== apiOrigin) throw new Error('Link de paginação GitHub fora da origem confiável');
-      const response = await this.get(next);
+      const cached = this.pageCache.get(next);
+      const response = await this.get(next,cached?.etag);
+      if (response.status === 304) {
+        if (!cached) throw new Error('Resposta GitHub 304 sem página em cache');
+        next = cached.next;
+        continue;
+      }
       const pageBody = collectionKey && response.body && typeof response.body === 'object' && !Array.isArray(response.body)
         ? (response.body as Record<string,unknown>)[collectionKey] : response.body;
       if (!Array.isArray(pageBody)) throw new Error('Resposta paginada GitHub inválida');
       result.push(...pageBody as T[]);
-      next = parseNext(response.headers.get('link'));
+      const following = parseNext(response.headers.get('link'));
+      const etag = response.headers.get('etag');
+      if (etag) this.pageCache.set(next,{etag,next:following});
+      else this.pageCache.delete(next);
+      next = following;
     }
     if (next) throw new Error('Paginação GitHub excedeu limite de segurança');
     return result;

@@ -13,7 +13,8 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
   for (const [repositoryId, projectLinks] of byRepository) {
     const { owner, name } = projectLinks[0]!;
     try {
-      const ingestionMode = store.history.hasSuccessfulPoll(repositoryId) ? 'live' : 'backfill';
+      const lastSuccessAt = store.history.lastSuccessfulPollAt(repositoryId);
+      if (!lastSuccessAt || projectLinks.some(link=>link.linkedAt>lastSuccessAt)) client.clearPageCache();
       const identity = await client.get(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`);
       if (!identity.body || typeof identity.body !== 'object' || Array.isArray(identity.body) ||
           String((identity.body as {id?:unknown}).id) !== repositoryId) throw new Error('ID GitHub diverge do vínculo configurado');
@@ -24,6 +25,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       pullRequests.sort((a,b)=>(a.merged_at??a.updated_at).localeCompare(b.merged_at??b.updated_at)||a.id-b.id);
       workflowRuns.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id-b.id||a.run_attempt-b.run_attempt);
       for (const link of projectLinks) {
+        const ingestionMode = !lastSuccessAt || link.linkedAt>lastSuccessAt ? 'backfill' : 'live';
         for (const pr of pullRequests) if (store.history.recordGithubMilestone({...normalizePullRequest(repositoryId, link.projectId, pr),ingestionMode})) milestones++;
         for (const run of workflowRuns) {
           const normalized = normalizeWorkflowRun(repositoryId, link.projectId, run);
@@ -32,6 +34,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       }
       store.history.markPollSuccess(repositoryId);
     } catch (error) {
+      client.clearPageCache();
       errors.push({ repositoryId, message: error instanceof Error ? error.message : 'Falha de coleta GitHub',
         ...(error instanceof GitHubRateLimitError ? {retryAfterMs:error.retryAfterMs} : {}) });
     }

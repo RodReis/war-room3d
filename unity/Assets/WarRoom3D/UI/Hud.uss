@@ -17,6 +17,8 @@
 .status-inactive { color: rgb(172, 193, 200); }
 .detail-row { flex-direction: row; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
 .activity { white-space: normal; font-size: 15px; min-height: 45px; }
+.resource-panel { display: none; }
+.resource-panel .activity { font-size: 13px; }
 .primary-button { margin-top: 12px; height: 36px; background-color: rgb(17, 125, 145); color: white; -unity-font-style: bold; }
 .control-panel { position: absolute; right: 18px; bottom: 18px; width: 235px; padding: 14px; background-color: rgba(8, 21, 31, 0.94); border-right-width: 2px; border-right-color: rgb(54, 198, 213); }
 .control-panel Button { margin-top: 8px; height: 30px; background-color: rgb(22, 49, 61); color: rgb(226, 243, 247); }

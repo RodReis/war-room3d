@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "environments": [
+    { "environmentId": "lab", "name": "Laboratório sintético" },
+    { "environmentId": "homolog", "name": "Homologação sintética" }
+  ],
+  "resources": [
+    { "resourceId": "db-lab", "environmentId": "lab", "kind": "database", "name": "Banco", "sourceId": "probe-db", "staleAfterMs": 60000 },
+    { "resourceId": "api-lab", "environmentId": "lab", "kind": "api", "name": "API", "sourceId": "probe-api", "staleAfterMs": 60000 },
+    { "resourceId": "db-homolog", "environmentId": "homolog", "kind": "database", "name": "Banco", "sourceId": "probe-homolog", "staleAfterMs": 60000 }
+  ],
+  "projectResources": [
+    { "projectId": "p1", "resourceId": "api-lab", "origin": "configured", "confidence": "confirmed" },
+    { "projectId": "p2", "resourceId": "api-lab", "origin": "configured", "confidence": "confirmed" },
+    { "projectId": "p3", "resourceId": "db-homolog", "origin": "configured", "confidence": "confirmed" }
+  ],
+  "dependencies": [
+    { "dependentResourceId": "api-lab", "dependencyResourceId": "db-lab", "origin": "configured", "confidence": "confirmed" }
+  ]
+}

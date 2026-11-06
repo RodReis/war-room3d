@@ -10,11 +10,11 @@ namespace WarRoom3D.Editor
     {
         private const string ScenePath = "Assets/WarRoom3D/Scenes/QuartelM0.unity";
 
-        [MenuItem("War-Room3D/Criar cena M0")]
+        [MenuItem("War-Room3D/Criar cena M0/M2 demo")]
         public static void CreateScene()
         {
             PlayerSettings.companyName = "RodReis";
-            PlayerSettings.productName = "War-Room3D M0";
+            PlayerSettings.productName = "War-Room3D M2 Demo";
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var sector = new GameObject("Setor 01").AddComponent<SectorBuilder>();
             if (!AssetDatabase.IsValidFolder("Assets/WarRoom3D/Materials"))
@@ -32,6 +32,12 @@ namespace WarRoom3D.Editor
             var loaderObject = new SerializedObject(loader);
             loaderObject.FindProperty("fixture").objectReferenceValue = fixture;
             loaderObject.ApplyModifiedPropertiesWithoutUndo();
+            var infrastructureLoader = new GameObject("Demonstração M2").AddComponent<InfrastructureDemoLoader>();
+            var infrastructureFixture = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/WarRoom3D/Demo/m2-infrastructure.v1.json");
+            if (infrastructureFixture == null) throw new System.Exception("Fixture M2 não encontrada");
+            var infrastructureObject = new SerializedObject(infrastructureLoader);
+            infrastructureObject.FindProperty("fixture").objectReferenceValue = infrastructureFixture;
+            infrastructureObject.ApplyModifiedPropertiesWithoutUndo();
 
             var cameraObject = new GameObject("Câmera orbital");
             cameraObject.tag = "MainCamera";
@@ -64,6 +70,7 @@ namespace WarRoom3D.Editor
             presenterObject.FindProperty("document").objectReferenceValue = ui;
             presenterObject.FindProperty("styleSheet").objectReferenceValue = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/WarRoom3D/UI/Hud.uss");
             presenterObject.FindProperty("loader").objectReferenceValue = loader;
+            presenterObject.FindProperty("infrastructureLoader").objectReferenceValue = infrastructureLoader;
             presenterObject.FindProperty("sector").objectReferenceValue = sector;
             presenterObject.FindProperty("orbit").objectReferenceValue = orbit;
             presenterObject.ApplyModifiedPropertiesWithoutUndo();
@@ -101,6 +108,22 @@ namespace WarRoom3D.Editor
             if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
                 throw new System.Exception("Build Windows M0 falhou: " + report.summary.result);
             Debug.Log("Build Windows M0 concluído: " + report.summary.totalSize + " bytes");
+        }
+
+        [MenuItem("War-Room3D/Build Windows M2 demo")]
+        public static void BuildWindowsM2()
+        {
+            CreateScene();
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = "Builds/WarRoom3D-M2-Demo/WarRoom3D.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new System.Exception("Build Windows M2 demo falhou: " + report.summary.result);
+            Debug.Log("Build Windows M2 demo concluído: " + report.summary.totalSize + " bytes");
         }
     }
 }

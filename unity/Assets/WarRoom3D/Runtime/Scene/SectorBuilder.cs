@@ -36,6 +36,7 @@ namespace WarRoom3D
             Cube("Plataforma", core, new Vector3(0, 0.05f, 0), new Vector3(8, 0.3f, 7), graphite);
             Cube("Mesa de comando", core, new Vector3(0, 0.8f, 0), new Vector3(4.6f, 0.55f, 2.4f), glass);
             Cube("Mapa luminoso", core, new Vector3(0, 1.2f, 0), new Vector3(3.9f, 0.08f, 1.9f), cyan);
+            core.gameObject.AddComponent<DataCenterBuilder>();
             roomsRoot = new GameObject("Salas").transform;
             roomsRoot.SetParent(transform, false);
             for (int i = 0; i < Positions.Length; i++)

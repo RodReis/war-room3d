@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://war-room3d.local/contracts/resource.v1.schema.json",
+  "title": "Inventário explícito de infraestrutura M2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "environments", "resources", "projectResources", "dependencies"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "environments": { "type": "array", "items": { "$ref": "#/$defs/environment" } },
+    "resources": { "type": "array", "items": { "$ref": "#/$defs/resource" } },
+    "projectResources": { "type": "array", "items": { "$ref": "#/$defs/projectResource" } },
+    "dependencies": { "type": "array", "items": { "$ref": "#/$defs/dependency" } }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["environmentId", "name"],
+      "properties": { "environmentId": { "$ref": "#/$defs/id" }, "name": { "type": "string", "minLength": 1, "maxLength": 80 } }
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["resourceId", "environmentId", "kind", "name", "sourceId", "staleAfterMs"],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/id" }, "environmentId": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["host", "docker", "api", "database"] },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "sourceId": { "$ref": "#/$defs/id" },
+        "staleAfterMs": { "type": "integer", "minimum": 1000, "maximum": 86400000 }
+      }
+    },
+    "projectResource": {
+      "type": "object", "additionalProperties": false,
+      "required": ["projectId", "resourceId", "origin", "confidence"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/id" }, "resourceId": { "$ref": "#/$defs/id" },
+        "origin": { "enum": ["configured", "observed", "user_asserted"] },
+        "confidence": { "enum": ["confirmed", "unverified"] }
+      }
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dependentResourceId", "dependencyResourceId", "origin", "confidence"],
+      "properties": {
+        "dependentResourceId": { "$ref": "#/$defs/id" },
+        "dependencyResourceId": { "$ref": "#/$defs/id" },
+        "origin": { "enum": ["configured", "observed", "user_asserted"] },
+        "confidence": { "enum": ["confirmed", "unverified"] }
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Resultado M0 — issue #1
 
-Data: 06/11/2026. [PR #7](https://github.com/RodReis/war-room3d/pull/7), branch `feat/m0-fundacao-visual`, base `c7f4462333b04781f11ecdc230ed2128adc23e21`. Conferir o HEAD remoto durante a revisão. Integração e aceite funcional do PI permanecem pendentes.
+Data: 06/11/2026. [PR #7](https://github.com/RodReis/war-room3d/pull/7), branch `feat/m0-fundacao-visual`, HEAD `d51ce8f8ee5a7165b9e607f924ce3f0901b5791f`, base `c7f4462333b04781f11ecdc230ed2128adc23e21`. Squash merge confirmado em `e962a532d54281d469a794487609db073fe19718` (`mergedAt` 06/11/2026 15:48:47 UTC). Aceite funcional do PI pendente.
 
 ## Provas executadas
 

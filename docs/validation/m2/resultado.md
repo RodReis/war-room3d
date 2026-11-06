@@ -1,6 +1,6 @@
 # M2 — inventário, saúde, data center demonstrativo e proxy Docker
 
-Issue [#3](https://github.com/RodReis/war-room3d/issues/3), [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão no HEAD `459a13c7987a54d5c4b1b9930fd433f13af636ed`, empilhada sobre a PR M1 [#8](https://github.com/RodReis/war-room3d/pull/8), HEAD base `abb61b4`. A fatia Docker usa branch separada sobre #9. Data: 06/11/2026. Windows x64; Node.js 24.15.0; Unity 6000.3.27f1.
+Issue [#3](https://github.com/RodReis/war-room3d/issues/3), [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão no HEAD `459a13c7987a54d5c4b1b9930fd433f13af636ed`, empilhada sobre a PR M1 [#8](https://github.com/RodReis/war-room3d/pull/8), HEAD base `abb61b4`. [PR #10](https://github.com/RodReis/war-room3d/pull/10) contém a fatia Docker sobre #9. Data: 06/11/2026. Windows x64; Node.js 24.15.0; Unity 6000.3.27f1.
 
 | Prova | Resultado | Evidência |
 |---|---|---|

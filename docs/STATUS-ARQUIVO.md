@@ -26,7 +26,13 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 
 ## 06/11/2026 — Primeira fatia M2 em revisão
 
-- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão com correção de cena em `1ecd8c0673ca6e61411f8c13aea7e9d380b0c9dc`, sobre a PR #8, sem merge.
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão no HEAD remoto `459a13c7987a54d5c4b1b9930fd433f13af636ed`, sobre a PR #8, sem merge.
 - Contratos 8/8, serviço 30/30 e typecheck, Unity EditMode 6/6, PlayMode 4/4 e build Windows x64 concluídos após correção do carregador serializado e dois achados da revisão automática. [Resultado e limites](validation/m2/resultado.md).
-- Data center Unity usa fixture ilustrativa; a sonda host leu memória local pontualmente no teste, HTTP usou fake e Docker/banco permanecem desativados. O [levantamento](validation/m2/laboratorio.md) documenta a falta de proxy mínimo e papel de monitoração.
+- Data center Unity usa fixture ilustrativa; a sonda host leu memória local pontualmente no teste, HTTP usou fake e Docker/banco permaneciam desativados nesta fatia. O [levantamento](validation/m2/laboratorio.md) documenta a falta de proxy mínimo e papel de monitoração naquele momento.
 - Aceite funcional do PI pendente; a issue continua aberta.
+
+## 06/11/2026 — Proxy Docker M2 em revisão
+
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #10](https://github.com/RodReis/war-room3d/pull/10) aberta sobre #9, sem merge.
+- Proxy local em processo separado e sonda de leitura restrita ao projeto Compose e diretório exato do checkout autorizado. Um ensaio real pontual confirmou recusa 401/404 e leitura de contêiner parado, persistida em SQLite temporário. Typecheck e 34/34 testes do serviço; [prova e limites](validation/m2/docker-proxy.md).
+- A identidade Windows do proxy ainda alcança o daemon com permissão ampla; não há instalação de coleta contínua, conector SQL, transporte M1/Unity live ou aceite funcional do PI.

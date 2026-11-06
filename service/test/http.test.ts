@@ -136,3 +136,32 @@ test('eventos de sessão e infraestrutura compartilham sequência de replay', t 
     [1, 'dependency.changed'], [2, 'project.changed'], [3, 'event.changed'], [4, 'resource.changed']
   ]);
 });
+
+test('snapshot mantém a mesma visão do SQLite durante escrita por outro processo', t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'wr3d-snapshot-'));
+  const databasePath = path.join(directory, 'state.db');
+  const reader = new EventStore(databasePath);
+  reader.infrastructure.replaceInventory({
+    schemaVersion: '1.0', environments: [{ environmentId: 'lab', name: 'Laboratório' }],
+    resources: [{ resourceId: 'db-lab', environmentId: 'lab', kind: 'database', name: 'Banco sintético', sourceId: 'probe-db', staleAfterMs: 60000 }],
+    projectResources: [], dependencies: []
+  });
+  const writer = new EventStore(databasePath);
+  t.after(() => { writer.close(); reader.close(); rmSync(directory, { recursive: true, force: true }); });
+  const original = reader.infrastructure.snapshot.bind(reader.infrastructure);
+  const now = '2026-11-06T16:00:00.000Z';
+  let wrote = false;
+  reader.infrastructure.snapshot = (at: string) => {
+    if (!wrote) {
+      wrote = true;
+      writer.infrastructure.recordReading({ resourceId: 'db-lab', sourceId: 'probe-db', sourceVersion: '1', health: 'saudavel', observedAt: now, evidenceRef: 'probe-test' }, now);
+    }
+    return original(at);
+  };
+  const before = reader.snapshot(now) as { streamSequence: number; resourceStates: { health: string }[] };
+  assert.equal(before.streamSequence, 1);
+  assert.equal(before.resourceStates[0]?.health, 'sem_dados');
+  const after = reader.snapshot(now) as { streamSequence: number; resourceStates: { health: string }[] };
+  assert.equal(after.streamSequence, 2);
+  assert.equal(after.resourceStates[0]?.health, 'saudavel');
+});

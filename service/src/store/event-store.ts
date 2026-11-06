@@ -225,6 +225,10 @@ export class EventStore {
   }
 
   snapshot(now: string = new Date().toISOString()): Row {
+    return this.db.transaction(() => this.snapshotInsideTransaction(now))();
+  }
+
+  private snapshotInsideTransaction(now: string): Row {
     const projects = (this.db.prepare('SELECT project_id, name FROM projects ORDER BY project_id').all() as { project_id: string; name: string }[]).map(row => ({ projectId: row.project_id, name: row.name }));
     const roomPlacements = (this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[]).map(row => ({ projectId: row.project_id, sectorId: row.sector_id, slotId: row.slot_id, layoutVersion: row.layout_version }));
     const sessions = (this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[]).map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));

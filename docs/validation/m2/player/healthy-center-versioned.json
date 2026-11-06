@@ -1,0 +1,16 @@
+{
+    "connected": true,
+    "resourceCount": 1,
+    "sessionCount": 0,
+    "incidentCount": 0,
+    "health": "saudavel",
+    "coverage": "atual",
+    "freshness": "atual",
+    "sampledFrames": 120,
+    "meanFrameMs": 0.6638352870941162,
+    "p95FrameMs": 0.8741000890731812,
+    "snapshotToHudMs": 433.2309,
+    "imageWidth": 1280,
+    "imageHeight": 720,
+    "view": "center"
+}

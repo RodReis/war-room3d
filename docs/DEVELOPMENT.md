@@ -22,10 +22,10 @@ As dependências não exigem um único PR por etapa. Cada fatia deve produzir co
 - O [snapshot HTTP e os avisos SSE](validation/m2/transport.md) foram testados com estado M1/M2 sintético. A [cena Unity live](validation/m2/unity-live.md) consome esse transporte em ensaio sintético separado da fixture demonstrativa.
 - A [sonda PostgreSQL](validation/m2/database-probe.md) usa transação de leitura e consulta fixa em testes sintéticos. Nenhuma credencial ou consulta real do banco do laboratório foi usada.
 - A [ativação local controlada](validation/m2/monitoring-local.md) permite ligar sondas host/HTTP explicitamente configuradas ao serviço de snapshot/SSE; PostgreSQL e Docker contínuo seguem desativados até validação das permissões exigidas.
-- O [laboratório ContaIA local](validation/m2/contaia-local.md) foi consultado pontualmente: a sonda HTTP M2 classificou a API como `saudavel` e o Vault selado como `degradado`. A consulta não ativou coleta recorrente nem validou o Player.
+- O [laboratório ContaIA local](validation/m2/contaia-local.md) foi consultado pontualmente: a sonda HTTP M2 classificou a API como `saudavel` e o Vault selado como `degradado`. O [Player Windows](validation/m2/player-operacional.md) consumiu snapshot/SSE desses estados em ensaio pontual com projetos sintéticos, sem coleta recorrente.
 - Uma [API própria em produção](validation/m2/api-producao.md) respondeu a uma leitura pontual de liveness/readiness e à sonda HTTP M2; o endereço e dados de negócio ficaram fora do Git.
 - `docs/arte`, `docs/analise` e `docs/preview` são referências locais ignoradas pelo Git.
-- Não há Compose, banco compartilhado, pipeline CI ou instalador configurado neste repositório. Os builds Windows M0/M2 são locais; o M2 live foi validado com fonte sintética.
+- Não há Compose, banco compartilhado, pipeline CI ou instalador configurado neste repositório. Os builds Windows M0/M2 são locais; o M2 live foi validado com fonte sintética e, depois, com fontes HTTP locais autorizadas em ensaio pontual.
 
 Se Compose for introduzido, registrar aqui nome, comandos, portas, volumes, política de backup/restauração e usuários autorizados antes de ativar fontes reais. Nunca copiar credenciais para este documento.
 

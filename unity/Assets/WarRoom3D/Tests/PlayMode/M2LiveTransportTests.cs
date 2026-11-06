@@ -60,6 +60,7 @@ namespace WarRoom3D.Tests
                 float deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && (!client.Connected || client.Snapshot == null)) yield return null;
                 Assert.That(client.Connected, Is.True, client.ConnectionMessage);
+                Assert.That(client.LastSnapshotToHudMs, Is.GreaterThan(0));
                 hud.SendMessage("ShowDataCenter");
                 Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Degradado"));
                 deadline = Time.realtimeSinceStartup + 5f;

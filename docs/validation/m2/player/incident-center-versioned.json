@@ -1,0 +1,16 @@
+{
+    "connected": true,
+    "resourceCount": 1,
+    "sessionCount": 0,
+    "incidentCount": 1,
+    "health": "degradado",
+    "coverage": "atual",
+    "freshness": "atual",
+    "sampledFrames": 120,
+    "meanFrameMs": 0.6396333575248718,
+    "p95FrameMs": 0.7818027138710022,
+    "snapshotToHudMs": 420.9006,
+    "imageWidth": 1280,
+    "imageHeight": 720,
+    "view": "center"
+}

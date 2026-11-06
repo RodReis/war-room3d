@@ -1,0 +1,9 @@
+{
+  "name": "WarRoom3D.PlayMode",
+  "rootNamespace": "WarRoom3D.Tests",
+  "references": ["WarRoom3D.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false,
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"]
+}

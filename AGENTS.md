@@ -2,7 +2,7 @@
 
 ## Fonte de verdade e estado atual
 
-O [PRD](PRD.md) define o produto, o [GDD](GDD.md) define a experiência e a arquitetura proposta, e os [planos M0–M5](README.md) organizam a execução. As issues [#1–#6](https://github.com/RodReis/war-room3d/issues) representam essas etapas. Neste momento, o repositório público contém documentos e planos; projeto Unity, serviço, Compose e CI ainda dependem de implementação. Não apresentar proposta ou fixture como funcionalidade entregue.
+O [PRD](PRD.md) define o produto, o [GDD](GDD.md) define a experiência e a arquitetura proposta, e os [planos M0–M5](README.md) organizam a execução. As issues [#1–#6](https://github.com/RodReis/war-room3d/issues) representam essas etapas. Conferir [STATUS](docs/STATUS.md) e as evidências da etapa antes de afirmar entrega. Não apresentar proposta, fixture ou ensaio local como funcionalidade operacional.
 
 Idioma: documentação, issues, PRs, commits e comunicação em português do Brasil; identificadores de código em inglês; interface em português do Brasil.
 

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "demo",
+  "sectorId": "setor-01",
+  "selectedProjectId": "api-core",
+  "projects": [
+    { "projectId": "painel-web", "name": "Painel Web", "slotId": "slot-01", "provider": "Codex", "activeAgents": 4, "status": "trabalhando", "activity": "Revisar componentes do painel ilustrativo" },
+    { "projectId": "app-mobile", "name": "App Mobile", "slotId": "slot-02", "provider": "Claude", "activeAgents": 2, "status": "trabalhando", "activity": "Ajustar sincronização fictícia" },
+    { "projectId": "api-core", "name": "API Core", "slotId": "slot-03", "provider": "Ambos", "activeAgents": 4, "status": "trabalhando", "activity": "Implementar autenticação de exemplo" },
+    { "projectId": "chatbot-suporte", "name": "Chatbot de Suporte", "slotId": "slot-04", "provider": "Claude", "activeAgents": 1, "status": "aguardando", "activity": "Aguardar definição simulada" },
+    { "projectId": "design-system", "name": "Design System", "slotId": "slot-05", "provider": "Codex", "activeAgents": 0, "status": "inativo", "activity": "Nenhuma sessão ilustrativa em andamento" },
+    { "projectId": "infraestrutura", "name": "Infraestrutura", "slotId": "slot-06", "provider": "Ambos", "activeAgents": 3, "status": "atencao", "activity": "Aprovação fictícia de implantação pendente" }
+  ]
+}

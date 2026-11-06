@@ -1,0 +1,6 @@
+{
+  "name": "WarRoom3D.Runtime",
+  "rootNamespace": "WarRoom3D",
+  "references": ["Unity.InputSystem"],
+  "autoReferenced": true
+}

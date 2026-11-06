@@ -4,7 +4,7 @@ Atualizado em 06/11/2026. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md).
 
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
-| M0 | [#1](https://github.com/RodReis/war-room3d/issues/1) | [Plano](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | Não iniciada | Pendente |
+| M0 | [#1](https://github.com/RodReis/war-room3d/issues/1) | [Plano](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | Implementação e provas no branch em [resultado](validation/m0/resultado.md); integração pendente | Pendente |
 | M1 | [#2](https://github.com/RodReis/war-room3d/issues/2) | [Plano](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | Não iniciada | Pendente |
 | M2 | [#3](https://github.com/RodReis/war-room3d/issues/3) | [Plano](superpowers/plans/2026-11-06-m2-infraestrutura.md) | Não iniciada | Pendente |
 | M3 | [#4](https://github.com/RodReis/war-room3d/issues/4) | [Plano](superpowers/plans/2026-11-06-m3-historico-github.md) | Não iniciada | Pendente |

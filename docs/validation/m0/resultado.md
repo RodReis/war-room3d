@@ -1,6 +1,6 @@
 # Resultado M0 — issue #1
 
-Data: 06/11/2026. Branch: `feat/m0-fundacao-visual`. Base: `c7f4462333b04781f11ecdc230ed2128adc23e21`. O SHA da PR e o aceite funcional do PI permanecem pendentes até a publicação e revisão.
+Data: 06/11/2026. [PR #7](https://github.com/RodReis/war-room3d/pull/7), branch `feat/m0-fundacao-visual`, base `c7f4462333b04781f11ecdc230ed2128adc23e21`. Conferir o HEAD remoto durante a revisão. Integração e aceite funcional do PI permanecem pendentes.
 
 ## Provas executadas
 

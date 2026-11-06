@@ -14,7 +14,7 @@ Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infrae
 
 ## Executar a demonstração M0
 
-1. Abrir `unity/` com Unity **6000.3.27f1**. A cena inicial é `Assets/WarRoom3D/Scenes/QuartelM0.unity`.
+1. Abrir `unity/` com Unity **6000.3.27f1** e carregar `Assets/WarRoom3D/Scenes/QuartelM0.unity`.
 2. Entrar em Play no Editor ou usar **War-Room3D → Build Windows M0** para gerar `unity/Builds/WarRoom3D-M0/WarRoom3D.exe` (Windows x64).
 3. Em `contracts/`, executar `npm ci` e `npm test` com Node 24 para validar schema e fixture.
 

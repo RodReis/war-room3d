@@ -11,6 +11,7 @@ docs/superpowers/specs/
 *.db
 *.db-shm
 *.db-wal
+*.monitoring.local.json
 
 # Unity, IDE e builds.
 [Ll]ibrary/

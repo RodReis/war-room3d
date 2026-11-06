@@ -1,5 +1,7 @@
 import { EventStore } from '../store/event-store.ts';
 import { startReadOnlyServer } from './server.ts';
+import { configureMonitoring } from '../infra/monitoring.ts';
+import { readFileSync } from 'node:fs';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -8,9 +10,13 @@ if (!databasePath || !token || !Number.isSafeInteger(port) || port < 1024 || por
   throw new Error('Banco, token ou porta do serviço não configurados');
 const store = new EventStore(databasePath);
 try {
+  const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
+  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
   const { server, url } = await startReadOnlyServer(store, token, port);
+  monitoring?.runner.start(monitoring.intervalMs);
   process.stdout.write(`Serviço de leitura ativo em ${url}\n`);
-  for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, () => {
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {
+    await monitoring?.runner.stop();
     server.closeAllConnections();
     server.close(() => store.close());
   });

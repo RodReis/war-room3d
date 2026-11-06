@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-Não há workflow de CI versionado neste checkout documental. Portanto, ainda não existe job obrigatório nem medição de duração de PR. A criação do pipeline faz parte da implementação das etapas, começando pelo contrato e projeto Unity de M0.
+Não há workflow de CI versionado. Portanto, ainda não existe job obrigatório nem medição de duração de PR. A criação do pipeline deve medir primeiro a execução atual de contratos, serviço e Unity antes de definir gates.
 
 ## Desenho proposto
 

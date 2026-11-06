@@ -60,7 +60,7 @@ export function normalizePullRequest(repositoryId: string, projectId: string, pr
 
 export function normalizeWorkflowRun(repositoryId: string, projectId: string, run: { id: number; workflow_id: number; run_attempt: number; head_sha: string; head_branch: string; status: string; conclusion: string | null; updated_at: string; html_url: string }): { repositoryId: string; projectId: string; entityType: 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown> } | null {
   if (run.status !== 'completed' || !run.conclusion) return null;
-  const attemptIdentity = `${run.workflow_id}:${run.id}:${run.run_attempt}:${run.head_branch}:${run.head_sha}`;
-  return { repositoryId, projectId, entityType: 'workflow', entityId: attemptIdentity, transition: run.conclusion,
+  const runIdentity = `${run.workflow_id}:${run.id}:${run.head_branch}:${run.head_sha}`;
+  return { repositoryId, projectId, entityType: 'workflow', entityId: runIdentity, transition: `attempt-${run.run_attempt}-${run.conclusion}`,
     occurredAt: run.updated_at, payload: { workflowId: run.workflow_id, runId: run.id, attempt: run.run_attempt, ref: run.head_branch, headSha: run.head_sha, url: run.html_url } };
 }

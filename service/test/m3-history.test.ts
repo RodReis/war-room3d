@@ -47,8 +47,26 @@ test('workflow preserva identidade de workflow, ref, SHA e tentativa',()=>{
   const other=normalizeWorkflowRun('repo','p',{...base,workflow_id:5})!;
   const rerun=normalizeWorkflowRun('repo','p',{...base,run_attempt:2,conclusion:'success'})!;
   assert.notEqual(first.entityId,other.entityId);
-  assert.notEqual(first.entityId,rerun.entityId);
+  assert.equal(first.entityId,rerun.entityId);
+  assert.notEqual(first.transition,rerun.transition);
   assert.equal(normalizeWorkflowRun('repo','p',{...base,status:'in_progress',conclusion:null}),null);
+});
+
+test('falha CI mantém incidente; só rerun do mesmo workflow e ref resolve; replay inclui marcos e efeito',t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'repo-1',owner:'owner-a',name:'same',projectId:'p1'});
+  const record=(entityId:string,transition:string,runId:number,workflowId:number)=>store.history.recordGithubMilestone({repositoryId:'repo-1',projectId:'p1',entityType:'workflow',entityId,transition,occurredAt:`2026-11-06T1${runId}:00:00Z`,payload:{workflowId,runId,attempt:Number(transition.match(/attempt-(\d+)/)?.[1]),ref:'main',headSha:'sha-a',url:'https://github.com/o/r/actions'}});
+  const identity='7:99:main:sha-a';
+  assert.equal(record(identity,'attempt-1-failure',99,7),true);
+  assert.equal(record('8:100:main:sha-b','attempt-1-success',100,8),true);
+  let incidents=(store.history.daySummary('2026-11-06','America/Sao_Paulo').incidentMarkers as {resolvedAt:string|null}[]);
+  assert.equal(incidents.length,1); assert.equal(incidents[0]!.resolvedAt,null);
+  assert.equal(record(identity,'attempt-2-success',99,7),true);
+  incidents=store.history.daySummary('2026-11-06','America/Sao_Paulo').incidentMarkers as {resolvedAt:string|null}[];
+  assert.ok(incidents[0]!.resolvedAt);
+  const replay=store.history.replay(0,20);
+  assert.equal(replay.events.filter(e=>(e as {kind?:string}).kind==='github.milestone').length,3);
+  assert.equal(replay.events.filter(e=>(e as {kind?:string}).kind==='effect').length,1);
 });
 
 test('cliente GitHub pagina, aceita 304, recusa token e não encaminha paginação para outra origem',async()=>{

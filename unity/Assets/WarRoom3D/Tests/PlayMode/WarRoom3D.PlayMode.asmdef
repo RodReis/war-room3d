@@ -1,7 +1,7 @@
 {
   "name": "WarRoom3D.PlayMode",
   "rootNamespace": "WarRoom3D.Tests",
-  "references": ["WarRoom3D.Runtime"],
+  "references": ["WarRoom3D.Runtime", "Unity.InputSystem", "Unity.InputSystem.TestFramework"],
   "optionalUnityReferences": ["TestAssemblies"],
   "autoReferenced": false,
   "overrideReferences": true,

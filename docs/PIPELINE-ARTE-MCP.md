@@ -1,15 +1,15 @@
 # ChatGPT Canvas, ferramentas MCP e produção de arte
 
-**Estado em 06/11/2026:** fluxo planejado para M0, sem geração, instalação ou importação executada. MCP é uma forma de o assistente operar ferramentas de autoria; não é fonte de eventos, protocolo do serviço local nem dependência do aplicativo distribuído. O runtime continua descrito em [ARCHITECTURE](ARCHITECTURE.md).
+**Estado em 06/11/2026:** Unity CLI/MCP, Blender MCP e Tripo CLI/MCP foram conectados e testados na M0. O [ensaio do GLB v2 e do rack sintético](validation/m0/arte-v2.md) registra o que foi importado e medido. Não houve geração pelo Tripo nem publicação de binários de arte. MCP é uma forma de operar ferramentas de autoria; não é fonte de eventos, protocolo do serviço local nem dependência do aplicativo distribuído. O runtime continua descrito em [ARCHITECTURE](ARCHITECTURE.md).
 
 ## Papel de cada ferramenta
 
 | Ferramenta | Uso proposto | Saída verificável | Estado observado nesta sessão |
 |---|---|---|---|
 | ChatGPT Canvas | Rascunhar e revisar especificações, prompts e protótipos de layout | Texto/código revisado e transferido para arquivos versionados do projeto | Identidade confirmada; não há servidor MCP do Canvas identificado ou sincronização automática com o Git |
-| Unity + MCP/CLI | Criar e inspecionar cenas/prefabs, importar derivados, capturar vistas e executar testes/build no Editor | Cena modular e build Windows com captura e métricas | Não há projeto Unity nem ferramenta Unity MCP conectada nesta sessão |
-| Blender + MCP | Inspecionar GLB, separar/remodelar peças, corrigir pivôs/UV/materiais/LOD e exportar derivados | Arquivo fonte editável e GLB por peça, com relatório de malha | Ferramenta MCP listada, mas o addon do Blender não respondeu à checagem de conexão |
-| Tripo3D | Gerar **uma peça por solicitação** a partir de prompt ou referência autorizada; enviar a peça ao Blender para revisão | GLB candidato, prompt, versão/modelo, tarefa e licença registrados | CLI/MCP oficiais documentados; nenhum servidor Tripo3D conectado ou geração executada |
+| Unity + MCP/CLI | Criar e inspecionar cenas/prefabs, importar derivados, capturar vistas e executar testes/build no Editor | Cena modular e build Windows com captura e métricas | CLI 1.0.0-beta.13 e Pipeline 0.10.0-exp.1 conectados ao Editor 6000.3.27f1; leitura, importação, captura, testes e build validados |
+| Blender + MCP | Inspecionar GLB, separar/remodelar peças, corrigir pivôs/UV/materiais/LOD e exportar derivados | Arquivo fonte editável e GLB por peça, com relatório de malha | Addon 1.8 e servidor 1.30.0 validados por leitura e execução; rack sintético exportado, sem derivar do GLB v2 |
+| Tripo3D | Gerar **uma peça por solicitação** a partir de prompt ou referência autorizada; enviar a peça ao Blender para revisão | GLB candidato, prompt, versão/modelo, tarefa e licença registrados | CLI/MCP 0.8.1 autenticado; inicialização e lista de ferramentas passaram; geração `not_run` por custo/direitos não definidos |
 
 Neste projeto, “Canvas” significa **ChatGPT Canvas**, a área de edição colaborativa do ChatGPT para texto e código. Essa identificação não comprova a existência de um servidor MCP do Canvas nesta sessão. O Tripo Studio também tem um recurso chamado Agentic Canvas, mas é outro produto e não faz parte desta escolha.
 
@@ -23,6 +23,8 @@ Neste projeto, “Canvas” significa **ChatGPT Canvas**, a área de edição co
 6. Registrar resultado em `docs/validation/m0/arte-v2.md`: peça, fonte, licença, hashes, versões, métricas, capturas, decisão de recuperar/remodelar/descartar e limitações. Publicar binários apenas após revisão específica de direitos, conteúdo e tamanho.
 
 O resultado de Tripo3D é um candidato artístico. Texto de painel, atividade de agentes e estados de infraestrutura continuam vindo da UI e do contrato de dados, não de textura gerada. Um avatar gerado precisa ser separado/rigado e avaliado antes de representar qualquer agente.
+
+O ensaio reproduzível de autoria local usa `node tools/mcp-smoke.mjs blender --code-file tools/blender/m0-rack.py --output-dir docs/analise/m0-rack`, com uma sessão temporária do Blender. O script substitui os objetos da cena aberta e salva `.blend` e `.glb` no diretório ignorado; ele recusa substituir um arquivo `.blend` aberto fora desse diretório. `node tools/mcp-smoke.mjs tripo` verifica o servidor sem iniciar geração.
 
 ## Prompt base para Tripo3D
 

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "eventId": "event-1",
+  "sourceId": "laboratorio-codex",
+  "sourceEventId": "record-1",
+  "sourceVersion": "fixture-1",
+  "type": "session.observed",
+  "observedAt": "2026-11-06T15:00:00Z",
+  "receivedAt": "2026-11-06T15:00:01Z",
+  "projectId": "projeto-a",
+  "provider": "codex",
+  "sessionKey": "sessao-a",
+  "provenance": "observed",
+  "ingestionMode": "live",
+  "payload": {},
+  "evidenceRefs": []
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://war-room3d.local/contracts/event.v1.schema.json",
+  "title": "Evento normalizado M1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventId", "sourceId", "sourceVersion", "type", "observedAt", "receivedAt", "provenance", "ingestionMode", "payload", "evidenceRefs"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "eventId": { "$ref": "#/$defs/id" },
+    "sourceId": { "$ref": "#/$defs/id" },
+    "sourceEventId": { "$ref": "#/$defs/id" },
+    "sourceVersion": { "$ref": "#/$defs/id" },
+    "sourceSequence": { "type": "integer", "minimum": 0 },
+    "streamSequence": { "type": "integer", "minimum": 1 },
+    "type": { "enum": ["session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "source.unavailable", "source.recovered", "resource.observed"] },
+    "observedAt": { "$ref": "#/$defs/time" },
+    "occurredAt": { "$ref": "#/$defs/time" },
+    "receivedAt": { "$ref": "#/$defs/time" },
+    "projectId": { "$ref": "#/$defs/id" },
+    "provider": { "enum": ["claude", "codex"] },
+    "sessionKey": { "$ref": "#/$defs/id" },
+    "agentKey": { "$ref": "#/$defs/id" },
+    "resourceId": { "$ref": "#/$defs/id" },
+    "environmentId": { "$ref": "#/$defs/id" },
+    "correlationId": { "$ref": "#/$defs/id" },
+    "causationId": { "$ref": "#/$defs/id" },
+    "provenance": { "enum": ["observed", "inferred", "user_asserted", "illustrative"] },
+    "ingestionMode": { "enum": ["live", "backfill", "resync", "demo"] },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "parentAgentKey": { "$ref": "#/$defs/id" },
+        "reason": { "enum": ["explicit", "source_lost", "source_recovered"] }
+      }
+    },
+    "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/id" }, "maxItems": 16 }
+  },
+  "allOf": [
+    { "if": { "properties": { "type": { "type": "string", "pattern": "^(session|agent)\\." } } }, "then": { "required": ["projectId", "sessionKey", "provider"] } },
+    { "if": { "properties": { "type": { "type": "string", "pattern": "^agent\\." } } }, "then": { "required": ["agentKey"] } },
+    { "if": { "properties": { "type": { "const": "resource.observed" } } }, "then": { "required": ["resourceId", "environmentId"] } },
+    { "if": { "properties": { "ingestionMode": { "const": "demo" } } }, "then": { "properties": { "provenance": { "const": "illustrative" } } } },
+    { "if": { "properties": { "ingestionMode": { "enum": ["live", "backfill", "resync"] } } }, "then": { "properties": { "provenance": { "not": { "const": "illustrative" } } } } }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "time": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" }
+  }
+}

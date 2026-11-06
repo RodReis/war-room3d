@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
 import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type SessionState, type Presence } from '../domain/session-reducer.ts';
 import { InfrastructureStore } from '../infra/infrastructure-store.ts';
+import { appendStateChange } from './change-log.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -42,6 +43,13 @@ export interface ApplyResult {
   reason?: 'duplicate' | 'schema_invalid' | 'unknown_project';
 }
 
+export interface StreamChange {
+  streamSequence: number;
+  type: string;
+  resourceId?: string;
+  projectId?: string;
+}
+
 type Row = Record<string, unknown>;
 
 export class EventStore {
@@ -56,9 +64,12 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 2) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 3) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 3) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0003_state_changes.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
   }
@@ -85,6 +96,8 @@ export class EventStore {
       const sectorId = `setor-${String(Math.floor(index / 6) + 1).padStart(2, '0')}`;
       const slotId = `slot-${String((index % 6) + 1).padStart(2, '0')}`;
       this.db.prepare('INSERT INTO room_placements VALUES (?, ?, ?, ?)').run(record.projectId, sectorId, slotId, '1');
+      this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
+      appendStateChange(this.db, 'project.changed', record.projectId, new Date().toISOString());
     });
     operation();
   }
@@ -212,6 +225,10 @@ export class EventStore {
   }
 
   snapshot(now: string = new Date().toISOString()): Row {
+    return this.db.transaction(() => this.snapshotInsideTransaction(now))();
+  }
+
+  private snapshotInsideTransaction(now: string): Row {
     const projects = (this.db.prepare('SELECT project_id, name FROM projects ORDER BY project_id').all() as { project_id: string; name: string }[]).map(row => ({ projectId: row.project_id, name: row.name }));
     const roomPlacements = (this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[]).map(row => ({ projectId: row.project_id, sectorId: row.sector_id, slotId: row.slot_id, layoutVersion: row.layout_version }));
     const sessions = (this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[]).map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));
@@ -223,6 +240,29 @@ export class EventStore {
     });
     return { schemaVersion: '1.0', mode: 'live', revision: this.number('revision'), streamSequence: this.number('stream_sequence'), projects, roomPlacements, sessions, agents, tasks: [], invocations: [], feed, sources,
       ...this.infrastructure.snapshot(now), capabilities: ['sessions', 'agents', 'feed', 'infrastructure'] };
+  }
+
+  changesSince(cursor: number, limit = 1001): StreamChange[] {
+    if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 1001)
+      throw new Error('Cursor ou limite inválido');
+    return (this.db.prepare(`SELECT stream_sequence AS streamSequence, type, object_id AS objectId FROM (
+      SELECT stream_sequence, 'event.changed' AS type, NULL AS object_id FROM events WHERE stream_sequence > ?
+      UNION ALL
+      SELECT stream_sequence, type, object_id FROM state_changes WHERE stream_sequence > ?
+    ) ORDER BY stream_sequence LIMIT ?`).all(cursor, cursor, limit) as { streamSequence: number; type: string; objectId: string | null }[])
+      .map(row => ({ streamSequence: row.streamSequence, type: row.type,
+        ...(row.type === 'resource.changed' && row.objectId ? { resourceId: row.objectId } : {}),
+        ...(row.type === 'project.changed' && row.objectId ? { projectId: row.objectId } : {}) }));
+  }
+
+  transportBaseline(): number { return this.number('transport_baseline'); }
+
+  changeWindow(cursor: number, limit = 1001): { baseline: number; current: number; changes: StreamChange[] } {
+    return this.db.transaction(() => ({
+      baseline: this.transportBaseline(),
+      current: this.number('stream_sequence'),
+      changes: this.changesSince(cursor, limit)
+    }))();
   }
 
   quarantineCount(): number {

@@ -60,7 +60,7 @@ test('duplicata avança cursor sem alterar revisão, feed ou agente', t => {
   store.registerProject({ projectId: fixture.projectId!, name: 'api', canonicalPath: 'C:\\Projetos\\api' });
   assert.equal(store.apply(fixture, cursor(100)).applied, true);
   const before = store.snapshot();
-  assert.deepEqual(store.apply({ ...fixture, eventId: 'event-duplicado' }, cursor(200)), { applied: false, revision: 1, streamSequence: 1, reason: 'duplicate' });
+  assert.deepEqual(store.apply({ ...fixture, eventId: 'event-duplicado' }, cursor(200)), { applied: false, revision: 2, streamSequence: 2, reason: 'duplicate' });
   assert.equal(store.getCursor(fixture.sourceId, 'session.jsonl')?.offset, 200);
   assert.deepEqual(store.snapshot(), before);
   assert.equal(validateSnapshot(before), true, JSON.stringify(validateSnapshot.errors));

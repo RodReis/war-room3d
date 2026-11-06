@@ -28,4 +28,4 @@ O capturador amostrou **949.888 frames em 605,000 s**. `Time.unscaledDeltaTime` 
 
 ## Verificações da fatia
 
-`npm run typecheck` e 48/48 testes do serviço passaram. Unity EditMode passou 9/9, PlayMode 7/7, e o build Windows concluiu; o log do Editor informou aviso de validação de licença sem impedir o build. Um ensaio curto de 5 s confirmou a gravação dos dois traços e a saída limpa após corrigir o temporizador do roteiro. A repetição longa final terminou com código 0 e todas as condições de validade marcadas como verdadeiras.
+`npm run typecheck` e 48/48 testes do serviço passaram. Unity EditMode passou 9/9, PlayMode 7/7, e o build Windows concluiu; o log do Editor informou aviso de validação de licença sem impedir o build. Um ensaio curto de 5 s confirmou a gravação dos dois traços e a saída limpa após corrigir o temporizador do roteiro. A repetição longa final terminou com código 0 e todas as condições de validade marcadas como verdadeiras. Após a revisão da PR, o gate foi testado com o resumo válido e com falhas deliberadas separadas nos limites de latência e frame time; só o caso válido foi aceito. O roteiro corrigido também passou em novo ensaio curto.

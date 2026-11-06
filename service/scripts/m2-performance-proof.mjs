@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EventStore } from '../src/store/event-store.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
+import { performanceGate } from './m2-performance-gate.mjs';
 
 const seconds = Number(process.argv[2] ?? 600);
 if (!Number.isSafeInteger(seconds) || seconds < 5 || seconds > 600)
@@ -134,7 +135,7 @@ try {
   writeFileSync(artifact('summary.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify({ artifact: path.basename(artifact('summary.json')), ...summary,
     latency: { ...summary.latency, samplesMs: `${latencies.length} samples in artifact` } }));
-  if (Object.values(summary.validity).some(value => !value)) process.exitCode = 1;
+  if (!performanceGate(summary)) process.exitCode = 1;
 } finally {
   if (child && child.exitCode === null) {
     child.kill();

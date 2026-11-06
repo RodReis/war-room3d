@@ -5,7 +5,7 @@
 | Etapa | Issue | Plano | Estado |
 |---|---|---|---|
 | M0 — contrato e cena modular | [#1](https://github.com/RodReis/war-room3d/issues/1) | [M0](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | [PR #7](https://github.com/RodReis/war-room3d/pull/7) integrada em `e962a532`; aceite funcional pendente |
-| M1 — sessões e salas vivas | [#2](https://github.com/RodReis/war-room3d/issues/2) | [M1](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | Planejada; depende de M0 |
+| M1 — sessões e salas vivas | [#2](https://github.com/RodReis/war-room3d/issues/2) | [M1](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | [PR #8](https://github.com/RodReis/war-room3d/pull/8) de contrato/store em revisão; integração real pendente |
 | M2 — data center essencial | [#3](https://github.com/RodReis/war-room3d/issues/3) | [M2](superpowers/plans/2026-11-06-m2-infraestrutura.md) | Planejada; depende de M1 |
 | M3 — histórico e GitHub | [#4](https://github.com/RodReis/war-room3d/issues/4) | [M3](superpowers/plans/2026-11-06-m3-historico-github.md) | Planejada; depende da persistência M1 |
 | M4 — interação assistida | [#5](https://github.com/RodReis/war-room3d/issues/5) | [M4](superpowers/plans/2026-11-06-m4-interacao.md) | Planejada; depende de sessão e auditoria |
@@ -17,7 +17,7 @@ As dependências não exigem um único PR por etapa. Cada fatia deve produzir co
 
 - Repositório público: `RodReis/war-room3d`, branch `main`.
 - Cliente M0: Unity 6000.3.27f1, URP 17.3.0, Windows x64; versões e provas em [baseline M0](validation/m0/baseline.md) e [resultado M0](validation/m0/resultado.md).
-- Serviço proposto: Node.js 24, TypeScript e SQLite local. Ainda não existe implementação.
+- Serviço M1 em revisão na PR #8: Node.js 24, TypeScript e SQLite local para estado sintético, ainda sem adaptadores, HTTP/SSE ou Unity live.
 - `docs/arte`, `docs/analise` e `docs/preview` são referências locais ignoradas pelo Git.
 - Não há Compose, banco compartilhado, pipeline CI ou instalador configurado. O build Windows M0 é local e usa apenas a fixture sintética.
 

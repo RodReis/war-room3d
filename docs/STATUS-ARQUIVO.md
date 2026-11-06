@@ -16,3 +16,10 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - Nenhum check de CI configurado no HEAD da PR e nenhuma regra de proteção na `main` no momento do merge. Isso não equivale a CI aprovado.
 - Limites: GLB v2 e rack de ensaio fora do build; direitos de redistribuição do GLB v2, custo de geração Tripo, frame time/VRAM, mouse físico no executável e teste em outra máquina não validados. Não há conectores reais, infraestrutura operacional nem comandos reais na M0.
 - Aceite funcional do PI pendente; a issue continua aberta.
+
+## 06/11/2026 — Primeira fatia M1 em revisão
+
+- Issue [#2](https://github.com/RodReis/war-room3d/issues/2); [PR #8](https://github.com/RodReis/war-room3d/pull/8) aberta no HEAD remoto `3e12a38add6c33db8b0abd478f24089f2f490ede`, sem merge.
+- Validação local sintética: contratos 7/7; serviço 15/15 e typecheck aprovado no Windows x64 com Node.js 24.15.0. Detalhes e limites em [contrato/store M1](validation/m1/contrato-store.md).
+- Adaptadores reais, HTTP/SSE, Unity live, build M1 e p95 serviço→HUD não executados. Nenhuma sessão pessoal ou ativo de `docs/arte` foi publicado.
+- Aceite funcional do PI pendente; a issue continua aberta.

@@ -2,6 +2,8 @@ import { EventStore } from '../store/event-store.ts';
 import { startReadOnlyServer } from './server.ts';
 import { configureMonitoring } from '../infra/monitoring.ts';
 import { readFileSync } from 'node:fs';
+import { GitHubClient } from '../github/github-client.ts';
+import { pollLinkedRepositories } from '../github/github-poller.ts';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -14,8 +16,26 @@ try {
   const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
   const { server, url } = await startReadOnlyServer(store, token, port);
   monitoring?.runner.start(monitoring.intervalMs);
+  const githubToken = process.env.WR3D_GITHUB_TOKEN;
+  let githubTimer: NodeJS.Timeout | null = null;
+  let pollRunning = false;
+  if (githubToken) {
+    const client = new GitHubClient(githubToken);
+    const poll = async (): Promise<void> => {
+      if (pollRunning) return;
+      pollRunning = true;
+      try {
+        const result = await pollLinkedRepositories(store, client);
+        process.stdout.write(`GitHub M3: ${result.repositories} repositórios, ${result.milestones} marcos novos, ${result.errors.length} falhas\n`);
+      } catch { process.stdout.write('GitHub M3: coleta indisponível\n'); }
+      finally { pollRunning = false; }
+    };
+    void poll();
+    githubTimer = setInterval(() => void poll(), 60000);
+  }
   process.stdout.write(`Serviço de leitura ativo em ${url}\n`);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {
+    if (githubTimer) clearInterval(githubTimer);
     await monitoring?.runner.stop();
     server.closeAllConnections();
     server.close(() => store.close());

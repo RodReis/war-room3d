@@ -29,11 +29,42 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
     response.setHeader('X-Content-Type-Options', 'nosniff');
     const supplied = request.headers.authorization?.startsWith('Bearer ') ? Buffer.from(request.headers.authorization.slice(7)) : Buffer.alloc(0);
     if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { response.writeHead(401).end(); return; }
-    if (request.method !== 'GET') { response.writeHead(405, { Allow: 'GET' }).end(); return; }
-    if (request.headers['content-length'] || request.headers['transfer-encoding'] || !request.url || request.url.includes('?')) {
-      response.writeHead(404).end(); return;
+    if (!request.url) { response.writeHead(404).end(); return; }
+    if ((request.method === 'POST' && request.url === '/v1/github/repositories') || (request.method === 'DELETE' && request.url === '/v1/github/repositories')) {
+      const length = Number(request.headers['content-length'] ?? 0);
+      if (!Number.isSafeInteger(length) || length < 1 || length > 4096 || request.headers['transfer-encoding']) { response.writeHead(413).end(); return; }
+      let raw = '';
+      request.setEncoding('utf8');
+      request.on('data', chunk => { raw += chunk; if (Buffer.byteLength(raw) > 4096) request.destroy(); });
+      request.on('end', () => {
+        try {
+          const input = JSON.parse(raw) as { repositoryId: string; owner?: string; name?: string; projectId: string };
+          if (!input || typeof input.repositoryId !== 'string' || typeof input.projectId !== 'string') throw new Error('Corpo inválido');
+          if (request.method === 'DELETE') { sendJson(response, 200, { removed: store.history.unlinkRepository(input.repositoryId, input.projectId) }); return; }
+          if (typeof input.owner !== 'string' || typeof input.name !== 'string') throw new Error('Vínculo precisa de owner e name');
+          sendJson(response, 201, store.history.linkRepository({ repositoryId: input.repositoryId, owner: input.owner, name: input.name, projectId: input.projectId }));
+        } catch (error) { sendJson(response, 400, { code: 'invalid_repository_link', message: error instanceof Error ? error.message : 'Entrada inválida' }); }
+      });
+      return;
     }
+    if (request.method !== 'GET') { response.writeHead(405, { Allow: 'GET, POST, DELETE' }).end(); return; }
+    if (request.headers['content-length'] || request.headers['transfer-encoding']) { response.writeHead(404).end(); return; }
     try {
+      const parsedUrl = new URL(request.url, 'http://127.0.0.1');
+      if (parsedUrl.pathname === '/v1/history/day') {
+        const date = parsedUrl.searchParams.get('date');
+        const timeZone = parsedUrl.searchParams.get('timeZone');
+        if (!date || !timeZone || [...parsedUrl.searchParams.keys()].some(k => !['date','timeZone'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        sendJson(response, 200, store.history.daySummary(date, timeZone)); return;
+      }
+      if (parsedUrl.pathname === '/v1/history/replay') {
+        const cursor = parseCursor(parsedUrl.searchParams.get('cursor') ?? '0');
+        const limit = Number(parsedUrl.searchParams.get('limit') ?? '500');
+        if (cursor === null || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000 || [...parsedUrl.searchParams.keys()].some(k => !['cursor','limit'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        sendJson(response, 200, store.history.replay(cursor, limit)); return;
+      }
+      if (parsedUrl.pathname === '/v1/github/repositories') { sendJson(response, 200, store.history.repositories()); return; }
+      if (parsedUrl.search) { response.writeHead(404).end(); return; }
       if (request.url === '/v1/health') { sendJson(response, 200, { status: 'ok' }); return; }
       if (request.url === '/v1/capabilities') {
         sendJson(response, 200, { schemaVersion: '1.0', capabilities: store.snapshot().capabilities }); return;

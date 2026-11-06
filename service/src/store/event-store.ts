@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 4) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 5) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -77,6 +77,9 @@ export class EventStore {
     })();
     if (schemaVersion < 4) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0004_history_github.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 5) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0005_collection_windows.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -248,6 +251,40 @@ export class EventStore {
 
   snapshot(now: string = new Date().toISOString()): Row {
     return this.db.transaction(() => this.snapshotInsideTransaction(now))();
+  }
+
+  historicalSnapshot(at: string): Row {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
+        new Date(at).toISOString().slice(0,19) !== at.slice(0,19))
+      throw new Error('Instante de replay inválido');
+    const input = this.db.transaction(() => ({
+      projects: this.db.prepare('SELECT project_id,name FROM projects ORDER BY project_id').all() as {project_id:string;name:string}[],
+      placements: this.db.prepare('SELECT project_id,sector_id,slot_id,layout_version FROM room_placements ORDER BY project_id').all() as {project_id:string;sector_id:string;slot_id:string;layout_version:string}[],
+      events: this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE substr(json_extract(event_json,'$.observedAt'),1,19)<=?").all(at.slice(0,19)) as {stream_sequence:number;event_json:string}[],
+      revision: this.number('revision'),
+      streamSequence: this.number('stream_sequence')
+    }))();
+    const historicalEvents = input.events.map(row=>({ ...row,event:JSON.parse(row.event_json) as NormalizedEvent }))
+      .filter(row=>compareTimestamp(row.event.observedAt,at)<=0)
+      .sort((a,b)=>compareTimestamp(a.event.observedAt,b.event.observedAt)||a.stream_sequence-b.stream_sequence);
+    const projection = new EventStore(':memory:');
+    try {
+      projection.db.transaction(() => {
+        const project = projection.db.prepare('INSERT INTO projects(project_id,name) VALUES (?,?)');
+        const placement = projection.db.prepare('INSERT INTO room_placements(project_id,sector_id,slot_id,layout_version) VALUES (?,?,?,?)');
+        for (const row of input.projects) project.run(row.project_id,row.name);
+        for (const row of input.placements) placement.run(row.project_id,row.sector_id,row.slot_id,row.layout_version);
+      })();
+      let replayOffset = 0;
+      for (const row of historicalEvents) {
+        projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
+      }
+      const state = projection.snapshot(at);
+      const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
+      const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
+      return { ...state, mode:'replay', at, revision:input.revision, streamSequence:input.streamSequence,
+        feed, capabilities:['sessions','agents','feed'], coverage:{status:historicalEvents.length?'unknown':'none',reason:'expected_collection_windows_not_recorded'} };
+    } finally { projection.close(); }
   }
 
   private snapshotInsideTransaction(now: string): Row {

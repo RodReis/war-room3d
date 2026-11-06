@@ -20,14 +20,27 @@ namespace WarRoom3D
         private Label metrics;
         private Label coverage;
         private Label seal;
+        private TextField seekField;
+        private Button playButton;
+        private Button speedButton;
         private HistoryDayData day;
         private HistoryReplayPage page;
         private int replayIndex;
         private long currentPageCursor;
         private readonly Stack<long> previousPageCursors = new Stack<long>();
         private bool replaying;
+        private int projectionRequestVersion;
+        private bool projectionInFlight;
+        private string pendingProjectionAt;
+        private DateTime playbackAt;
+        private bool hasPlaybackAt;
+        private bool playing;
+        private int speedIndex;
+        private float nextProjectionAt;
+        private static readonly double[] PlaybackSpeeds = { 1, 60, 180, 600 };
         public bool IsReplaying => replaying;
         public event Action<bool> ReplayChanged;
+        public event Action<LiveSnapshot> ReplayStateChanged;
 
         public void Configure(VisualElement documentRoot, LiveStateClient liveClient)
         {
@@ -41,11 +54,15 @@ namespace WarRoom3D
             metrics = root.Q<Label>("history-metrics");
             coverage = root.Q<Label>("history-coverage");
             seal = root.Q<Label>("history-seal");
+            seekField = root.Q<TextField>("history-seek");
+            playButton = root.Q<Button>("history-play");
+            speedButton = root.Q<Button>("history-speed");
             if (panel == null || mask == null || dateField == null || zoneField == null || timeline == null ||
-                metrics == null || coverage == null || seal == null) throw new ArgumentException("HUD histórico incompleto");
+                metrics == null || coverage == null || seal == null || seekField == null || playButton == null || speedButton == null) throw new ArgumentException("HUD histórico incompleto");
             panel.style.display = DisplayStyle.None;
             mask.style.display = DisplayStyle.None;
             root.Q<VisualElement>("history-replay-controls").style.display = DisplayStyle.None;
+            root.Q<VisualElement>("history-time-controls").style.display = DisplayStyle.None;
             dateField.value = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             zoneField.value = "America/Sao_Paulo";
             var open = root.Q<Button>("history-button");
@@ -57,6 +74,9 @@ namespace WarRoom3D
             root.Q<Button>("history-previous").clicked += Previous;
             root.Q<Button>("history-next").clicked += Next;
             root.Q<Button>("history-live").clicked += ExitReplay;
+            root.Q<Button>("history-seek-button").clicked += Seek;
+            playButton.clicked += TogglePlayback;
+            speedButton.clicked += CycleSpeed;
         }
 
         private void Open()
@@ -106,6 +126,10 @@ namespace WarRoom3D
                 "\n" + (day.agentHoursKnown ? $"Horas-agente: {day.agentHours:0.##} h" : "Horas-agente: indisponível");
             coverage.text = day.coverage.status == "none" ? "Sem observações de sessão neste dia. Cobertura incompleta." :
                 "Cobertura de sessão não comprovada; janelas esperadas não registradas.";
+            coverage.text += day.githubCoverage.status == "none" ? " GitHub: sem coletas registradas." :
+                day.githubCoverage.status == "failed" ? " GitHub: coletas falharam; cobertura indisponível." :
+                day.githubCoverage.status == "partial" ? " GitHub: " + day.githubCoverage.successfulAttempts + " coleta(s), " + day.githubCoverage.failedAttempts + " falha(s); cobertura contínua não comprovada." :
+                " GitHub: " + day.githubCoverage.successfulAttempts + " coleta(s) pontuais; cobertura contínua não comprovada.";
             timeline.Clear();
             foreach (var milestone in day.milestones)
             {
@@ -145,6 +169,7 @@ namespace WarRoom3D
             mask.style.display = DisplayStyle.Flex;
             seal.text = "REPRODUÇÃO · HISTÓRICO DE EVENTOS";
             root.Q<VisualElement>("history-replay-controls").style.display = DisplayStyle.Flex;
+            root.Q<VisualElement>("history-time-controls").style.display = DisplayStyle.Flex;
             root.Q<Button>("history-replay").style.display = DisplayStyle.None;
             RenderReplayItem();
         }
@@ -153,10 +178,13 @@ namespace WarRoom3D
 
         private void RenderReplayItem()
         {
+            playing = false;
+            playButton.text = "Reproduzir";
             timeline.Clear();
             if (page.events.Length == 0)
             {
                 metrics.text = "Sem eventos nesta página.";
+                ReplayStateChanged?.Invoke(null);
                 return;
             }
             var item = page.events[replayIndex];
@@ -169,7 +197,108 @@ namespace WarRoom3D
                 foreach (var effect in item.effects)
                     timeline.Add(new Label(effect.effectType == "merge.celebration" ? "Marco: merge confirmado" :
                         effect.effectType == "ci.alarm" ? "Alerta: falha de CI" : "Efeito: " + effect.effectType));
-            coverage.text = "Histórico completo por sequência. Cena ao vivo oculta; comandos indisponíveis.";
+            coverage.text = "Projeção histórica em consulta. Comandos indisponíveis.";
+            var at = item.occurredAt ?? item.observedAt;
+            if (!string.IsNullOrEmpty(at) && TryParseUtc(at, out playbackAt))
+            {
+                hasPlaybackAt = true;
+                seekField.value = playbackAt.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+                QueueProjection(at);
+            }
+            else
+            {
+                hasPlaybackAt = false;
+                ReplayStateChanged?.Invoke(null);
+                coverage.text = "Instante ausente: projeção histórica indisponível.";
+            }
+        }
+
+        private static bool TryParseUtc(string value, out DateTime at) => DateTime.TryParseExact(value,
+            new[] { "yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.FFFFFFF'Z'" }, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out at);
+
+        private void QueueProjection(string at)
+        {
+            projectionRequestVersion++;
+            ReplayStateChanged?.Invoke(null);
+            if (projectionInFlight) { pendingProjectionAt = at; return; }
+            StartCoroutine(LoadProjection(at, projectionRequestVersion));
+        }
+
+        private void Seek()
+        {
+            if (!replaying) return;
+            playing = false;
+            playButton.text = "Reproduzir";
+            if (!TryParseUtc(seekField.value, out var at)) { coverage.text = "Instante UTC inválido."; return; }
+            playbackAt = at;
+            hasPlaybackAt = true;
+            timeline.Clear();
+            timeline.Add(new Label("Busca temporal: " + seekField.value + ". Use Anterior/Próximo para voltar aos marcos."));
+            metrics.text = "Projeção em " + seekField.value;
+            QueueProjection(seekField.value);
+        }
+
+        private void TogglePlayback()
+        {
+            if (!replaying) return;
+            if (!hasPlaybackAt) { Seek(); if (!hasPlaybackAt) return; }
+            playing = !playing;
+            playButton.text = playing ? "Pausar" : "Reproduzir";
+            nextProjectionAt = Time.realtimeSinceStartup;
+        }
+
+        private void CycleSpeed()
+        {
+            speedIndex = (speedIndex + 1) % PlaybackSpeeds.Length;
+            speedButton.text = PlaybackSpeeds[speedIndex].ToString(CultureInfo.InvariantCulture) + "×";
+        }
+
+        private void Update()
+        {
+            if (!replaying || !playing || !hasPlaybackAt) return;
+            playbackAt = playbackAt.AddSeconds(Time.unscaledDeltaTime * PlaybackSpeeds[speedIndex]);
+            if (playbackAt >= DateTime.UtcNow) { playbackAt = DateTime.UtcNow; playing = false; playButton.text = "Reproduzir"; }
+            if (Time.realtimeSinceStartup < nextProjectionAt) return;
+            nextProjectionAt = Time.realtimeSinceStartup + 1f;
+            var at = playbackAt.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+            seekField.value = at;
+            metrics.text = "Reprodução " + PlaybackSpeeds[speedIndex].ToString(CultureInfo.InvariantCulture) + "× · " + at;
+            QueueProjection(at);
+        }
+
+        private IEnumerator LoadProjection(string at, int version)
+        {
+            projectionInFlight = true;
+            UnityWebRequest request;
+            try { request = client.CreateHistoryRequest("/v1/history/replay/state?at=" + Uri.EscapeDataString(at)); }
+            catch (ArgumentException) { coverage.text = "Projeção histórica indisponível."; projectionInFlight = false; yield break; }
+            using (request)
+            {
+                yield return request.SendWebRequest();
+                if (replaying && version == projectionRequestVersion &&
+                    (request.result != UnityWebRequest.Result.Success || request.responseCode != 200))
+                {
+                    coverage.text = "Projeção histórica indisponível para este instante.";
+                }
+                else if (replaying && version == projectionRequestVersion)
+                {
+                    try
+                    {
+                        var state = LiveSnapshot.Parse(request.downloadHandler.text, "replay");
+                        ReplayStateChanged?.Invoke(state);
+                        coverage.text = "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
+                    }
+                    catch (ArgumentException) { coverage.text = "Estado histórico incompatível."; }
+                }
+            }
+            projectionInFlight = false;
+            if (replaying && pendingProjectionAt != null)
+            {
+                var nextAt = pendingProjectionAt;
+                pendingProjectionAt = null;
+                StartCoroutine(LoadProjection(nextAt, projectionRequestVersion));
+            }
         }
 
         private void Previous()
@@ -188,13 +317,22 @@ namespace WarRoom3D
 
         private void ExitReplay()
         {
+            StopAllCoroutines();
             replaying = false;
+            playing = false;
+            hasPlaybackAt = false;
+            projectionInFlight = false;
+            pendingProjectionAt = null;
+            playButton.text = "Reproduzir";
+            projectionRequestVersion++;
+            ReplayStateChanged?.Invoke(null);
             ReplayChanged?.Invoke(false);
             page = null;
             previousPageCursors.Clear();
             mask.style.display = DisplayStyle.None;
             seal.text = "MEU DIA · LEITURA";
             root.Q<VisualElement>("history-replay-controls").style.display = DisplayStyle.None;
+            root.Q<VisualElement>("history-time-controls").style.display = DisplayStyle.None;
             root.Q<Button>("history-replay").style.display = DisplayStyle.Flex;
             client.RefreshNow();
             RenderDay();
@@ -217,6 +355,7 @@ namespace WarRoom3D
         public double agentHours;
         public bool agentHoursKnown;
         public HistoryCoverage coverage;
+        public HistoryGithubCoverage githubCoverage;
         public HistoryMilestone[] milestones;
         public HistoryIncident[] incidentMarkers;
 
@@ -226,12 +365,13 @@ namespace WarRoom3D
             try { value = JsonUtility.FromJson<HistoryDayData>(json); }
             catch (Exception) { throw new ArgumentException("Meu dia inválido"); }
             if (value == null || string.IsNullOrEmpty(value.date) || string.IsNullOrEmpty(value.timeZone) ||
-                value.coverage == null || value.milestones == null || value.incidentMarkers == null)
+                value.coverage == null || value.githubCoverage == null || value.milestones == null || value.incidentMarkers == null)
                 throw new ArgumentException("Contrato Meu dia incompatível");
             return value;
         }
     }
     [Serializable] public sealed class HistoryCoverage { public string status; public int observedEventCount; }
+    [Serializable] public sealed class HistoryGithubCoverage { public string status; public int attempts; public int successfulAttempts; public int failedAttempts; }
     [Serializable] public sealed class HistoryMilestone { public string projectId; public string entityType; public string transition; public string occurredAt; public string ingestionMode; }
     [Serializable] public sealed class HistoryIncident { public long workflowId; public string @ref; public string openedAt; public string resolvedAt; }
     [Serializable]

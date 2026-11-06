@@ -12,6 +12,7 @@ namespace WarRoom3D.Tests
             const string json = "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":null," +
                 "\"elapsedDurationKnown\":false,\"agentHours\":null,\"agentHoursKnown\":false," +
                 "\"coverage\":{\"status\":\"none\",\"observedEventCount\":0}," +
+                "\"githubCoverage\":{\"status\":\"none\",\"attempts\":0,\"successfulAttempts\":0}," +
                 "\"milestones\":[{\"projectId\":\"p1\",\"entityType\":\"pull_request\",\"transition\":\"merged\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\"}]," +
                 "\"incidentMarkers\":[]}";
             var day = HistoryDayData.Parse(json);

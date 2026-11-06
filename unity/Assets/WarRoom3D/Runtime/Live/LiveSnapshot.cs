@@ -20,12 +20,12 @@ namespace WarRoom3D
         public LiveResourceState[] resourceStates;
         public LiveIncident[] incidents;
 
-        public static LiveSnapshot Parse(string json)
+        public static LiveSnapshot Parse(string json, string expectedMode = "live")
         {
             LiveSnapshot snapshot;
             try { snapshot = JsonUtility.FromJson<LiveSnapshot>(json); }
             catch (Exception) { throw new ArgumentException("Snapshot live inválido"); }
-            if (snapshot == null || snapshot.schemaVersion != "1.0" || snapshot.mode != "live" || snapshot.streamSequence < 0 ||
+            if (snapshot == null || snapshot.schemaVersion != "1.0" || snapshot.mode != expectedMode || snapshot.streamSequence < 0 ||
                 snapshot.projects == null || snapshot.roomPlacements == null || snapshot.sessions == null || snapshot.agents == null || snapshot.feed == null ||
                 snapshot.resources == null || snapshot.resourceStates == null || snapshot.incidents == null)
                 throw new ArgumentException("Contrato live incompatível");

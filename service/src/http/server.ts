@@ -67,6 +67,15 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
         if (cursor === null || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000 || [...parsedUrl.searchParams.keys()].some(k => !['cursor','limit'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
         sendJson(response, 200, store.history.replay(cursor, limit)); return;
       }
+      if (parsedUrl.pathname === '/v1/history/replay/state') {
+        const at = parsedUrl.searchParams.get('at');
+        if (!at || [...parsedUrl.searchParams.keys()].some(k => k !== 'at') ||
+            !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
+            new Date(at).toISOString().slice(0,19) !== at.slice(0,19)) {
+          sendJson(response, 400, { code: 'invalid_query' }); return;
+        }
+        sendJson(response, 200, store.historicalSnapshot(at)); return;
+      }
       if (parsedUrl.pathname === '/v1/github/repositories') { sendJson(response, 200, store.history.repositories()); return; }
       if (parsedUrl.search) { response.writeHead(404).end(); return; }
       if (request.url === '/v1/health') { sendJson(response, 200, { status: 'ok' }); return; }

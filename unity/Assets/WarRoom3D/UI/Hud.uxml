@@ -70,6 +70,14 @@
                 <ui:Button name="history-next" text="Próximo" />
                 <ui:Button name="history-live" text="Voltar ao vivo" />
             </ui:VisualElement>
+            <ui:VisualElement name="history-time-controls" class="history-time-controls">
+                <ui:TextField name="history-seek" label="Instante UTC (AAAA-MM-DDTHH:MM:SSZ)" />
+                <ui:VisualElement class="history-time-actions">
+                    <ui:Button name="history-seek-button" text="Buscar instante" />
+                    <ui:Button name="history-play" text="Reproduzir" />
+                    <ui:Button name="history-speed" text="1×" />
+                </ui:VisualElement>
+            </ui:VisualElement>
             <ui:Button name="history-close" text="Fechar" />
         </ui:VisualElement>
     </ui:VisualElement>

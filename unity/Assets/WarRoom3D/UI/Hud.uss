@@ -25,7 +25,7 @@
 .control-panel Button { margin-top: 8px; height: 30px; background-color: rgb(22, 49, 61); color: rgb(226, 243, 247); }
 .hint { margin-top: 10px; font-size: 11px; white-space: normal; color: rgb(172, 193, 200); }
 .history-button { display: none; }
-.history-mask { display: none; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: rgba(3, 10, 16, 0.92); }
+.history-mask { display: none; position: absolute; top: 0; bottom: 0; left: 0; right: 0; background-color: rgba(3, 10, 16, 0.48); }
 .history-panel { display: none; position: absolute; top: 110px; right: 18px; bottom: 18px; width: 440px; padding: 20px; background-color: rgba(8, 21, 31, 0.97); border-right-width: 2px; border-right-color: rgb(54, 198, 213); }
 .history-title { font-size: 25px; -unity-font-style: bold; margin-top: 8px; margin-bottom: 12px; }
 .history-seal { color: rgb(255, 215, 119); -unity-font-style: bold; font-size: 13px; }
@@ -34,6 +34,9 @@
 .history-timeline Label { white-space: normal; margin-top: 8px; font-size: 13px; }
 .history-replay-controls { display: none; flex-direction: row; justify-content: space-between; }
 .history-replay-controls Button { flex-grow: 1; margin-right: 5px; height: 34px; }
+.history-time-controls { display: none; margin-top: 8px; }
+.history-time-actions { flex-direction: row; }
+.history-time-actions Button { flex-grow: 1; margin-right: 5px; height: 32px; }
 .effects-toggle { display: none; }
 .effect-banner { display: none; position: absolute; top: 111px; left: 360px; right: 275px; min-height: 44px; padding: 10px 14px; background-color: rgba(8, 49, 58, 0.95); border-left-width: 3px; border-left-color: rgb(54, 198, 213); color: rgb(225, 241, 245); -unity-font-style: bold; white-space: normal; }
 .effect-alarm { background-color: rgba(73, 33, 21, 0.97); border-left-color: rgb(255, 185, 92); }

@@ -12,6 +12,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
   const errors: Array<{repositoryId:string;message:string;retryAfterMs?:number}> = [];
   for (const [repositoryId, projectLinks] of byRepository) {
     const { owner, name } = projectLinks[0]!;
+    const startedAt = new Date().toISOString();
     try {
       const lastSuccessAt = store.history.lastSuccessfulPollAt(repositoryId);
       if (!lastSuccessAt || projectLinks.some(link=>link.linkedAt>lastSuccessAt)) client.clearPageCache();
@@ -36,9 +37,10 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
           if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
         }
       }
-      store.history.markPollSuccess(repositoryId);
+      store.history.markPollSuccess(repositoryId,startedAt);
     } catch (error) {
       client.clearPageCache();
+      store.history.markPollFailure(repositoryId,startedAt,error instanceof GitHubRateLimitError?'rate_limited':'api_error');
       errors.push({ repositoryId, message: error instanceof Error ? error.message : 'Falha de coleta GitHub',
         ...(error instanceof GitHubRateLimitError ? {retryAfterMs:error.retryAfterMs} : {}) });
     }

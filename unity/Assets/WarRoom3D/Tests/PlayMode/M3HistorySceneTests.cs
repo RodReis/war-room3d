@@ -103,9 +103,24 @@ namespace WarRoom3D.Tests
                 while (Time.realtimeSinceStartup < deadline && root.Q<VisualElement>("history-mask").style.display.value != DisplayStyle.Flex) yield return null;
                 Assert.That(root.Q<Label>("history-seal").text, Does.StartWith("REPRODUÇÃO"));
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("sequência 1"));
+                while (Time.realtimeSinceStartup < deadline && GameObject.Find("ReplayMarker:p1") == null) yield return null;
+                Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Not.Null);
+                Assert.That(root.Q<Label>("demo-seal").text, Does.StartWith("REPRODUÇÃO"));
+                root.Q<TextField>("history-seek").value = "2026-11-06T15:10:00Z";
+                history.SendMessage("Seek");
+                deadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-coverage").text.Contains("15:10:00Z")) yield return null;
+                Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Not.Null);
+                history.SendMessage("CycleSpeed");
+                Assert.That(root.Q<Button>("history-speed").text, Is.EqualTo("60×"));
+                history.SendMessage("TogglePlayback");
+                Assert.That(root.Q<Button>("history-play").text, Is.EqualTo("Pausar"));
+                history.SendMessage("TogglePlayback");
                 Assert.That(root.Q<Label>("effect-banner").style.display.value, Is.EqualTo(DisplayStyle.None));
                 history.SendMessage("ExitReplay");
                 Assert.That(root.Q<VisualElement>("history-mask").style.display.value, Is.EqualTo(DisplayStyle.None));
+                yield return null;
+                Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Null);
                 client.AcceptSnapshot(Snapshot(2));
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && root.Q<Label>("effect-banner").style.display.value != DisplayStyle.Flex) yield return null;
@@ -139,13 +154,15 @@ namespace WarRoom3D.Tests
                     while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync()))
                         if (line == "Authorization: Bearer " + token) authorized = true;
                     var status = authorized ? "200 OK" : "401 Unauthorized";
-                    var body = first != null && first.Contains("/v1/history/replay?cursor=2") ?
+                    var body = first != null && first.Contains("/v1/history/replay/state?at=") ?
+                        "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[]}" :
+                        first != null && first.Contains("/v1/history/replay?cursor=2") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?cursor=1") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":1,\"throughSequence\":2,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":2,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"merge-2\",\"effectType\":\"merge.celebration\",\"ingestionMode\":\"live\",\"durationMs\":8000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":0,\"throughSequence\":1,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":1,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\",\"effects\":[]}]}" :
-                        "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2},\"milestones\":[],\"incidentMarkers\":[]}";
+                        "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2},\"githubCoverage\":{\"status\":\"sampled\",\"attempts\":1,\"successfulAttempts\":1},\"milestones\":[],\"incidentMarkers\":[]}";
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                     await stream.WriteAsync(header, 0, header.Length);

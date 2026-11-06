@@ -44,8 +44,15 @@ export class HistoryStore {
     return row?.last_success_at??null;
   }
 
-  markPollSuccess(repositoryId: string, at = new Date().toISOString()): void {
-    this.db.prepare('INSERT INTO github_poll_state(repository_id,last_success_at) VALUES (?,?) ON CONFLICT(repository_id) DO UPDATE SET last_success_at=excluded.last_success_at').run(repositoryId,at);
+  markPollSuccess(repositoryId: string, startedAt: string, completedAt = new Date().toISOString()): void {
+    this.db.transaction(() => {
+      this.db.prepare('INSERT INTO github_poll_state(repository_id,last_success_at) VALUES (?,?) ON CONFLICT(repository_id) DO UPDATE SET last_success_at=excluded.last_success_at').run(repositoryId,completedAt);
+      this.db.prepare("INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,'success')").run(repositoryId,startedAt,completedAt);
+    })();
+  }
+
+  markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', completedAt = new Date().toISOString()): void {
+    this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,?)').run(repositoryId,startedAt,completedAt,status);
   }
 
   recordGithubMilestone(input: { repositoryId: string; projectId: string; entityType: 'pull_request' | 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown>; ingestionMode?: 'live' | 'backfill' }): boolean {
@@ -137,9 +144,17 @@ export class HistoryStore {
     const sessionUnion = sessions === null ? null : unionDuration(sessions);
     const agentMs = agents === null ? null : agents.reduce((sum, x) => sum + x.end - x.start, 0);
     const dayEvents = events.filter(e => { const t = Date.parse(String(e.observedAt)); return t >= dayStart && t < dayEnd; });
+    const githubAttempts = this.db.prepare('SELECT repository_id,started_at,completed_at,status FROM github_poll_attempts WHERE started_at>=? AND started_at<? ORDER BY started_at,id')
+      .all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {repository_id:string;started_at:string;completed_at:string;status:string}[];
+    const successfulAttempts = githubAttempts.filter(x=>x.status==='success');
+    const failedAttempts = githubAttempts.filter(x=>x.status!=='success');
     return { date, timeZone, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
       agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
       coverage: { status: dayEvents.length ? 'unknown' : 'none', observedEventCount: dayEvents.length, reason: 'expected_collection_windows_not_recorded', gaps: dayEvents.length ? null : [{ start: new Date(dayStart).toISOString(), end: new Date(dayEnd).toISOString(), reason: 'no_observations' }] },
+      githubCoverage: { status: githubAttempts.length===0?'none':successfulAttempts.length===0?'failed':failedAttempts.length?'partial':'sampled',
+        attempts:githubAttempts.length,successfulAttempts:successfulAttempts.length,failedAttempts:failedAttempts.length,
+        lastSuccessfulPollAt:successfulAttempts.at(-1)?.completed_at??null,
+        gaps:failedAttempts.map(x=>({repositoryId:x.repository_id,start:x.started_at,end:x.completed_at,reason:x.status})) },
       milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[]).map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
       incidentMarkers: (this.db.prepare('SELECT incident_id,repository_id,project_id,workflow_id,run_id,ref,head_sha,opened_at,resolved_at,last_attempt,evidence_url FROM history_incidents WHERE (opened_at>=? AND opened_at<?) OR (resolved_at>=? AND resolved_at<?) ORDER BY opened_at').all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString(),new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {incident_id:string;repository_id:string;project_id:string;workflow_id:number;run_id:number;ref:string;head_sha:string;opened_at:string;resolved_at:string|null;last_attempt:number;evidence_url:string}[]).map(r=>({incidentId:r.incident_id,repositoryId:r.repository_id,projectId:r.project_id,workflowId:r.workflow_id,runId:r.run_id,ref:r.ref,headSha:r.head_sha,openedAt:r.opened_at,resolvedAt:r.resolved_at,lastAttempt:r.last_attempt,evidenceUrl:r.evidence_url})), costs: null };
   }

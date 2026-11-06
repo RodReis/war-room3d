@@ -19,6 +19,10 @@ namespace WarRoom3D
         private bool insideRoom;
         private bool insideDataCenter;
         private bool filterProject;
+        private bool replayMode;
+        private Transform replayMarkers;
+        private Material replayActiveMaterial;
+        private Material replayUnknownMaterial;
 
         private void Start()
         {
@@ -42,6 +46,8 @@ namespace WarRoom3D
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
             var history = gameObject.AddComponent<HistoryHudPresenter>();
             history.Configure(root, client);
+            history.ReplayChanged += OnReplayChanged;
+            history.ReplayStateChanged += RenderReplayState;
             gameObject.AddComponent<EffectDirector>().Configure(root, client, history);
             client.SnapshotChanged += Render;
             client.ConnectionChanged += OnConnection;
@@ -53,6 +59,11 @@ namespace WarRoom3D
 
         private void OnDestroy()
         {
+            var history = GetComponent<HistoryHudPresenter>();
+            if (history != null) { history.ReplayChanged -= OnReplayChanged; history.ReplayStateChanged -= RenderReplayState; }
+            ClearReplayMarkers();
+            if (replayActiveMaterial != null) Destroy(replayActiveMaterial);
+            if (replayUnknownMaterial != null) Destroy(replayUnknownMaterial);
             if (client == null) return;
             client.SnapshotChanged -= Render;
             client.ConnectionChanged -= OnConnection;
@@ -75,6 +86,7 @@ namespace WarRoom3D
         private void OnConnection(bool connected, string message)
         {
             if (root == null) return;
+            if (replayMode) return;
             root.Q<Label>("demo-seal").text = connected ? "AO VIVO · SERVIÇO LOCAL" : snapshot == null ? "SEM CONEXÃO · SEM DADOS" : "SEM CONEXÃO · ÚLTIMO SNAPSHOT";
             if (snapshot == null) root.Q<Label>("activity").text = message;
             else { RefreshProject(); RefreshResources(); }
@@ -82,6 +94,7 @@ namespace WarRoom3D
 
         private void Render(LiveSnapshot next)
         {
+            if (replayMode) return;
             snapshot = next;
             if (root == null) return;
             var list = root.Q<ScrollView>("project-list");
@@ -97,6 +110,89 @@ namespace WarRoom3D
             else if (Array.Find(snapshot.projects, item => item.projectId == selectedProjectId) == null) selectedProjectId = snapshot.projects[0].projectId;
             RefreshProject();
             RefreshResources();
+        }
+
+        private void OnReplayChanged(bool active)
+        {
+            replayMode = active;
+            if (!active)
+            {
+                ClearReplayMarkers();
+                snapshot = client.Snapshot;
+                if (snapshot != null) Render(snapshot);
+                else ShowEmpty();
+                OnConnection(client.Connected, client.ConnectionMessage);
+            }
+            else
+            {
+                snapshot = null;
+                ShowReplayUnavailable();
+            }
+        }
+
+        private void RenderReplayState(LiveSnapshot state)
+        {
+            if (!replayMode) return;
+            ClearReplayMarkers();
+            snapshot = state;
+            if (state == null) { ShowReplayUnavailable(); return; }
+            var list = root.Q<ScrollView>("project-list");
+            list.Clear();
+            foreach (var project in state.projects)
+            {
+                var entry = project;
+                list.Add(new Button(() => SelectProject(entry.projectId)) { text = project.name });
+            }
+            if (state.projects.Length == 0) selectedProjectId = null;
+            else if (Array.Find(state.projects, item => item.projectId == selectedProjectId) == null) selectedProjectId = state.projects[0].projectId;
+            BuildReplayMarkers(state);
+            RefreshProject();
+            RefreshResources();
+        }
+
+        private void ShowReplayUnavailable()
+        {
+            root.Q<ScrollView>("project-list").Clear();
+            root.Q<Label>("project-name").text = "Projeção histórica indisponível";
+            root.Q<Label>("status").text = "Sem dados";
+            root.Q<Label>("activity").text = "Aguardando estado do instante selecionado.";
+            root.Q<Label>("demo-seal").text = "REPRODUÇÃO · SEM COMANDOS";
+            root.Q<Button>("enter-button").SetEnabled(false);
+        }
+
+        private void BuildReplayMarkers(LiveSnapshot state)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (shader == null) return;
+            replayActiveMaterial ??= new Material(shader) { color = new Color(0.08f, 0.78f, 0.9f) };
+            replayUnknownMaterial ??= new Material(shader) { color = new Color(0.92f, 0.58f, 0.16f) };
+            replayMarkers = new GameObject("Projeção histórica").transform;
+            replayMarkers.SetParent(sector.transform, false);
+            foreach (var placement in state.roomPlacements)
+            {
+                if (placement.sectorId != "setor-01" || !sector.Rooms.TryGetValue(placement.slotId, out var room)) continue;
+                bool active = false, uncertain = false;
+                foreach (var session in state.sessions)
+                    if (session.projectId == placement.projectId && session.presence != "encerrada")
+                    {
+                        if (session.presence == "desconhecida" || session.freshness != "atual") uncertain = true;
+                        else active = true;
+                    }
+                if (!active && !uncertain) continue;
+                var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                marker.name = "ReplayMarker:" + placement.projectId;
+                marker.transform.SetParent(replayMarkers, false);
+                marker.transform.position = room.position + new Vector3(0, 2.8f, 0);
+                marker.transform.localScale = new Vector3(2.4f, 0.14f, 2.4f);
+                marker.GetComponent<Renderer>().sharedMaterial = active ? replayActiveMaterial : replayUnknownMaterial;
+                Destroy(marker.GetComponent<Collider>());
+            }
+            root.Q<Label>("demo-seal").text = "REPRODUÇÃO · CENA HISTÓRICA";
+        }
+
+        private void ClearReplayMarkers()
+        {
+            if (replayMarkers != null) { Destroy(replayMarkers.gameObject); replayMarkers = null; }
         }
 
         private void SelectProject(string projectId)
@@ -130,7 +226,7 @@ namespace WarRoom3D
             {
                 if (!sessionKeys.Contains(agent.sessionKey) || agent.presence == "encerrada") continue;
                 var session = sessions.Find(item => item.sessionKey == agent.sessionKey);
-                bool sourceCurrent = client.Connected && session != null && session.freshness == "atual" && session.presence != "desconhecida" && session.presence != "encerrada";
+                bool sourceCurrent = (replayMode || client.Connected) && session != null && session.freshness == "atual" && session.presence != "desconhecida" && session.presence != "encerrada";
                 if (!sourceCurrent || agent.presence == "desconhecida") uncertainAgents++;
                 else if (agent.presence == "observada" || agent.presence == "trabalhando" || agent.presence == "aguardando")
                 {
@@ -138,16 +234,16 @@ namespace WarRoom3D
                     if (agent.presence == "trabalhando") workingAgents++;
                 }
             }
-            string status = !client.Connected ? "Sem dados · conexão perdida" : SessionStatus(sessions);
+            string status = !replayMode && !client.Connected ? "Sem dados · conexão perdida" : SessionStatus(sessions);
             var statusLabel = root.Q<Label>("status");
             statusLabel.text = status;
             statusLabel.EnableInClassList("status-attention", status == "Fonte indisponível");
-            statusLabel.EnableInClassList("status-inactive", !client.Connected || sessions.Count == 0);
+            statusLabel.EnableInClassList("status-inactive", (!replayMode && !client.Connected) || sessions.Count == 0);
             statusLabel.EnableInClassList("status-waiting", status == "Aguardando");
             root.Q<Label>("provider").text = providers.Count == 0 ? "Sem sessão" : providers.Count > 1 ? "Ambos" : providers.Contains("codex") ? "Codex" : "Claude";
             root.Q<Label>("agents").text = $"{presentAgents} agentes presentes · {workingAgents} trabalhando" +
                 (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
-            root.Q<Label>("activity").text = client.Connected ? "Estado de sessões observado; tarefas não disponíveis nesta fatia." : "Conexão perdida. O último snapshot não confirma atividade atual.";
+            root.Q<Label>("activity").text = replayMode ? "Estado histórico de sessões; tarefas não disponíveis nesta fatia." : client.Connected ? "Estado de sessões observado; tarefas não disponíveis nesta fatia." : "Conexão perdida. O último snapshot não confirma atividade atual.";
             root.Q<Label>("agent-tree").text = presentAgents == 0 && uncertainAgents == 0 ? "Nenhum agente presente observado" :
                 $"{presentAgents} agentes presentes" + (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
             var lines = new List<string>();

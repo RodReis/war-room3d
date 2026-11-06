@@ -37,7 +37,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
           if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
         }
       }
-      store.history.markPollSuccess(repositoryId,startedAt);
+      store.history.markPollSuccess(repositoryId,startedAt,client.pageCacheSnapshot());
     } catch (error) {
       client.clearPageCache();
       store.history.markPollFailure(repositoryId,startedAt,error instanceof GitHubRateLimitError?'rate_limited':'api_error');

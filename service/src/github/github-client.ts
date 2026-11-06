@@ -1,5 +1,6 @@
 export interface GitHubResponse { status: number; headers: Headers; body: unknown }
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
+export interface GitHubPageCacheEntry { url: string; etag: string; next: string | null }
 
 export class GitHubRateLimitError extends Error {
   readonly retryAfterMs: number;
@@ -22,6 +23,20 @@ export class GitHubClient {
   }
 
   clearPageCache(): void { this.pageCache.clear(); }
+
+  pageCacheSnapshot(): GitHubPageCacheEntry[] {
+    return [...this.pageCache].map(([url,value])=>({url,etag:value.etag,next:value.next})).sort((a,b)=>a.url.localeCompare(b.url));
+  }
+
+  restorePageCache(entries: readonly GitHubPageCacheEntry[]): void {
+    const origin = new URL(this.base).origin;
+    if (entries.length > 1000 || entries.some(entry=>
+      !entry.url || new URL(entry.url).origin !== origin ||
+      !entry.etag || entry.etag.length > 512 ||
+      (entry.next !== null && new URL(entry.next).origin !== origin))) throw new Error('Cache de páginas GitHub inválido');
+    this.pageCache.clear();
+    for (const entry of entries) this.pageCache.set(entry.url,{etag:entry.etag,next:entry.next});
+  }
 
   async get(url: string, etag?: string): Promise<GitHubResponse> {
     const headers: Record<string,string> = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };

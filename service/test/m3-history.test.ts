@@ -208,6 +208,7 @@ test('cliente GitHub pagina, aceita 304, recusa token e não encaminha paginaç�
   assert.match(String((requests[0]!.headers as Record<string,string>).Authorization),/^Bearer /);
   const malicious=new GitHubClient('x'.repeat(30),async()=>new Response('[]',{status:200,headers:{link:'<https://evil.test/steal>; rel="next"'}}),'https://api.github.test');
   await assert.rejects(()=>malicious.getAllPages('/start'),/fora da origem/);
+  assert.throws(()=>malicious.restorePageCache([{url:'https://evil.test/steal',etag:'"bad"',next:null}]),/inválido/);
   let anonymousHeaders: HeadersInit | undefined;
   const anonymous=new GitHubClient('',async (_input,init)=>{anonymousHeaders=init?.headers;return new Response('[]',{status:200});},'https://api.github.test');
   await anonymous.getAllPages('/public');
@@ -241,6 +242,34 @@ test('ETag por página evita reprocessar respostas 304 e preserva próxima pági
   assert.deepEqual(await client.getAllPages<{id:number}>('/first'),[{id:1},{id:2}]);
   assert.deepEqual(await client.getAllPages<{id:number}>('/first'),[]);
   assert.deepEqual(requests.map(x=>x.etag),[undefined,undefined,'"first"','"second"']);
+});
+
+test('ETag só é restaurado do SQLite após coleta concluída e sobrevive reinício',async t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-etag-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  let store:EventStore|null=new EventStore(dbPath);
+  t.after(()=>{store?.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\synthetic'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'},'2026-01-01T00:00:00Z');
+  let conditional=0;
+  const fetcher=async(input:string|URL,init?:RequestInit)=>{
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/same')) return new Response(JSON.stringify({id:42}),{status:200});
+    if((init?.headers as Record<string,string>)['If-None-Match']) {conditional++;return new Response(null,{status:304});}
+    if(url.includes('/pulls?')) return new Response(JSON.stringify([{id:11,number:5,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/owner-a/same/pull/5'}]),{status:200,headers:{etag:'"prs"'}});
+    return new Response(JSON.stringify({workflow_runs:[]}),{status:200,headers:{etag:'"runs"'}});
+  };
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,1);
+  assert.equal(store.history.githubPageCache().length,2);
+  store.close();store=null;
+  store=new EventStore(dbPath);
+  const client=new GitHubClient('',fetcher);
+  client.restorePageCache(store.history.githubPageCache());
+  const result=await pollLinkedRepositories(store,client);
+  assert.equal(result.milestones,0);
+  assert.equal(result.errors.length,0);
+  assert.equal(conditional,2);
+  assert.equal((store.history.replay(0,10).events as unknown[]).length,1);
 });
 
 test('novo projeto vinculado recebe backfill mesmo após ETag 304 de outro projeto',async t=>{
@@ -280,6 +309,7 @@ test('erro em workflows invalida ETag de PR antes da gravação parcial',async t
   });
   assert.equal((await pollLinkedRepositories(store,client)).errors.length,1);
   assert.equal(store.history.hasSuccessfulPoll('42'),false);
+  assert.equal(store.history.githubPageCache().length,0);
   fail=false;
   assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
   assert.equal(conditionalPr,false);

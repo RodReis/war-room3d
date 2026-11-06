@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 5) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 6) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -80,6 +80,9 @@ export class EventStore {
     })();
     if (schemaVersion < 5) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0005_collection_windows.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 6) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0006_github_page_cache.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);

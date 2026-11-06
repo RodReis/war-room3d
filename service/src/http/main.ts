@@ -25,6 +25,8 @@ try {
   let nextPollAllowedAt = 0;
   if (githubConfigPath) {
     const client = new GitHubClient(githubToken ?? '');
+    try { client.restorePageCache(store.history.githubPageCache()); }
+    catch { client.clearPageCache(); process.stdout.write('GitHub M3: cache de páginas inválido; nova leitura necessária\n'); }
     const poll = async (): Promise<void> => {
       if (pollRunning || Date.now() < nextPollAllowedAt) return;
       pollRunning = true;

@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3';
+import type { GitHubPageCacheEntry } from '../github/github-client.ts';
 
 type EventRow = { event_id: string; stream_sequence: number; event_json: string };
 
@@ -44,15 +45,23 @@ export class HistoryStore {
     return row?.last_success_at??null;
   }
 
-  markPollSuccess(repositoryId: string, startedAt: string, completedAt = new Date().toISOString()): void {
+  markPollSuccess(repositoryId: string, startedAt: string, cacheEntries: readonly GitHubPageCacheEntry[], completedAt = new Date().toISOString()): void {
     this.db.transaction(() => {
       this.db.prepare('INSERT INTO github_poll_state(repository_id,last_success_at) VALUES (?,?) ON CONFLICT(repository_id) DO UPDATE SET last_success_at=excluded.last_success_at').run(repositoryId,completedAt);
       this.db.prepare("INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,'success')").run(repositoryId,startedAt,completedAt);
+      this.db.prepare('DELETE FROM github_page_cache').run();
+      const insert=this.db.prepare('INSERT INTO github_page_cache(url,etag,next_url,saved_at) VALUES (?,?,?,?)');
+      for (const entry of cacheEntries) insert.run(entry.url,entry.etag,entry.next,completedAt);
     })();
   }
 
   markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', completedAt = new Date().toISOString()): void {
     this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,?)').run(repositoryId,startedAt,completedAt,status);
+  }
+
+  githubPageCache(): GitHubPageCacheEntry[] {
+    return (this.db.prepare('SELECT url,etag,next_url FROM github_page_cache ORDER BY url').all() as {url:string;etag:string;next_url:string|null}[])
+      .map(row=>({url:row.url,etag:row.etag,next:row.next_url}));
   }
 
   recordGithubMilestone(input: { repositoryId: string; projectId: string; entityType: 'pull_request' | 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown>; ingestionMode?: 'live' | 'backfill' }): boolean {

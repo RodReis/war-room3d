@@ -5,7 +5,7 @@ Issue [#3](https://github.com/RodReis/war-room3d/issues/3) reaberta em 06/11/202
 | Prova | Resultado | Evidência |
 |---|---|---|
 | Contratos | `pass` — 8/8 | `cd contracts; npm ci; npm test` |
-| Serviço | `pass` — typecheck e 47/47 na fatia de ativação local sobre `b9c640f` | `cd service; npm ci; npm run typecheck; npm test`; inclui processo standalone com host local |
+| Serviço | `pass` — typecheck e 48/48 na fatia de ativação local sobre `b9c640f` | `cd service; npm ci; npm run typecheck; npm test`; inclui processo standalone com host local e regressões da revisão |
 | Unity EditMode | `pass` — 9/9 no checkout da fatia atual | `unity test ./unity --mode EditMode --output Logs/m2-issue3-editmode-retry.xml --timeout 240`; XML local |
 | Unity PlayMode | `pass` — 7/7 no checkout da fatia atual | `unity test ./unity --mode PlayMode --output Logs/m2-issue3-playmode.xml --timeout 240`; inclui HTTP/SSE sintético, atualização periódica e impacto em sala sem agentes |
 | Build Windows x64 | `pass` — 172.238.494 bytes no checkout da fatia atual | `M2LiveProjectSetup.BuildWindowsM2Live`, Unity batch; executável local em `unity/Builds/WarRoom3D-M2-Live/` |
@@ -16,7 +16,7 @@ Issue [#3](https://github.com/RodReis/war-room3d/issues/3) reaberta em 06/11/202
 | Snapshot HTTP/SSE | `pass` sintético | Contrato validado, autenticação, cursor, replay e migração em SQLite temporário; [prova e limites](transport.md) |
 | UI live HTTP/SSE | `pass` sintético | Cena sem fixture, snapshot degradado, aviso SSE e novo snapshot saudável; [evidência](unity-live.md) |
 | Ensaio SQL real e servidor de jogo | `not_run` | O servidor de jogo autorizado está parado e não expõe HTTP de saúde; healthcheck Docker do banco não substitui papel de monitoração e consulta SQL aprovada |
-| Capturas visuais e frame time do executável | `not_run` | Build e testes não medem legibilidade nem desempenho no Player conectado a uma fonte operacional autorizada; dependem de sessão visual separada |
+| Capturas visuais e frame time do executável | `not_run` | O controlador Computer Use retornou `native pipe is unavailable` em duas tentativas; não houve sessão visual do Player conectado a uma fonte operacional autorizada |
 | CI no HEAD | `not_run` | Nenhum workflow versionado para estas provas |
 | Ativação local de coleta | `pass` sintético na nova fatia | Configuração explícita de host/HTTP, API sintética em loopback, incidente, recuperação e snapshot sem sessões; [evidência e limites](monitoring-local.md) |
 

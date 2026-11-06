@@ -30,7 +30,7 @@ function parseConfig(input: unknown): MonitoringConfig {
   const projectIds = new Set<string>();
   for (const value of input.projects) {
     if (!isRecord(value) || typeof value.projectId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(value.projectId) ||
-        typeof value.name !== 'string' || typeof value.canonicalPath !== 'string' || value.name.length === 0 ||
+        typeof value.name !== 'string' || typeof value.canonicalPath !== 'string' || value.name.length === 0 || value.name.length > 80 ||
         value.canonicalPath.length === 0 || Object.keys(value).some(key => !['projectId', 'name', 'canonicalPath', 'aliases'].includes(key)) ||
         (value.aliases !== undefined && (!Array.isArray(value.aliases) || !value.aliases.every(item => typeof item === 'string'))))
       throw new Error('Projeto de monitoração inválido');
@@ -90,7 +90,6 @@ export function configureMonitoring(store: EventStore, input: unknown): { runner
         throw new Error('Caminho de projeto já pertence a outro cadastro');
     }
   }
-  for (const project of config.projects) if (!existing.has(project.projectId)) store.registerProject(project);
-  store.infrastructure.replaceInventory(config.inventory);
+  store.registerProjectsAndReplaceInventory(config.projects.filter(project => !existing.has(project.projectId)), config.inventory);
   return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs), intervalMs: config.intervalMs };
 }

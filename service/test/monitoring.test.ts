@@ -60,6 +60,11 @@ test('configuração recusa sonda fora do inventário antes de cadastrar projeto
   assert.throws(() => configureMonitoring(store, config), /Sonda não autorizada/);
   assert.deepEqual(store.snapshot().projects, []);
   assert.deepEqual(store.snapshot().resources, []);
+  assert.throws(() => configureMonitoring(store, {
+    ...config, projects: [{ ...projects[0], name: 'X'.repeat(81) }, projects[1], projects[2]],
+    probes: [{ kind: 'api', resourceId: 'api-lab', url: 'http://127.0.0.1:12345/health' }]
+  }), /Projeto de monitoração inválido/);
+  assert.deepEqual(store.snapshot().projects, []);
 });
 
 test('caminho novo em projeto existente falha antes de cadastrar outros projetos', t => {
@@ -74,6 +79,23 @@ test('caminho novo em projeto existente falha antes de cadastrar outros projetos
   }), /Caminho de projeto existente/);
   assert.deepEqual(store.snapshot().projects, [{ projectId: 'p1', name: 'Projeto 1' }]);
   assert.deepEqual(store.snapshot().resources, []);
+});
+
+test('inventário incompatível reverte projeto, sala e eventos da mesma configuração', t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'war-room3d-monitoring-'));
+  const store = new EventStore(path.join(directory, 'state.db'));
+  t.after(() => { store.close(); rmSync(directory, { recursive: true, force: true }); });
+  for (const project of projects) store.registerProject(project);
+  store.infrastructure.replaceInventory(inventory);
+  const before = store.snapshot();
+  const incompatible = { ...inventory, resources: inventory.resources.map((resource: { resourceId: string }) =>
+    resource.resourceId === 'db-homolog' ? { ...resource, environmentId: 'lab' } : resource) };
+  assert.throws(() => configureMonitoring(store, {
+    schemaVersion: '1.0', projects: [...projects, { projectId: 'p4', name: 'Projeto 4', canonicalPath: 'C:\\Projects\\p4' }],
+    inventory: incompatible, intervalMs: 1000, timeoutMs: 1000,
+    probes: [{ kind: 'api', resourceId: 'api-lab', url: 'http://127.0.0.1:12345/health' }]
+  }), /Identidade de recurso não pode mudar de ambiente/);
+  assert.deepEqual(store.snapshot(), before);
 });
 
 test('processo standalone inicia coleta real do host local e serve snapshot sem agentes', async t => {

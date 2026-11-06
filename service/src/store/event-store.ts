@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
 import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type SessionState, type Presence } from '../domain/session-reducer.ts';
 import { InfrastructureStore } from '../infra/infrastructure-store.ts';
+import type { Inventory } from '../infra/inventory.ts';
 import { appendStateChange } from './change-log.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
@@ -75,6 +76,13 @@ export class EventStore {
   }
 
   close(): void { this.db.close(); }
+
+  registerProjectsAndReplaceInventory(projects: readonly ProjectRecord[], inventory: Inventory): void {
+    this.db.transaction(() => {
+      for (const project of projects) this.registerProject(project);
+      this.infrastructure.replaceInventory(inventory);
+    })();
+  }
 
   private number(key: string): number {
     return (this.db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as { value: number }).value;

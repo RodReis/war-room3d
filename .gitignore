@@ -1,0 +1,28 @@
+# Arquivos de pesquisa e arte mantidos localmente até revisão de publicação.
+docs/analise/
+docs/arte/
+docs/preview/
+docs/superpowers/specs/
+
+# Dados e segredos locais.
+.env
+.env.*
+!*.env.example
+*.db
+*.db-shm
+*.db-wal
+
+# Unity, IDE e builds.
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+unity/.vs/
+unity/.idea/
+*.csproj
+*.sln
+*.suo
+*.user

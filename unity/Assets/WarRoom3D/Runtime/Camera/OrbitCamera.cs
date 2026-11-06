@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 
 namespace WarRoom3D
 {
+    public interface IHudPointerArea { bool IsPointerOverHud(Vector2 screenPosition); }
+
     public sealed class OrbitCamera : MonoBehaviour
     {
         private Vector3 focus;
@@ -10,7 +12,7 @@ namespace WarRoom3D
         private float pitch;
         private float distance;
         private bool dragging;
-        private HudPresenter hud;
+        private IHudPointerArea hud;
 
         public float Yaw => yaw;
         public float Pitch => pitch;
@@ -19,7 +21,7 @@ namespace WarRoom3D
 
         private void Awake() => ResetView();
 
-        public void SetHud(HudPresenter presenter) => hud = presenter;
+        public void SetHud(IHudPointerArea presenter) => hud = presenter;
 
         public void FocusRoom(Transform room)
         {

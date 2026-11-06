@@ -30,6 +30,17 @@ namespace WarRoom3D
             }
         }
 
+        public void UseNeutralIndicators()
+        {
+            Build();
+            var neutral = MaterialFor(new Color(0.22f, 0.29f, 0.36f));
+            foreach (Transform rack in transform)
+            {
+                var indicator = rack.Find("Sinalizador");
+                if (indicator != null) indicator.GetComponent<Renderer>().sharedMaterial = neutral;
+            }
+        }
+
         private static Material MaterialFor(Color color, bool emissive = false)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");

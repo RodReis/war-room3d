@@ -42,3 +42,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #11](https://github.com/RodReis/war-room3d/pull/11) aberta sobre #10, sem merge. O HEAD remoto deve ser conferido na PR antes da integração.
 - Snapshot HTTP autenticado e avisos SSE persistidos com sequência M1/M2; migração SQLite 0003 exige snapshot novo de clientes antigos. Contratos 8/8, serviço typecheck e 38/38; [prova e limites](validation/m2/transport.md).
 - Unity live, fontes reais de sessão/API/banco, ensaio de carga, CI e aceite funcional do PI permanecem pendentes.
+
+## 06/11/2026 — Cena Unity live M2 em revisão
+
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #12](https://github.com/RodReis/war-room3d/pull/12) aberta sobre #11 no HEAD remoto inicial `da3d0c53ead2e6b5dd942799a8be3c03d68b2f76`, sem merge e sem checks configurados.
+- Cena live separada da demonstração, cliente de snapshot HTTP/SSE com reconexão e HUD de infraestrutura. Dois achados da revisão automática foram corrigidos: atualização periódica para expiração e contagem separada de agentes incertos. EditMode 9/9, PlayMode 7/7, incluindo servidor sintético em loopback; build Windows x64 de 172.230.310 bytes após revisão. [Prova e limites](validation/m2/unity-live.md).
+- API/banco reais, coleta Docker contínua sob identidade isolada, prova visual/frame time do Player e aceite funcional do PI permanecem pendentes.

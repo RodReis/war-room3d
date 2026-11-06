@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement name="surface" class="surface" picking-mode="Ignore">
         <ui:VisualElement name="header" class="header">
-            <ui:Label text="WAR-ROOM3D / M2 · DEMONSTRAÇÃO" class="eyebrow" />
+            <ui:Label name="stage-eyebrow" text="WAR-ROOM3D / M2 · DEMONSTRAÇÃO" class="eyebrow" />
             <ui:Label text="Quartel-general" class="heading" />
             <ui:Label name="demo-seal" text="CONCEITO · DADOS ILUSTRATIVOS" class="seal" />
         </ui:VisualElement>
@@ -9,18 +9,18 @@
           <ui:ScrollView name="project-content" class="project-content">
             <ui:Label name="breadcrumb" text="Quartel-general / Setor 01" class="eyebrow" />
             <ui:Label name="view-title" text="Seis salas e núcleo central" class="section-title" />
-            <ui:Label text="PROJETOS DO SETOR" class="eyebrow section-space" />
+            <ui:Label name="project-list-heading" text="PROJETOS DO SETOR" class="eyebrow section-space" />
             <ui:ScrollView name="project-list" class="project-list" />
             <ui:Label text="SALA SELECIONADA" class="eyebrow section-space" />
             <ui:Label name="project-name" text="API Core" class="project-name" />
             <ui:Label name="status" text="Trabalhando · exemplo" class="status" />
             <ui:VisualElement class="detail-row"><ui:Label text="Provedor" /><ui:Label name="provider" text="Ambos" /></ui:VisualElement>
             <ui:VisualElement class="detail-row"><ui:Label text="Agentes" /><ui:Label name="agents" text="4 agentes ilustrativos" /></ui:VisualElement>
-            <ui:Label text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />
+            <ui:Label name="activity-heading" text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />
             <ui:Label name="activity" text="Implementar autenticação de exemplo" class="activity" />
-            <ui:Label text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
+            <ui:Label name="agents-heading" text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
             <ui:Label name="agent-tree" class="activity" />
-            <ui:Label text="FEED · HORÁRIOS ILUSTRATIVOS" class="eyebrow section-space" />
+            <ui:Label name="feed-heading" text="FEED · HORÁRIOS ILUSTRATIVOS" class="eyebrow section-space" />
             <ui:Label name="feed" class="activity" />
             <ui:Label text="INFRAESTRUTURA VINCULADA" class="eyebrow section-space" />
             <ui:Label name="infrastructure-alert" class="activity" />
@@ -36,7 +36,7 @@
             <ui:Label name="resource-filter" text="Filtro: todos os recursos" class="hint" />
             <ui:Button name="resource-project-button" text="Desta sala" class="primary-button" />
             <ui:Button name="resource-all-button" text="Todos os recursos" class="primary-button" />
-            <ui:Label text="RECURSOS · EXEMPLO" class="eyebrow section-space" />
+            <ui:Label name="resource-list-heading" text="RECURSOS · EXEMPLO" class="eyebrow section-space" />
             <ui:ScrollView name="resource-list" class="project-list" />
             <ui:Label text="RECURSO SELECIONADO" class="eyebrow section-space" />
             <ui:Label name="resource-name" text="Selecione um recurso" class="project-name" />

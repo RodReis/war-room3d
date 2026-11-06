@@ -21,13 +21,13 @@ _(vazio)_
 
 ## Em Andamento
 
-### Sem épico
-
-- M0 — Fundação visual e contrato (#1)
+_(vazio)_
 
 ## Feito
 
-_(vazio)_
+### Sem épico
+
+- M0 — Fundação visual e contrato (#1)
 
 ## Finalizado
 

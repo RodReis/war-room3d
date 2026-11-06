@@ -54,3 +54,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - O PI ampliou a autorização de leitura pontual para o servidor de jogo e o banco em dois checkouts distintos do Compose compartilhado. [PR #13](https://github.com/RodReis/war-room3d/pull/13) documental aberta sobre #12 no HEAD remoto inicial `e1e1e6a2693bc401cb9d02bcebd0374508cefee1`, sem merge ou checks configurados.
 - Proxy Docker autenticado e efêmero retornou `200` para cada escopo exato, um contêiner por checkout: servidor `exited/unhealthy` sem porta publicada; banco `running/healthy` no healthcheck Docker. [Evidência e limites](validation/m2/laboratorio.md).
 - Nenhuma consulta SQL, log, variável de ambiente, volume ou comando dentro de contêiner foi usado. Saúde HTTP/SQL reais, coleta contínua isolada e aceite funcional do PI permanecem pendentes.
+
+## 06/11/2026 — Sonda PostgreSQL M2 preparada em revisão
+
+- [PR #14](https://github.com/RodReis/war-room3d/pull/14) aberta sobre #13 no HEAD remoto inicial `d6c0177bcc6de3c3fe2658b68901a6ec218e7ae4`, sem merge e sem checks configurados.
+- Sonda limitada a loopback, consulta `SELECT 1` em transação `READ ONLY`, timeout e senha por callback injetada. `npm ci` sem vulnerabilidades reportadas; typecheck e 41/41 testes do serviço passaram. [Prova e limites](validation/m2/database-probe.md).
+- Não houve conexão SQL real, papel/consulta de monitoração verificados ou integração com armazenamento local de segredo. Aceite funcional do PI permanece pendente.

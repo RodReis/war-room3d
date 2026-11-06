@@ -13,11 +13,12 @@ updated: 2026-11-06
 - M4 — Mensagens e permissões assistidas (#5)
 - M3 — Meu dia, replay e GitHub (#4)
 - M2 — Data center e infraestrutura essencial (#3)
-- M1 — Quartel vivo e observação de agentes (#2)
 
 ## A Fazer
 
-_(vazio)_
+### Sem épico
+
+- M1 — Quartel vivo e observação de agentes (#2)
 
 ## Em Andamento
 
@@ -25,13 +26,13 @@ _(vazio)_
 
 ## Feito
 
-### Sem épico
-
-- M0 — Fundação visual e contrato (#1)
+_(vazio)_
 
 ## Finalizado
 
-_(vazio)_
+### Sem épico
+
+- M0 — Fundação visual e contrato (#1, finalizado em: 2026-11-06)
 
 ## Descartado
 

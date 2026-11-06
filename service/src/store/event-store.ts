@@ -7,6 +7,7 @@ import { InfrastructureStore } from '../infra/infrastructure-store.ts';
 import type { Inventory } from '../infra/inventory.ts';
 import { appendStateChange } from './change-log.ts';
 import { HistoryStore } from '../history/history.ts';
+import type { RepositoryLink } from '../history/history.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -82,6 +83,13 @@ export class EventStore {
   }
 
   close(): void { this.db.close(); }
+
+  registerProjectsAndLinkRepositories(projects: readonly ProjectRecord[], repositories: readonly Omit<RepositoryLink, 'linkedAt'>[]): void {
+    this.db.transaction(() => {
+      for (const project of projects) this.registerProject(project);
+      for (const repository of repositories) this.history.linkRepository(repository);
+    })();
+  }
 
   registerProjectsAndReplaceInventory(projects: readonly ProjectRecord[], inventory: Inventory): void {
     this.db.transaction(() => {

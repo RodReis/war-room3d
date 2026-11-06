@@ -4,6 +4,7 @@ import { configureMonitoring } from '../infra/monitoring.ts';
 import { readFileSync } from 'node:fs';
 import { GitHubClient } from '../github/github-client.ts';
 import { pollLinkedRepositories } from '../github/github-poller.ts';
+import { configureGithub } from '../github/github-config.ts';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -14,13 +15,15 @@ const store = new EventStore(databasePath);
 try {
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
   const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
+  const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
+  if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const { server, url } = await startReadOnlyServer(store, token, port);
   monitoring?.runner.start(monitoring.intervalMs);
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
-  if (githubToken) {
-    const client = new GitHubClient(githubToken);
+  if (githubConfigPath) {
+    const client = new GitHubClient(githubToken ?? '');
     const poll = async (): Promise<void> => {
       if (pollRunning) return;
       pollRunning = true;
@@ -31,7 +34,7 @@ try {
       finally { pollRunning = false; }
     };
     void poll();
-    githubTimer = setInterval(() => void poll(), 60000);
+    githubTimer = setInterval(() => void poll(), githubToken ? 60000 : 600000);
   }
   process.stdout.write(`Serviço de leitura ativo em ${url}\n`);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {

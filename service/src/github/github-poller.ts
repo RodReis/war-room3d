@@ -2,7 +2,7 @@ import type { EventStore } from '../store/event-store.ts';
 import { GitHubClient, normalizePullRequest, normalizeWorkflowRun } from './github-client.ts';
 
 interface PullRequest { id:number; number:number; state:string; merged_at:string|null; updated_at:string; html_url:string }
-interface WorkflowRun { id:number; workflow_id:number; run_attempt:number; head_sha:string; head_branch:string; status:string; conclusion:string|null; updated_at:string; html_url:string }
+interface WorkflowRun { id:number; workflow_id:number; run_attempt:number; head_sha:string; head_branch:string|null; status:string; conclusion:string|null; updated_at:string; html_url:string }
 
 export async function pollLinkedRepositories(store: EventStore, client: GitHubClient): Promise<{ repositories: number; milestones: number; errors: Array<{ repositoryId:string; message:string }> }> {
   const links = store.history.repositories();
@@ -13,17 +13,24 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
   for (const [repositoryId, projectLinks] of byRepository) {
     const { owner, name } = projectLinks[0]!;
     try {
+      const ingestionMode = store.history.hasSuccessfulPoll(repositoryId) ? 'live' : 'backfill';
+      const identity = await client.get(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`);
+      if (!identity.body || typeof identity.body !== 'object' || Array.isArray(identity.body) ||
+          String((identity.body as {id?:unknown}).id) !== repositoryId) throw new Error('ID GitHub diverge do vínculo configurado');
       const [pullRequests, workflowRuns] = await Promise.all([
-        client.getAllPages<PullRequest>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=all&per_page=100`),
-        client.getAllPages<WorkflowRun>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/actions/runs?per_page=100`)
+        client.getAllPages<PullRequest>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=all&sort=updated&direction=desc&per_page=100`),
+        client.getAllPages<WorkflowRun>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/actions/runs?per_page=100`, 'workflow_runs')
       ]);
+      pullRequests.sort((a,b)=>(a.merged_at??a.updated_at).localeCompare(b.merged_at??b.updated_at)||a.id-b.id);
+      workflowRuns.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id-b.id||a.run_attempt-b.run_attempt);
       for (const link of projectLinks) {
-        for (const pr of pullRequests) if (store.history.recordGithubMilestone(normalizePullRequest(repositoryId, link.projectId, pr))) milestones++;
+        for (const pr of pullRequests) if (store.history.recordGithubMilestone({...normalizePullRequest(repositoryId, link.projectId, pr),ingestionMode})) milestones++;
         for (const run of workflowRuns) {
           const normalized = normalizeWorkflowRun(repositoryId, link.projectId, run);
-          if (normalized && store.history.recordGithubMilestone(normalized)) milestones++;
+          if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode})) milestones++;
         }
       }
+      store.history.markPollSuccess(repositoryId);
     } catch (error) {
       errors.push({ repositoryId, message: error instanceof Error ? error.message : 'Falha de coleta GitHub' });
     }

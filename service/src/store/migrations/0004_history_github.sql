@@ -17,7 +17,8 @@ CREATE TABLE history_milestones (
   transition TEXT NOT NULL,
   occurred_at TEXT NOT NULL,
   payload_json TEXT NOT NULL,
-  PRIMARY KEY(repository_id, entity_type, entity_id, transition)
+  ingestion_mode TEXT NOT NULL CHECK(ingestion_mode IN ('live','backfill')),
+  PRIMARY KEY(repository_id, project_id, entity_type, entity_id, transition)
 );
 CREATE INDEX history_milestones_time ON history_milestones(occurred_at);
 ALTER TABLE history_milestones ADD COLUMN stream_sequence INTEGER NOT NULL DEFAULT 0;
@@ -28,6 +29,7 @@ CREATE TABLE history_effects (
   occurred_at TEXT NOT NULL,
   stream_sequence INTEGER NOT NULL,
   duration_ms INTEGER NOT NULL CHECK(duration_ms BETWEEN 0 AND 60000),
+  ingestion_mode TEXT NOT NULL CHECK(ingestion_mode IN ('live','backfill')),
   parameters_json TEXT NOT NULL,
   PRIMARY KEY(causation_id, effect_type)
 );
@@ -41,10 +43,16 @@ CREATE TABLE history_incidents (
   head_sha TEXT NOT NULL,
   opened_at TEXT NOT NULL,
   resolved_at TEXT,
+  last_observed_at TEXT NOT NULL,
   last_attempt INTEGER NOT NULL,
-  evidence_url TEXT NOT NULL
+  evidence_url TEXT NOT NULL,
+  resolution_rule_version INTEGER NOT NULL DEFAULT 1
 );
-CREATE UNIQUE INDEX history_one_open_ci_incident ON history_incidents(repository_id, workflow_id, run_id, ref, head_sha) WHERE resolved_at IS NULL;
+CREATE UNIQUE INDEX history_one_open_ci_incident ON history_incidents(repository_id, project_id, workflow_id, ref) WHERE resolved_at IS NULL;
+CREATE TABLE github_poll_state (
+  repository_id TEXT PRIMARY KEY,
+  last_success_at TEXT NOT NULL
+);
 ALTER TABLE state_changes RENAME TO state_changes_v3;
 CREATE TABLE state_changes (
   stream_sequence INTEGER PRIMARY KEY,

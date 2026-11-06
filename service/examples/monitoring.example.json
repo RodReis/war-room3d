@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "projects": [
+    {
+      "projectId": "project-example",
+      "name": "Projeto ilustrativo",
+      "canonicalPath": "C:\\Projects\\example"
+    }
+  ],
+  "inventory": {
+    "schemaVersion": "1.0",
+    "environments": [
+      { "environmentId": "local-example", "name": "Ambiente ilustrativo" }
+    ],
+    "resources": [
+      {
+        "resourceId": "host-example",
+        "environmentId": "local-example",
+        "kind": "host",
+        "name": "Host local",
+        "sourceId": "probe-host-example",
+        "staleAfterMs": 30000
+      }
+    ],
+    "projectResources": [
+      {
+        "projectId": "project-example",
+        "resourceId": "host-example",
+        "origin": "configured",
+        "confidence": "unverified"
+      }
+    ],
+    "dependencies": []
+  },
+  "probes": [
+    { "kind": "host", "resourceId": "host-example" }
+  ],
+  "intervalMs": 5000,
+  "timeoutMs": 1000
+}

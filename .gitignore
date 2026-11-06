@@ -24,5 +24,10 @@ unity/.vs/
 unity/.idea/
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
+node_modules/
+unity/Assets/LocalArt/
+unity/Assets/LocalArt.meta
+unity/.vscode/

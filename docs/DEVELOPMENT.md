@@ -4,7 +4,7 @@
 
 | Etapa | Issue | Plano | Estado |
 |---|---|---|---|
-| M0 — contrato e cena modular | [#1](https://github.com/RodReis/war-room3d/issues/1) | [M0](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | Planejada |
+| M0 — contrato e cena modular | [#1](https://github.com/RodReis/war-room3d/issues/1) | [M0](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | [PR #7](https://github.com/RodReis/war-room3d/pull/7) em revisão; integração e aceite pendentes |
 | M1 — sessões e salas vivas | [#2](https://github.com/RodReis/war-room3d/issues/2) | [M1](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | Planejada; depende de M0 |
 | M2 — data center essencial | [#3](https://github.com/RodReis/war-room3d/issues/3) | [M2](superpowers/plans/2026-11-06-m2-infraestrutura.md) | Planejada; depende de M1 |
 | M3 — histórico e GitHub | [#4](https://github.com/RodReis/war-room3d/issues/4) | [M3](superpowers/plans/2026-11-06-m3-historico-github.md) | Planejada; depende da persistência M1 |
@@ -16,10 +16,10 @@ As dependências não exigem um único PR por etapa. Cada fatia deve produzir co
 ## Baseline de ambiente
 
 - Repositório público: `RodReis/war-room3d`, branch `main`.
-- Cliente alvo: Unity 6.3 LTS, Windows x64; verificar patch e pacotes no início de M0.
+- Cliente M0: Unity 6000.3.27f1, URP 17.3.0, Windows x64; versões e provas em [baseline M0](validation/m0/baseline.md) e [resultado M0](validation/m0/resultado.md).
 - Serviço proposto: Node.js 24, TypeScript e SQLite local. Ainda não existe implementação.
 - `docs/arte`, `docs/analise` e `docs/preview` são referências locais ignoradas pelo Git.
-- Não há Compose, banco compartilhado, pipeline CI ou instalador configurado neste checkout documental.
+- Não há Compose, banco compartilhado, pipeline CI ou instalador configurado. O build Windows M0 é local e usa apenas a fixture sintética.
 
 Se Compose for introduzido, registrar aqui nome, comandos, portas, volumes, política de backup/restauração e usuários autorizados antes de ativar fontes reais. Nunca copiar credenciais para este documento.
 

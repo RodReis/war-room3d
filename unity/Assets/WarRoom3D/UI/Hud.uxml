@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="surface" class="surface" picking-mode="Ignore">
+        <ui:VisualElement name="header" class="header">
+            <ui:Label text="WAR-ROOM3D / M0" class="eyebrow" />
+            <ui:Label text="Quartel-general" class="heading" />
+            <ui:Label name="demo-seal" text="CONCEITO · DADOS ILUSTRATIVOS" class="seal" />
+        </ui:VisualElement>
+        <ui:VisualElement name="project-panel" class="project-panel">
+          <ui:ScrollView name="project-content" class="project-content">
+            <ui:Label name="breadcrumb" text="Quartel-general / Setor 01" class="eyebrow" />
+            <ui:Label name="view-title" text="Seis salas e núcleo central" class="section-title" />
+            <ui:Label text="PROJETOS DO SETOR" class="eyebrow section-space" />
+            <ui:ScrollView name="project-list" class="project-list" />
+            <ui:Label text="SALA SELECIONADA" class="eyebrow section-space" />
+            <ui:Label name="project-name" text="API Core" class="project-name" />
+            <ui:Label name="status" text="Trabalhando · exemplo" class="status" />
+            <ui:VisualElement class="detail-row"><ui:Label text="Provedor" /><ui:Label name="provider" text="Ambos" /></ui:VisualElement>
+            <ui:VisualElement class="detail-row"><ui:Label text="Agentes" /><ui:Label name="agents" text="4 agentes ilustrativos" /></ui:VisualElement>
+            <ui:Label text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />
+            <ui:Label name="activity" text="Implementar autenticação de exemplo" class="activity" />
+            <ui:Label text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
+            <ui:Label name="agent-tree" class="activity" />
+            <ui:Label text="FEED · HORÁRIOS ILUSTRATIVOS" class="eyebrow section-space" />
+            <ui:Label name="feed" class="activity" />
+            <ui:Button name="enter-button" text="Entrar na sala" class="primary-button" />
+            <ui:Button name="back-button" text="Voltar ao quartel" class="primary-button" />
+          </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:VisualElement name="control-panel" class="control-panel">
+            <ui:Label text="CÂMERA" class="eyebrow" />
+            <ui:Button name="angle-button" text="Outro ângulo" />
+            <ui:Button name="reset-button" text="Restaurar câmera" />
+            <ui:Label text="Mouse direito: girar  ·  Roda: zoom" class="hint" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

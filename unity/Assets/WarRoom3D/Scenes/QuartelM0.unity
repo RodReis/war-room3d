@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &175194683
+--- !u!1 &5601728
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,64 +127,39 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 175194686}
-  - component: {fileID: 175194685}
-  - component: {fileID: 175194684}
+  - component: {fileID: 5601730}
+  - component: {fileID: 5601729}
   m_Layer: 0
-  m_Name: HUD
+  m_Name: Setor 01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &175194684
+--- !u!114 &5601729
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175194683}
+  m_GameObject: {fileID: 5601728}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 347d2d0a2fe69984a8a07058d3e459ed, type: 3}
+  m_Script: {fileID: 11500000, guid: 675e8a5fc190e6e469781826d92e34d5, type: 3}
   m_Name:
-  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.HudPresenter
-  document: {fileID: 175194685}
-  styleSheet: {fileID: 7433441132597879392, guid: d497729d70fe5a24383cc09f7a5179e9, type: 3}
-  loader: {fileID: 1198996486}
-  infrastructureLoader: {fileID: 1058971707}
-  sector: {fileID: 1365308396}
-  orbit: {fileID: 1073634661}
---- !u!114 &175194685
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175194683}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name:
-  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
-  m_PanelSettings: {fileID: 11400000, guid: 2f91af419b81c3e4dabc1992777777e5, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: 846abce15638e1a42a9237fcd793a7a2, type: 3}
-  m_SortingOrder: 0
-  m_Position: 0
-  m_WorldSpaceSizeMode: 1
-  m_WorldSpaceWidth: 1920
-  m_WorldSpaceHeight: 1080
-  m_PivotReferenceSize: 0
-  m_Pivot: 0
-  m_WorldSpaceCollider: {fileID: 0}
---- !u!4 &175194686
+  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.SectorBuilder
+  graphiteMaterial: {fileID: 2100000, guid: 1ad88be68055cd048b59bedcb5f5f2e6, type: 2}
+  floorMaterial: {fileID: 2100000, guid: c7821832d7669e547bea6930c458efd6, type: 2}
+  cyanMaterial: {fileID: 2100000, guid: 26987a18f6ac6ca49b1a4384b2c9c0ec, type: 2}
+  glassMaterial: {fileID: 2100000, guid: 5a5fb31bc79da7445a141c9065748203, type: 2}
+  goldMaterial: {fileID: 2100000, guid: 68f695d8fec2c4a4c87d0baf930054f5, type: 2}
+--- !u!4 &5601730
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 175194683}
+  m_GameObject: {fileID: 5601728}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -193,7 +168,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &699922118
+--- !u!1 &867795324
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -201,8 +176,53 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 699922120}
-  - component: {fileID: 699922119}
+  - component: {fileID: 867795326}
+  - component: {fileID: 867795325}
+  m_Layer: 0
+  m_Name: "Demonstra\xE7\xE3o M2"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &867795325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867795324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32f7898bf834e554ebd9a087f1261dcb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.InfrastructureDemoLoader
+  fixture: {fileID: 4900000, guid: 70c112e8e8ecb614c82a3afe59f467d6, type: 3}
+--- !u!4 &867795326
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 867795324}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1657858862
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1657858864}
+  - component: {fileID: 1657858863}
   m_Layer: 0
   m_Name: Luz principal
   m_TagString: Untagged
@@ -210,13 +230,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!108 &699922119
+--- !u!108 &1657858863
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 699922118}
+  m_GameObject: {fileID: 1657858862}
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
@@ -275,13 +295,13 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &699922120
+--- !u!4 &1657858864
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 699922118}
+  m_GameObject: {fileID: 1657858862}
   serializedVersion: 2
   m_LocalRotation: {x: 0.44601488, y: -0.22957529, z: 0.11950933, w: 0.85678667}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -290,7 +310,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1058971706
+--- !u!1 &1698265042
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -298,35 +318,35 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1058971708}
-  - component: {fileID: 1058971707}
+  - component: {fileID: 1698265044}
+  - component: {fileID: 1698265043}
   m_Layer: 0
-  m_Name: "Demonstra\xE7\xE3o M2"
+  m_Name: "Demonstra\xE7\xE3o"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1058971707
+--- !u!114 &1698265043
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1058971706}
+  m_GameObject: {fileID: 1698265042}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1103571654}
+  m_Script: {fileID: 11500000, guid: 59ca9c44b71df3846ac121b80cbe2c99, type: 3}
   m_Name:
-  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.InfrastructureDemoLoader
-  fixture: {fileID: 4900000, guid: 70c112e8e8ecb614c82a3afe59f467d6, type: 3}
---- !u!4 &1058971708
+  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.DemoLoader
+  fixture: {fileID: 4900000, guid: f992c892297ce6b40a5f4fa8983ea337, type: 3}
+--- !u!4 &1698265044
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1058971706}
+  m_GameObject: {fileID: 1698265042}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -335,7 +355,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1073634660
+--- !u!1 &1747431380
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -343,9 +363,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1073634663}
-  - component: {fileID: 1073634662}
-  - component: {fileID: 1073634661}
+  - component: {fileID: 1747431383}
+  - component: {fileID: 1747431382}
+  - component: {fileID: 1747431381}
   m_Layer: 0
   m_Name: "C\xE2mera orbital"
   m_TagString: MainCamera
@@ -353,25 +373,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1073634661
+--- !u!114 &1747431381
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1073634660}
+  m_GameObject: {fileID: 1747431380}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c42caecc8f903c747afdd0f9a2793169, type: 3}
   m_Name:
   m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.OrbitCamera
---- !u!20 &1073634662
+--- !u!20 &1747431382
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1073634660}
+  m_GameObject: {fileID: 1747431380}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -416,13 +436,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &1073634663
+--- !u!4 &1747431383
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1073634660}
+  m_GameObject: {fileID: 1747431380}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -431,22 +451,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!115 &1103571654
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name:
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: InfrastructureDemoLoader
-  m_Namespace: WarRoom3D
-  m_AssemblyName: WarRoom3D.Runtime
---- !u!1 &1198996485
+--- !u!1 &2091212415
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -454,84 +459,64 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1198996487}
-  - component: {fileID: 1198996486}
+  - component: {fileID: 2091212418}
+  - component: {fileID: 2091212417}
+  - component: {fileID: 2091212416}
   m_Layer: 0
-  m_Name: "Demonstra\xE7\xE3o"
+  m_Name: HUD
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1198996486
+--- !u!114 &2091212416
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1198996485}
+  m_GameObject: {fileID: 2091212415}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59ca9c44b71df3846ac121b80cbe2c99, type: 3}
+  m_Script: {fileID: 11500000, guid: 347d2d0a2fe69984a8a07058d3e459ed, type: 3}
   m_Name:
-  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.DemoLoader
-  fixture: {fileID: 4900000, guid: f992c892297ce6b40a5f4fa8983ea337, type: 3}
---- !u!4 &1198996487
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1198996485}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1365308395
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1365308397}
-  - component: {fileID: 1365308396}
-  m_Layer: 0
-  m_Name: Setor 01
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1365308396
+  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.HudPresenter
+  document: {fileID: 2091212417}
+  styleSheet: {fileID: 7433441132597879392, guid: d497729d70fe5a24383cc09f7a5179e9, type: 3}
+  loader: {fileID: 1698265043}
+  infrastructureLoader: {fileID: 867795325}
+  sector: {fileID: 5601729}
+  orbit: {fileID: 1747431381}
+--- !u!114 &2091212417
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365308395}
+  m_GameObject: {fileID: 2091212415}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 675e8a5fc190e6e469781826d92e34d5, type: 3}
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
   m_Name:
-  m_EditorClassIdentifier: WarRoom3D.Runtime::WarRoom3D.SectorBuilder
-  graphiteMaterial: {fileID: 2100000, guid: 1ad88be68055cd048b59bedcb5f5f2e6, type: 2}
-  floorMaterial: {fileID: 2100000, guid: c7821832d7669e547bea6930c458efd6, type: 2}
-  cyanMaterial: {fileID: 2100000, guid: 26987a18f6ac6ca49b1a4384b2c9c0ec, type: 2}
-  glassMaterial: {fileID: 2100000, guid: 5a5fb31bc79da7445a141c9065748203, type: 2}
-  goldMaterial: {fileID: 2100000, guid: 68f695d8fec2c4a4c87d0baf930054f5, type: 2}
---- !u!4 &1365308397
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 2f91af419b81c3e4dabc1992777777e5, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 846abce15638e1a42a9237fcd793a7a2, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!4 &2091212418
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1365308395}
+  m_GameObject: {fileID: 2091212415}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -544,9 +529,9 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1365308397}
-  - {fileID: 1198996487}
-  - {fileID: 1058971708}
-  - {fileID: 1073634663}
-  - {fileID: 699922120}
-  - {fileID: 175194686}
+  - {fileID: 5601730}
+  - {fileID: 1698265044}
+  - {fileID: 867795326}
+  - {fileID: 1747431383}
+  - {fileID: 1657858864}
+  - {fileID: 2091212418}

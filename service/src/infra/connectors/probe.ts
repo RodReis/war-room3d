@@ -9,6 +9,10 @@ export interface Probe {
 
 export class CollectorRunner {
   private running = false;
+  private scheduled = false;
+  private timer: NodeJS.Timeout | null = null;
+  private pending: Promise<void> | null = null;
+  lastError: Error | null = null;
   private readonly store: InfrastructureStore;
   private readonly probes: readonly Probe[];
   private readonly timeoutMs: number;
@@ -48,5 +52,29 @@ export class CollectorRunner {
       }
       return { collected, failed };
     } finally { this.running = false; }
+  }
+
+  start(intervalMs: number): void {
+    if (!Number.isSafeInteger(intervalMs) || intervalMs < 1000 || intervalMs > 3600000) throw new Error('Intervalo de coleta inválido');
+    if (this.scheduled) throw new Error('Coleta periódica já iniciada');
+    this.scheduled = true;
+    this.lastError = null;
+    const tick = async (): Promise<void> => {
+      try { await this.collectOnce(); }
+      catch (error) {
+        this.lastError = error instanceof Error ? error : new Error('Falha na coleta periódica');
+        this.scheduled = false;
+      }
+      if (this.scheduled) this.timer = setTimeout(() => { this.pending = tick(); }, intervalMs);
+    };
+    this.timer = setTimeout(() => { this.pending = tick(); }, 0);
+  }
+
+  async stop(): Promise<void> {
+    this.scheduled = false;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    await this.pending;
+    this.pending = null;
   }
 }

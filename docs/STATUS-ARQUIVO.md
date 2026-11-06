@@ -27,6 +27,6 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 ## 06/11/2026 — Primeira fatia M2 em revisão
 
 - Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão com correção de cena em `1ecd8c0673ca6e61411f8c13aea7e9d380b0c9dc`, sobre a PR #8, sem merge.
-- Contratos 8/8, serviço 29/29 e typecheck, Unity EditMode 6/6, PlayMode 4/4 e build Windows x64 concluídos após correção do carregador serializado e dois achados da revisão automática. [Resultado e limites](validation/m2/resultado.md).
+- Contratos 8/8, serviço 30/30 e typecheck, Unity EditMode 6/6, PlayMode 4/4 e build Windows x64 concluídos após correção do carregador serializado e dois achados da revisão automática. [Resultado e limites](validation/m2/resultado.md).
 - Data center Unity usa fixture ilustrativa; a sonda host leu memória local pontualmente no teste, HTTP usou fake e Docker/banco permanecem desativados. O [levantamento](validation/m2/laboratorio.md) documenta a falta de proxy mínimo e papel de monitoração.
 - Aceite funcional do PI pendente; a issue continua aberta.

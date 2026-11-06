@@ -73,3 +73,26 @@ test('sonda HTTP cancela corpo mesmo em resposta rejeitada', async () => {
     assert.equal(cancelled, true, `Corpo HTTP ${status} permaneceu aberto`);
   }
 });
+
+test('coleta periódica permanece ativa sem sessão e para sem rodada adicional', async t => {
+  const store = storeForTest(t);
+  let resolveFirst!: () => void;
+  const first = new Promise<void>(resolve => { resolveFirst = resolve; });
+  let count = 0;
+  const probe: Probe = {
+    resourceId: 'api-lab', sourceId: 'probe-api',
+    async collect() {
+      count++;
+      resolveFirst();
+      return { resourceId: 'api-lab', sourceId: 'probe-api', sourceVersion: '1', health: 'saudavel', observedAt: at, evidenceRef: 'http-status-200' };
+    }
+  };
+  const runner = new CollectorRunner(store.infrastructure, [probe], 1000, () => later);
+  runner.start(1000);
+  await first;
+  await runner.stop();
+  assert.equal(count, 1);
+  assert.equal((store.snapshot(later).sessions as unknown[]).length, 0);
+  assert.equal((store.snapshot(later).resourceStates as { resourceId: string; health: string }[]).find(item => item.resourceId === 'api-lab')?.health, 'saudavel');
+  assert.equal(runner.lastError, null);
+});

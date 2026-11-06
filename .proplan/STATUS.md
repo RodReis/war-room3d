@@ -15,13 +15,13 @@ updated: 2026-11-06
 
 ## A Fazer
 
-### Sem épico
-
-- M2 — Data center e infraestrutura essencial (#3)
+_(vazio)_
 
 ## Em Andamento
 
-_(vazio)_
+### Sem épico
+
+- M2 — Data center e infraestrutura essencial (#3)
 
 ## Feito
 

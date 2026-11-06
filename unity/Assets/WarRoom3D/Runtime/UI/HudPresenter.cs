@@ -139,6 +139,10 @@ namespace WarRoom3D
             else
             {
                 root.Q<Label>("resource-name").text = "Nenhum recurso vinculado";
+                var status = root.Q<Label>("resource-status");
+                status.text = "Sem dados · exemplo";
+                status.EnableInClassList("status-attention", false);
+                status.EnableInClassList("status-inactive", true);
                 root.Q<Label>("resource-detail").text = "Inventário ilustrativo sem vínculo para esta sala.";
             }
         }

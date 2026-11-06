@@ -44,8 +44,17 @@ namespace WarRoom3D.Tests
             Assert.That(root.Q<ScrollView>("resource-list").contentContainer.childCount, Is.EqualTo(3));
             hud.SendMessage("SetResourceFilter", false);
             Assert.That(root.Q<ScrollView>("resource-list").contentContainer.childCount, Is.EqualTo(5));
+            hud.SendMessage("SelectResource", loader.Snapshot.resources[2]);
+            Assert.That(root.Q<Label>("resource-status").text, Does.Contain("Saudável"));
             hud.SendMessage("ReturnToSector");
             Assert.That(root.Q<VisualElement>("resource-panel").resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+            var unlinked = System.Array.Find(demo.Snapshot.projects, item => item.projectId == "painel-web");
+            hud.SendMessage("Select", unlinked);
+            hud.SendMessage("ShowDataCenter");
+            Assert.That(root.Q<ScrollView>("resource-list").contentContainer.childCount, Is.Zero);
+            Assert.That(root.Q<Label>("resource-status").text, Does.Contain("Sem dados"));
+            Assert.That(root.Q<Label>("resource-status").ClassListContains("status-attention"), Is.False);
         }
     }
 }

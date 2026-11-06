@@ -58,3 +58,18 @@ test('timeout perde cobertura sem criar incidente; identidade da sonda é verifi
   const forged: Probe = { resourceId: 'api-lab', sourceId: 'probe-api', collect: async () => ({ resourceId: 'db-lab', sourceId: 'probe-api', sourceVersion: '1', health: 'saudavel', observedAt: at, evidenceRef: 'fake' }) };
   assert.deepEqual(await new CollectorRunner(store.infrastructure, [forged], 1000, () => later).collectOnce(), { collected: [], failed: ['api-lab'] });
 });
+
+test('sonda HTTP cancela corpo mesmo em resposta rejeitada', async () => {
+  for (const status of [200, 401]) {
+    let cancelled = false;
+    const body = new ReadableStream({
+      start(controller) { controller.enqueue(new Uint8Array([1])); },
+      cancel() { cancelled = true; }
+    });
+    const fetcher = (async () => new Response(body, { status })) as typeof fetch;
+    const probe = httpProbe('api-lab', 'probe-api', 'https://example.invalid/health', fetcher, () => at);
+    if (status === 200) await probe.collect(new AbortController().signal);
+    else await assert.rejects(probe.collect(new AbortController().signal));
+    assert.equal(cancelled, true, `Corpo HTTP ${status} permaneceu aberto`);
+  }
+});

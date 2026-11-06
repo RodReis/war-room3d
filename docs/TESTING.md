@@ -2,7 +2,7 @@
 
 ## Estado e princípio
 
-Ainda não há código de produto neste checkout. Os cenários abaixo definem provas para cada etapa; não são resultados executados. Cada relatório informa `pass`, `fail` ou `not_run`, versão do código, ambiente, comando e evidência. Um check verde de CI não substitui aceite visual e funcional.
+A M0 tem código e provas em `docs/validation/m0/resultado.md`. Os cenários das etapas seguintes definem provas, não resultados executados. Cada relatório informa `pass`, `fail` ou `not_run`, versão do código, ambiente, comando e evidência. Um check verde de CI não substitui aceite visual e funcional.
 
 | Etapa | Provas essenciais |
 |---|---|

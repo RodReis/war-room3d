@@ -41,8 +41,8 @@ PRD RF-01–RF-13, RF-34–RF-37 e RNF-01/RNF-04/RNF-08/RNF-09; GDD seções 10,
 
 - [ ] **Step 1: Escrever testes que aceitam evento de sessão e evento de recurso sem sessão; rejeitam ausência de `sourceId`, `observedAt`, `provenance` e versão major diferente.** O teste carrega os schemas por Ajv e verifica `validate(valid) === true`, `validate(invalid) === false` para cada caso.
 - [ ] **Step 2: Rodar `npm test` em `contracts/`; esperar falha pelos novos schemas/fixtures.**
-- [ ] **Step 3: Criar envelope com campos `schemaVersion`, `sourceId`, `sourceEventId?`, `eventId`, `type`, `observedAt`, `occurredAt?`, `receivedAt`, `projectId?`, `sessionKey?`, `agentKey?`, `resourceId?`, `provenance`, `ingestionMode`, `payload` e `evidenceRefs[]`.** `provenance` é `observed|inferred|user_asserted|illustrative`; `ingestionMode` é `live|backfill|resync|demo`. Regras condicionais exigem `projectId` para evento de sessão, `resourceId` para evento de recurso. `additionalProperties: false` no envelope.
-- [ ] **Step 4: Criar snapshot com `revision`, `streamSequence`, `projects[]`, `sessions[]`, `agents[]`, `sources[]` e `mode=live`.** Nunca serializar credenciais ou texto bruto de prompt. Rodar `npm test`; esperar aprovação. Commit seletivo de `contracts/`.
+- [ ] **Step 3: Criar envelope com campos `schemaVersion`, `sourceId`, `sourceEventId?`, `sourceVersion`, `sourceSequence?`, `eventId`, `streamSequence?`, `type`, `observedAt`, `occurredAt?`, `receivedAt`, `projectId?`, `provider?`, `sessionKey?`, `agentKey?`, `resourceId?`, `environmentId?`, `correlationId?`, `causationId?`, `provenance`, `ingestionMode`, `payload` e `evidenceRefs[]`.** `provenance` é `observed|inferred|user_asserted|illustrative`; `ingestionMode` é `live|backfill|resync|demo`. Regras condicionais exigem `projectId`, `provider` e `sessionKey` para evento de sessão/agente; evento de recurso exige `resourceId` e `environmentId`. `additionalProperties: false` no envelope. O primeiro schema cobre apenas tipos de evento implementados na fatia, sem aceitar payload bruto de provedor.
+- [ ] **Step 4: Criar snapshot com `revision`, `streamSequence`, `projects[]`, `roomPlacements[]`, `sessions[]`, `agents[]`, `tasks[]`, `invocations[]`, `feed[]`, `sources[]`, `capabilities[]` e `mode=live`.** Arrays ainda não implementados permanecem vazios e suas capacidades não são anunciadas. Nunca serializar credenciais ou texto bruto de prompt. Rodar `npm test`; esperar aprovação. Commit seletivo de `contracts/`.
 
 ## Task 2: Resolver identidade de projeto e sessão
 
@@ -63,11 +63,14 @@ PRD RF-01–RF-13, RF-34–RF-37 e RNF-01/RNF-04/RNF-08/RNF-09; GDD seções 10,
 - [ ] **Step 4: Implementar transação síncrona única.** Exemplo da fronteira, após validação do evento:
 
 ```ts
-const apply = db.transaction((event: NormalizedEvent, cursor: string) => {
-  const inserted = insertEvent.run(event);
-  if (inserted.changes === 0) return { applied: false, revision: readRevision() };
+const apply = db.transaction((event: NormalizedEvent, cursor: Cursor) => {
+  const inserted = insertEventOrIgnore.run(event);
+  if (inserted.changes === 0) {
+    advanceCursorIfMonotonic(cursor);
+    return { applied: false, revision: readRevision() };
+  }
   applyState(event);
-  saveCursor.run(event.sourceId, cursor);
+  advanceCursorIfMonotonic(cursor);
   return { applied: true, revision: nextRevision() };
 });
 ```

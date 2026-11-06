@@ -5,7 +5,7 @@ Atualizado em 06/11/2026. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md).
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
 | M0 | [#1](https://github.com/RodReis/war-room3d/issues/1) | [Plano](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | [PR #7](https://github.com/RodReis/war-room3d/pull/7) integrada em `e962a532`; [provas](validation/m0/resultado.md) | Pendente |
-| M1 | [#2](https://github.com/RodReis/war-room3d/issues/2) | [Plano](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | Não iniciada | Pendente |
+| M1 | [#2](https://github.com/RodReis/war-room3d/issues/2) | [Plano](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | [PR #8](https://github.com/RodReis/war-room3d/pull/8) de contrato/store em revisão; adaptadores e Unity live pendentes | Pendente |
 | M2 | [#3](https://github.com/RodReis/war-room3d/issues/3) | [Plano](superpowers/plans/2026-11-06-m2-infraestrutura.md) | Não iniciada | Pendente |
 | M3 | [#4](https://github.com/RodReis/war-room3d/issues/4) | [Plano](superpowers/plans/2026-11-06-m3-historico-github.md) | Não iniciada | Pendente |
 | M4 | [#5](https://github.com/RodReis/war-room3d/issues/5) | [Plano](superpowers/plans/2026-11-06-m4-interacao.md) | Não iniciada | Pendente |

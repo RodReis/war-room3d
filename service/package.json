@@ -1,0 +1,21 @@
+{
+  "name": "war-room3d-service",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "better-sqlite3": "12.6.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  }
+}

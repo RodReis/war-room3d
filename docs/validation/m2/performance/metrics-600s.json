@@ -1,0 +1,50 @@
+{
+  "mode": "synthetic-local",
+  "durationSeconds": 600,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "coverageDefinition": "first end-of-frame HUD snapshot with sequence at or beyond the accepted event",
+  "frameMeasurement": "Unity Time.unscaledDeltaTime; not presented-display FPS",
+  "plannedEvents": 6000,
+  "acceptedEvents": 6000,
+  "sequenceCoveredEvents": 6000,
+  "snapshotRequests": 2130,
+  "eventRequests": 2130,
+  "renderTraceCount": 2129,
+  "maxRenderGapMs": 1312,
+  "disconnectCount": 0,
+  "maxClockDriftMs": 1.0507000000216067,
+  "maxScheduleLagMs": 16.06109999999171,
+  "frame": {
+    "sampledFrames": 949888,
+    "sampledDurationSeconds": 605.0004272460938,
+    "meanMs": 0.6368662118911743,
+    "p95Ms": 0.9035006165504456,
+    "maxMs": 173.1529998779297,
+    "framesOver16Ms": 8,
+    "framesOver33Ms": 1,
+    "framesOver100Ms": 1,
+    "vSyncCount": 0,
+    "targetFrameRate": -1,
+    "runInBackground": true
+  },
+  "latency": {
+    "p50Ms": 136,
+    "p95Ms": 280,
+    "p99Ms": 757,
+    "maxMs": 1234,
+    "over2s": 0
+  },
+  "sequenceCoverageP95Within2s": true,
+  "frameIntervalP95Within16_67Ms": true,
+  "validity": {
+    "allSequencesCovered": true,
+    "clockStable": true,
+    "fullDuration": true,
+    "playerConnected": true,
+    "backgroundExecutionEnabled": true,
+    "resolution1080p": true
+  }
+}

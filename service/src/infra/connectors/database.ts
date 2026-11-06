@@ -20,14 +20,26 @@ export interface DatabaseSession {
 
 export type DatabaseSessionFactory = (config: ClientConfig) => DatabaseSession;
 
-const defaultSessionFactory: DatabaseSessionFactory = config => {
-  const client = new Client(config);
+export interface PgClientLike {
+  on(event: 'error', listener: (error: Error) => void): unknown;
+  connect(): Promise<unknown>;
+  query(sql: string): Promise<{ rowCount: number | null; rows: Record<string, unknown>[] }>;
+  end(): Promise<unknown>;
+}
+
+export function sessionFromPgClient(client: PgClientLike): DatabaseSession {
+  let idleError: Error | null = null;
+  // pg encaminha falhas durante connect/query/end às promises, mas emite 'error' quando está ocioso.
+  client.on('error', error => { idleError = error; });
+  const checkIdleError = () => { if (idleError) throw idleError; };
   return {
-    async connect() { await client.connect(); },
-    query: sql => client.query(sql),
-    end: () => client.end()
+    async connect() { await client.connect(); checkIdleError(); },
+    async query(sql) { checkIdleError(); const result = await client.query(sql); checkIdleError(); return result; },
+    async end() { await client.end(); checkIdleError(); }
   };
-};
+}
+
+const defaultSessionFactory: DatabaseSessionFactory = config => sessionFromPgClient(new Client(config));
 
 function validName(value: string): boolean {
   return typeof value === 'string' && value.length > 0 && value.length <= 128 && !/[\u0000-\u001f\u007f]/.test(value);

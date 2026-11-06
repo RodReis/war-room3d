@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { ClientConfig } from 'pg';
 import { EventStore } from '../src/store/event-store.ts';
-import { postgresProbe, type DatabaseSession, type PostgresTarget } from '../src/infra/connectors/database.ts';
+import { postgresProbe, sessionFromPgClient, type DatabaseSession, type PostgresTarget } from '../src/infra/connectors/database.ts';
 import { CollectorRunner } from '../src/infra/connectors/probe.ts';
 import type { Inventory } from '../src/infra/inventory.ts';
 
@@ -51,6 +52,24 @@ test('recusa alvo remoto, credencial vazia e cancelamento antes de abrir conexã
   cancelled.abort();
   await assert.rejects(missing.collect(cancelled.signal), /cancelada/);
   assert.equal(opened, false);
+});
+
+test('erro emitido pelo pg durante ocioso é capturado e reprova a coleta', async () => {
+  const emitter = new EventEmitter();
+  let queried = false;
+  let ended = false;
+  const client = Object.assign(emitter, {
+    async connect() {},
+    async query() { queried = true; return { rowCount: 1, rows: [{ ok: 1 }] }; },
+    async end() { ended = true; }
+  });
+  const session = sessionFromPgClient(client);
+  await session.connect();
+  emitter.emit('error', new Error('conexão PostgreSQL perdida'));
+  await assert.rejects(session.query('SELECT 1 AS ok'), /conexão PostgreSQL perdida/);
+  assert.equal(queried, false);
+  await assert.rejects(session.end(), /conexão PostgreSQL perdida/);
+  assert.equal(ended, true);
 });
 
 test('falha de consulta perde cobertura sem inventar incidente de banco', async t => {

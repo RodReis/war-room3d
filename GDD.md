@@ -170,7 +170,7 @@ A v2 tem três texturas 4096×4096, quatro salas periféricas e núcleo. O ciano
 
 Estratégia aprovada de direção: híbrida. Preservar originais, usar o modelo para proporções/composição, recuperar peças que mantenham qualidade e reconstruir partes funcionais. O primeiro ensaio compara uma sala, um rack e um trecho do painel. Se extrair exigir correção maior que remodelar, reconstruir o módulo e manter a referência visual.
 
-O fluxo de autoria pode usar Tripo3D para candidatos gerados por peça, Blender para tratamento e Unity para prova de cena/build. A identidade e a função de “Canvas” ainda precisam ser confirmadas. Essas ferramentas MCP/CLI auxiliam a produção; não integram o runtime nem substituem os adaptadores de sessões. Procedimento, prompt e evidências em [PIPELINE-ARTE-MCP](docs/PIPELINE-ARTE-MCP.md).
+O fluxo de autoria pode usar ChatGPT Canvas para revisar briefings, prompts e layouts; Tripo3D para candidatos gerados por peça; Blender para tratamento; e Unity para prova de cena/build. ChatGPT Canvas é uma superfície de edição, sem servidor MCP próprio verificado nesta sessão. Essas ferramentas auxiliam a produção; não integram o runtime nem substituem os adaptadores de sessões. Procedimento, prompt e evidências em [PIPELINE-ARTE-MCP](docs/PIPELINE-ARTE-MCP.md).
 
 ### 9.1 Kit modular proposto
 
@@ -245,7 +245,7 @@ Consulta documental em 06/11/2026; referências primárias na seção 21. Escolh
 | Animação | Animator, prefabs e trajetos/âncoras; navegação adicional somente se necessária | Estados visuais separados do domínio; chegada não bloqueia atualização |
 | Importação | Unity glTFast para GLB no Editor | Ensaiar materiais/avisos e variantes de shader no build; não é gerador de módulos |
 | Produção de arte | Blender, GLB preservado e derivados versionados | Limpeza, separação, remodelagem, UV, LOD e renders de referência |
-| Assistência de autoria | MCP/CLI de Unity, Blender e Tripo3D; Canvas a identificar | Acelerar ensaio de ativos e cena com revisão humana; nenhum deles é conector operacional do aplicativo |
+| Assistência de autoria | ChatGPT Canvas para revisão; MCP/CLI de Unity, Blender e Tripo3D quando disponíveis | Rascunhos aprovados viram arquivos versionados; nenhum é conector operacional do aplicativo |
 | Serviço local | Node.js 24 LTS + TypeScript estrito | Reuso de parsing/ecossistema; 24 é escolha conservadora, não alegação de versão mais recente |
 | API do produto | HTTP/JSON para consulta/comandos + SSE para estado/eventos | Uma via de eventos e comandos correlacionados por HTTP; reconexão explicitamente contratada |
 | Contratos | JSON Schema versionado e modelos C#/TS verificados por fixtures comuns | Evitar divergência entre clientes e coletores |

@@ -4,6 +4,7 @@ Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infrae
 
 - [PRD — requisitos do produto](PRD.md)
 - [GDD — experiência e arquitetura](GDD.md)
+- [Ferramentas MCP e produção de arte](docs/PIPELINE-ARTE-MCP.md)
 - [M0 — fundação visual e contrato](docs/superpowers/plans/2026-11-06-m0-fundacao-visual.md)
 - [M1 — quartel vivo](docs/superpowers/plans/2026-11-06-m1-quartel-vivo.md)
 - [M2 — infraestrutura essencial](docs/superpowers/plans/2026-11-06-m2-infraestrutura.md)

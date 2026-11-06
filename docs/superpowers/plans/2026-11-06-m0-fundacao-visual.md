@@ -159,10 +159,13 @@ public void ResetView() { _yaw = 45f; _pitch = 42f; _distance = 26f; ApplyPose()
 
 **Files:** Create `EnsaioGlbV2.unity`, `docs/validation/m0/arte-v2.md` e capturas em `docs/validation/m0/`.
 
+O [pipeline de arte e MCP](../../PIPELINE-ARTE-MCP.md) orienta o ensaio. Ferramentas de autoria são opcionais para executar o plano; o build não pode depender de MCP, conta Tripo3D ou Canvas.
+
 - [ ] **Step 1: Importar o GLB v2 fornecido localmente pelo glTFast na cena de ensaio, após verificar permissão de uso.** Conferir Inspector: avisos, malha, materiais, UV, texturas e importação no build. Não espalhar cópias grandes por cena; não tratar partes da malha única como salas selecionáveis. O binário não é requisito para clonar este repositório público.
 - [ ] **Step 2: Registrar quatro capturas padronizadas:** visão geral, ângulo oposto, aproximação de uma sala e núcleo/data center. Comparar com os renders de inspeção locais, quando disponíveis e autorizados.
 - [ ] **Step 3: Medir triângulos, frame time e memória no Editor e build Windows; registrar hardware e qualidade URP.** O alvo do GDD é hipótese de ensaio, não limite validado. Decidir por peça: recuperar, remodelar ou usar somente como referência. Registrar licença/origem antes de enviar binário ao Git público.
 - [ ] **Step 4: Executar um build Windows x64 e abrir fora do Editor.** Esperado: materiais corretos, sem figuras estáticas confundidas com agentes e HUD visível. Se a arte falhar, manter cena modular funcionando e registrar a falha em `arte-v2.md`.
+- [ ] **Step 5: Comparar uma peça candidata gerada e uma recuperada/remodelada, se houver conta e direitos autorizados.** Usar prompt por peça, revisar no Blender e provar na Unity; registrar proveniência, custo, licença, métricas e decisão. Se Tripo3D/Canvas/MCP não estiverem disponíveis, registrar `não executado` e concluir M0 pela geometria modular validada, sem simular integração.
 
 ## Task 7: Fechar M0 com evidência reproduzível
 

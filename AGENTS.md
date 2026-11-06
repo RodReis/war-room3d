@@ -45,6 +45,7 @@ Uma revisão relata achados reproduzíveis por arquivo/linha e prioridade; crit�
 |---|---|
 | [DEVELOPMENT](docs/DEVELOPMENT.md) | Sequência de execução, ambiente e status por etapa |
 | [ARCHITECTURE](docs/ARCHITECTURE.md) | Módulos, contratos, fluxo de dados e resiliência |
+| [PIPELINE-ARTE-MCP](docs/PIPELINE-ARTE-MCP.md) | Ferramentas de autoria, proveniência de ativos e ensaio M0 |
 | [DECISIONS](docs/DECISIONS.md) | Decisões arquiteturais e alternativas |
 | [GITHUB](docs/GITHUB.md) | Branches, commits e merge |
 | [PRS](docs/PRS.md) | Conteúdo da PR, revisão e métricas de fluxo |

@@ -20,9 +20,7 @@ _(vazio)_
 
 ## Em Andamento
 
-### Sem épico
-
-- M1 — Quartel vivo e observação de agentes (#2)
+_(vazio)_
 
 ## Feito
 
@@ -32,6 +30,7 @@ _(vazio)_
 
 ### Sem épico
 
+- M1 — Quartel vivo e observação de agentes (#2, finalizado em: 2026-11-06)
 - M0 — Fundação visual e contrato (#1, finalizado em: 2026-11-06)
 
 ## Descartado

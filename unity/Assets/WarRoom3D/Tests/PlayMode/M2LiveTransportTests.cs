@@ -34,6 +34,7 @@ namespace WarRoom3D.Tests
             var listener = new TcpListener(IPAddress.Loopback, 0);
             var cancellation = new CancellationTokenSource();
             int snapshots = 0;
+            int streams = 0;
             listener.Start();
             var port = ((IPEndPoint)listener.LocalEndpoint).Port;
             var serverTask = Task.Run(async () =>
@@ -43,7 +44,7 @@ namespace WarRoom3D.Tests
                     TcpClient connection;
                     try { connection = await listener.AcceptTcpClientAsync(); }
                     catch (SocketException) { break; }
-                    _ = Handle(connection, token, cancellation.Token, () => Interlocked.Increment(ref snapshots));
+                    _ = Handle(connection, token, cancellation.Token, () => Interlocked.Increment(ref snapshots), () => Interlocked.Increment(ref streams));
                 }
             });
             Environment.SetEnvironmentVariable("WR3D_SERVICE_URL", $"http://127.0.0.1:{port}");
@@ -66,6 +67,11 @@ namespace WarRoom3D.Tests
                 Assert.That(client.Snapshot.streamSequence, Is.EqualTo(2));
                 Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Saudável"));
                 Assert.That(snapshots, Is.GreaterThanOrEqualTo(2));
+                deadline = Time.realtimeSinceStartup + 8f;
+                while (Time.realtimeSinceStartup < deadline &&
+                    (client.Snapshot.streamSequence < 3 || root.Q<Label>("resource-status").text != "Sem dados")) yield return null;
+                Assert.That(client.Snapshot.streamSequence, Is.GreaterThanOrEqualTo(3), "Heartbeat não substitui atualização de frescor");
+                Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Sem dados"));
             }
             finally
             {
@@ -78,7 +84,7 @@ namespace WarRoom3D.Tests
             }
         }
 
-        private static async Task Handle(TcpClient connection, string token, CancellationToken cancellation, Func<int> nextSnapshot)
+        private static async Task Handle(TcpClient connection, string token, CancellationToken cancellation, Func<int> nextSnapshot, Func<int> nextStream)
         {
             using (connection)
             {
@@ -95,7 +101,7 @@ namespace WarRoom3D.Tests
                     if (first != null && first.StartsWith("GET /v1/snapshot ", StringComparison.Ordinal))
                     {
                         int count = nextSnapshot();
-                        string body = Snapshot(count == 1 ? "degradado" : "saudavel", count);
+                        string body = Snapshot(count == 1 ? "degradado" : count == 2 ? "saudavel" : "sem_dados", count);
                         var bytes = Encoding.UTF8.GetBytes(body);
                         await Write(stream, $"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                         await stream.WriteAsync(bytes, 0, bytes.Length);
@@ -103,9 +109,12 @@ namespace WarRoom3D.Tests
                     else if (first != null && first.StartsWith("GET /v1/events ", StringComparison.Ordinal))
                     {
                         await Write(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nConnection: keep-alive\r\n\r\n: connected\n\n");
-                        await Task.Delay(150, cancellation);
-                        await Write(stream, "id: 2\nevent: resource.changed\ndata: {\"streamSequence\":2,\"resourceId\":\"r1\"}\n\n");
-                        await Task.Delay(5000, cancellation);
+                        if (nextStream() == 1)
+                        {
+                            await Task.Delay(150, cancellation);
+                            await Write(stream, "id: 2\nevent: resource.changed\ndata: {\"streamSequence\":2,\"resourceId\":\"r1\"}\n\n");
+                        }
+                        await Task.Delay(10000, cancellation);
                     }
                 }
                 catch (Exception exception) when (exception is IOException || exception is ObjectDisposedException || exception is OperationCanceledException || exception is SocketException) { }

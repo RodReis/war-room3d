@@ -68,6 +68,14 @@ namespace WarRoom3D.Tests
             Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Degradado"));
             client.AcceptSnapshot(Snapshot.Replace("\"coverage\":\"atual\"", "\"coverage\":\"perdida\""));
             Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Sem dados"));
+            var uncertain = Snapshot.Replace("\"sessions\":[],\"agents\":[]",
+                "\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"desconhecida\",\"freshness\":\"desconhecido\",\"lastSeen\":\"2026-11-06T16:00:00Z\"}]," +
+                "\"agents\":[{\"agentKey\":\"a1\",\"sessionKey\":\"s1\",\"presence\":\"desconhecida\",\"parentStatus\":\"principal\"}]")
+                .Replace("\"coverage\":\"atual\"", "\"coverage\":\"perdida\"");
+            client.AcceptSnapshot(uncertain);
+            Assert.That(root.Q<Label>("agents").text, Does.Contain("0 agentes presentes"));
+            Assert.That(root.Q<Label>("agents").text, Does.Contain("1 incertos"));
+            Assert.That(root.Q<Label>("agent-tree").text, Does.Not.Contain("ativos"));
             Assert.Throws<System.ArgumentException>(() => client.AcceptSnapshot(Snapshot.Replace("\"mode\":\"live\"", "\"mode\":\"demo\"")));
             Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Sem dados"));
         }

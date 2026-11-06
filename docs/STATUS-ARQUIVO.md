@@ -46,5 +46,5 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 ## 06/11/2026 — Cena Unity live M2 em revisão
 
 - Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #12](https://github.com/RodReis/war-room3d/pull/12) aberta sobre #11 no HEAD remoto inicial `da3d0c53ead2e6b5dd942799a8be3c03d68b2f76`, sem merge e sem checks configurados.
-- Cena live separada da demonstração, cliente de snapshot HTTP/SSE com reconexão e HUD de infraestrutura. EditMode 9/9, PlayMode 7/7, incluindo servidor sintético em loopback; build Windows x64 de 172.229.542 bytes. [Prova e limites](validation/m2/unity-live.md).
+- Cena live separada da demonstração, cliente de snapshot HTTP/SSE com reconexão e HUD de infraestrutura. Dois achados da revisão automática foram corrigidos: atualização periódica para expiração e contagem separada de agentes incertos. EditMode 9/9, PlayMode 7/7, incluindo servidor sintético em loopback; build Windows x64 de 172.230.310 bytes após revisão. [Prova e limites](validation/m2/unity-live.md).
 - API/banco reais, coleta Docker contínua sob identidade isolada, prova visual/frame time do Player e aceite funcional do PI permanecem pendentes.

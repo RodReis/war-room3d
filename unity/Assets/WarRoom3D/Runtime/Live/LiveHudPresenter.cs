@@ -120,9 +120,21 @@ namespace WarRoom3D
                     sessionKeys.Add(session.sessionKey);
                     providers.Add(session.provider);
                 }
-            int agents = 0;
+            int presentAgents = 0;
+            int workingAgents = 0;
+            int uncertainAgents = 0;
             foreach (var agent in snapshot.agents)
-                if (sessionKeys.Contains(agent.sessionKey) && agent.presence != "encerrada") agents++;
+            {
+                if (!sessionKeys.Contains(agent.sessionKey) || agent.presence == "encerrada") continue;
+                var session = sessions.Find(item => item.sessionKey == agent.sessionKey);
+                bool sourceCurrent = client.Connected && session != null && session.freshness == "atual" && session.presence != "desconhecida" && session.presence != "encerrada";
+                if (!sourceCurrent || agent.presence == "desconhecida") uncertainAgents++;
+                else if (agent.presence == "observada" || agent.presence == "trabalhando" || agent.presence == "aguardando")
+                {
+                    presentAgents++;
+                    if (agent.presence == "trabalhando") workingAgents++;
+                }
+            }
             string status = !client.Connected ? "Sem dados · conexão perdida" : SessionStatus(sessions);
             var statusLabel = root.Q<Label>("status");
             statusLabel.text = status;
@@ -130,9 +142,11 @@ namespace WarRoom3D
             statusLabel.EnableInClassList("status-inactive", !client.Connected || sessions.Count == 0);
             statusLabel.EnableInClassList("status-waiting", status == "Aguardando");
             root.Q<Label>("provider").text = providers.Count == 0 ? "Sem sessão" : providers.Count > 1 ? "Ambos" : providers.Contains("codex") ? "Codex" : "Claude";
-            root.Q<Label>("agents").text = $"{agents} agentes observados";
+            root.Q<Label>("agents").text = $"{presentAgents} agentes presentes · {workingAgents} trabalhando" +
+                (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
             root.Q<Label>("activity").text = client.Connected ? "Estado de sessões observado; tarefas não disponíveis nesta fatia." : "Conexão perdida. O último snapshot não confirma atividade atual.";
-            root.Q<Label>("agent-tree").text = agents == 0 ? "Nenhum agente ativo observado" : $"{agents} agentes ativos observados";
+            root.Q<Label>("agent-tree").text = presentAgents == 0 && uncertainAgents == 0 ? "Nenhum agente presente observado" :
+                $"{presentAgents} agentes presentes" + (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
             var lines = new List<string>();
             for (int i = snapshot.feed.Length - 1; i >= 0 && lines.Count < 3; i--)
                 if (snapshot.feed[i].projectId == project.projectId) lines.Add($"{snapshot.feed[i].observedAt} · {snapshot.feed[i].type}");

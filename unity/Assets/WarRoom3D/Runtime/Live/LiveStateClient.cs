@@ -8,6 +8,7 @@ namespace WarRoom3D
 {
     public sealed class LiveStateClient : MonoBehaviour
     {
+        private const float SnapshotRefreshSeconds = 5f;
         private string baseUrl;
         private string token;
         private bool configured;
@@ -48,6 +49,7 @@ namespace WarRoom3D
                 yield return FetchSnapshot();
                 if (!Connected) { yield return new WaitForSecondsRealtime(2); continue; }
                 refreshRequested = false;
+                float refreshAt = Time.realtimeSinceStartup + SnapshotRefreshSeconds;
                 using (var request = UnityWebRequest.Get(baseUrl + "/v1/events"))
                 {
                     activeRequest = request;
@@ -61,8 +63,9 @@ namespace WarRoom3D
                     bool timedOut = false;
                     while (!operation.isDone && !refreshRequested && !timedOut)
                     {
+                        refreshRequested = Time.realtimeSinceStartup >= refreshAt;
                         timedOut = Time.realtimeSinceStartup - stream.LastDataAt > 45f;
-                        if (!timedOut) yield return null;
+                        if (!refreshRequested && !timedOut) yield return null;
                     }
                     if (refreshRequested) request.Abort();
                     else

@@ -25,6 +25,7 @@ if (target.protocol !== 'http:' || target.hostname !== '127.0.0.1' || target.use
 const suffix = process.argv[3] ?? '';
 if (suffix && !/^[A-Za-z0-9_-]{1,20}$/.test(suffix)) throw new Error('Sufixo inválido');
 const captureName = suffix ? `${scenario}-${suffix}` : scenario;
+if (captureName.length > 40) throw new Error('Nome completo da captura excede 40 caracteres');
 
 const captureDir = process.env.WR3D_CAPTURE_DIR ?? fileURLToPath(new URL('../../unity/Builds/WarRoom3D-M2-Live/capture/', import.meta.url));
 const imagePath = path.join(captureDir, `${captureName}.png`);

@@ -17,7 +17,7 @@ O grafo de três projetos, seus nomes e vínculos são **sintéticos**. O estado
 
 O Player registrou `connected: true`, 1 recurso, 0 sessões e 120 frames em cada cenário. As imagens foram inspecionadas: o nome do recurso e as linhas de detalhe quebram dentro do painel; o painel do projeto mostra o incidente mesmo sem agentes. O build e a execução são do Player, não apenas do Editor.
 
-No código desta fatia, `unity test ./unity --mode EditMode` produziu XML `Passed` 9/9 e `unity test ./unity --mode PlayMode` produziu XML `Passed` 7/7, sem falhas nem casos ignorados. O PlayMode cobre a métrica positiva da primeira requisição até a atualização do HUD. O build Windows concluiu; o Unity registrou um aviso de validação da licença que não impediu o build. `node --check service/scripts/m2-player-proof.mjs` passou, e uma execução adicional do roteiro versionado passou após reforçar as verificações de snapshot, SSE, estado, vista e métricas.
+No código desta fatia, `unity test ./unity --mode EditMode` produziu XML `Passed` 9/9 e `unity test ./unity --mode PlayMode` produziu XML `Passed` 7/7, sem falhas nem casos ignorados. O PlayMode cobre a métrica positiva da primeira requisição até a atualização do HUD. O build Windows concluiu; o Unity registrou um aviso de validação da licença que não impediu o build. `node --check service/scripts/m2-player-proof.mjs` passou, e uma execução adicional do roteiro versionado passou após reforçar as verificações de snapshot, SSE, estado, vista e métricas. Após a revisão da PR, um nome completo acima de 40 caracteres foi recusado antes de iniciar o Player; o nome de exatamente 40 caracteres gerou PNG/JSON e saiu com código 0.
 
 ## Reprodução
 

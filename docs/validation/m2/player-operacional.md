@@ -1,5 +1,7 @@
 # M2 — Player Windows ligado a fontes locais
 
+O [ensaio posterior de carga sintética](performance-operacional.md) mede 10 eventos/s por dez minutos em 1080p, com traços de aceitação e HUD. Seus limites são separados dos cenários HTTP reais pontuais abaixo.
+
 Data: 06/11/2026. Branch `feat/m2-player-proof` sobre `3933382`. Unity 6000.3.27f1, Windows x64, build de desenvolvimento com 172.240.533 bytes. Resolução de captura: 1280×720. O ensaio foi pontual e somente de leitura no laboratório local do ContaIA autorizado pelo PI.
 
 ## Caminho exercitado

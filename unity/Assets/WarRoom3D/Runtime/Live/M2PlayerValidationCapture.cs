@@ -1,7 +1,9 @@
 #if DEVELOPMENT_BUILD && !UNITY_EDITOR
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +18,17 @@ namespace WarRoom3D
         private string captureDirectory;
         private string captureName;
         private string captureView;
+        private int captureDurationSeconds;
+        private bool previousRunInBackground;
+        private readonly List<RenderObservation> renderObservations = new List<RenderObservation>();
+        private int disconnectCount;
+
+        [Serializable]
+        private sealed class RenderObservation
+        {
+            public long sequence;
+            public long utcUnixMs;
+        }
 
         [Serializable]
         private sealed class CaptureReport
@@ -30,10 +43,20 @@ namespace WarRoom3D
             public int sampledFrames;
             public float meanFrameMs;
             public float p95FrameMs;
+            public float maxFrameMs;
+            public int framesOver16Ms;
+            public int framesOver33Ms;
+            public int framesOver100Ms;
             public double snapshotToHudMs;
             public int imageWidth;
             public int imageHeight;
             public string view;
+            public float sampledDurationSeconds;
+            public int renderTraceCount;
+            public int disconnectCount;
+            public int vSyncCount;
+            public int targetFrameRate;
+            public bool runInBackground;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -55,6 +78,46 @@ namespace WarRoom3D
             capture.captureName = name;
             var requestedView = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VIEW");
             capture.captureView = requestedView == "project" || requestedView == "project-bottom" ? requestedView : "center";
+            var duration = Environment.GetEnvironmentVariable("WR3D_VALIDATION_DURATION_SECONDS");
+            if (!string.IsNullOrEmpty(duration))
+            {
+                if (!int.TryParse(duration, out var seconds) || seconds < 5 || seconds > 900)
+                {
+                    Debug.LogError("M2 Player: duração de validação inválida");
+                    Application.Quit(8);
+                    return;
+                }
+                capture.captureDurationSeconds = seconds;
+                capture.previousRunInBackground = Application.runInBackground;
+                Application.runInBackground = true;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            var client = GetComponent<LiveStateClient>();
+            if (client != null)
+            {
+                client.SnapshotChanged -= ObserveSnapshot;
+                client.ConnectionChanged -= ObserveConnection;
+            }
+            if (captureDurationSeconds > 0) Application.runInBackground = previousRunInBackground;
+        }
+
+        private void ObserveSnapshot(LiveSnapshot snapshot)
+        {
+            StartCoroutine(RecordRendered(snapshot.streamSequence));
+        }
+
+        private IEnumerator RecordRendered(long sequence)
+        {
+            yield return new WaitForEndOfFrame();
+            renderObservations.Add(new RenderObservation { sequence = sequence, utcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+        }
+
+        private void ObserveConnection(bool connected, string _)
+        {
+            if (!connected) disconnectCount++;
         }
 
         private IEnumerator Start()
@@ -107,17 +170,55 @@ namespace WarRoom3D
                 yield break;
             }
 
-            var frameTimes = new float[FrameSamples];
+            var frameTimes = new List<float>(captureDurationSeconds > 0 ? 36000 : FrameSamples);
             float sum = 0;
+            int framesOver16Ms = 0;
+            int framesOver33Ms = 0;
+            int framesOver100Ms = 0;
             yield return null;
             yield return null;
-            for (var index = 0; index < frameTimes.Length; index++)
+            if (captureDurationSeconds > 0)
+            {
+                client.SnapshotChanged += ObserveSnapshot;
+                client.ConnectionChanged += ObserveConnection;
+                try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".ready"), "ready"); }
+                catch (Exception error)
+                {
+                    Debug.LogException(error);
+                    Application.Quit(9);
+                    yield break;
+                }
+            }
+            var startedAt = Time.realtimeSinceStartup;
+            while (captureDurationSeconds > 0
+                ? Time.realtimeSinceStartup - startedAt < captureDurationSeconds
+                : frameTimes.Count < FrameSamples)
             {
                 yield return null;
-                frameTimes[index] = Time.unscaledDeltaTime * 1000f;
-                sum += frameTimes[index];
+                var milliseconds = Time.unscaledDeltaTime * 1000f;
+                frameTimes.Add(milliseconds);
+                sum += milliseconds;
+                if (milliseconds > 1000f / 60f) framesOver16Ms++;
+                if (milliseconds > 1000f / 30f) framesOver33Ms++;
+                if (milliseconds > 100f) framesOver100Ms++;
             }
-            Array.Sort(frameTimes);
+            report.sampledDurationSeconds = Time.realtimeSinceStartup - startedAt;
+            if (captureDurationSeconds > 0)
+            {
+                yield return new WaitForEndOfFrame();
+                client.SnapshotChanged -= ObserveSnapshot;
+                client.ConnectionChanged -= ObserveConnection;
+                var trace = new StringBuilder();
+                foreach (var observation in renderObservations) trace.AppendLine(JsonUtility.ToJson(observation));
+                try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".trace.jsonl"), trace.ToString()); }
+                catch (Exception error)
+                {
+                    Debug.LogException(error);
+                    Application.Quit(10);
+                    yield break;
+                }
+            }
+            frameTimes.Sort();
             var snapshot = client.Snapshot;
             var state = snapshot.resourceStates.Length > 0 ? snapshot.resourceStates[0] : null;
             report.connected = client.Connected;
@@ -127,11 +228,20 @@ namespace WarRoom3D
             report.health = state?.health ?? "sem_dados";
             report.coverage = state?.coverage ?? "sem_dados";
             report.freshness = state?.freshness ?? "sem_dados";
-            report.sampledFrames = frameTimes.Length;
-            report.meanFrameMs = sum / frameTimes.Length;
-            report.p95FrameMs = frameTimes[Mathf.CeilToInt(frameTimes.Length * 0.95f) - 1];
+            report.sampledFrames = frameTimes.Count;
+            report.meanFrameMs = sum / frameTimes.Count;
+            report.p95FrameMs = frameTimes[Mathf.CeilToInt(frameTimes.Count * 0.95f) - 1];
+            report.maxFrameMs = frameTimes[frameTimes.Count - 1];
+            report.framesOver16Ms = framesOver16Ms;
+            report.framesOver33Ms = framesOver33Ms;
+            report.framesOver100Ms = framesOver100Ms;
             report.snapshotToHudMs = client.LastSnapshotToHudMs;
             report.view = captureView;
+            report.renderTraceCount = renderObservations.Count;
+            report.disconnectCount = disconnectCount;
+            report.vSyncCount = QualitySettings.vSyncCount;
+            report.targetFrameRate = Application.targetFrameRate;
+            report.runInBackground = Application.runInBackground;
             try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".json"), JsonUtility.ToJson(report, true)); }
             catch (Exception error)
             {

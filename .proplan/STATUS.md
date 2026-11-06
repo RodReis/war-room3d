@@ -12,11 +12,12 @@ updated: 2026-11-06
 - M5 — Logs, rede e segurança operacional (#6)
 - M4 — Mensagens e permissões assistidas (#5)
 - M3 — Meu dia, replay e GitHub (#4)
-- M2 — Data center e infraestrutura essencial (#3)
 
 ## A Fazer
 
-_(vazio)_
+### Sem épico
+
+- M2 — Data center e infraestrutura essencial (#3)
 
 ## Em Andamento
 

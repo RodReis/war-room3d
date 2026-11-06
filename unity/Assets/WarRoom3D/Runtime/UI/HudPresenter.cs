@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 namespace WarRoom3D
 {
-    public sealed class HudPresenter : MonoBehaviour
+    public sealed class HudPresenter : MonoBehaviour, IHudPointerArea
     {
         [SerializeField] private UIDocument document;
         [SerializeField] private StyleSheet styleSheet;

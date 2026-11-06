@@ -8,6 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/WarRoom3D/Scenes/QuartelM0.unity
     guid: 8261a98265ab3dc459cda1fa6a5d9876
+  - enabled: 1
+    path: Assets/WarRoom3D/Scenes/QuartelM2Live.unity
+    guid: 5480be09a6c639b4fb6bfa08da46a29a
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

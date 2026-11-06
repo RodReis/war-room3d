@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { EventStore } from '../src/store/event-store.ts';
-import { GitHubClient, normalizeWorkflowRun } from '../src/github/github-client.ts';
+import { GitHubClient, GitHubRateLimitError, normalizeWorkflowRun } from '../src/github/github-client.ts';
 import { configureGithub } from '../src/github/github-config.ts';
 import { pollLinkedRepositories } from '../src/github/github-poller.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
@@ -41,6 +41,16 @@ test('Meu dia aplica fuso São Paulo e união de sessões sobrepostas sem contar
   const summary=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {elapsedDurationMs:number;coverage:{status:string}};
   assert.equal(summary.elapsedDurationMs,3*60*60*1000);
   assert.equal(summary.coverage.status,'unknown');
+});
+
+test('Meu dia não projeta sessão aberta até meia-noite e encerra intervalo na perda da fonte',t=>{
+  const store=storeFor(t);
+  const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T16:00:01Z',projectId:'p1',provider:'codex',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(eventId:string,type:string,observedAt:string,offset:number,sessionKey?:string)=>store.apply({...base,eventId,sourceEventId:eventId,sessionKey,type,observedAt},{sourceId:'source1',fileKey:'synthetic',generation:1,offset});
+  apply('open','session.observed','2026-11-06T15:00:00Z',1,'s1');
+  assert.equal(store.history.daySummary('2026-11-06','America/Sao_Paulo').elapsedDurationMs,null);
+  apply('lost','source.unavailable','2026-11-06T16:00:00Z',2);
+  assert.equal(store.history.daySummary('2026-11-06','America/Sao_Paulo').elapsedDurationMs,3600000);
 });
 
 test('configuração GitHub cadastra projeto sem sonda M2 e preserva vínculo no reinício',t=>{
@@ -173,12 +183,25 @@ test('cliente GitHub pagina, aceita 304, recusa token e não encaminha paginaç�
   assert.equal((anonymousHeaders as Record<string,string>).Authorization,undefined);
 });
 
+test('limite GitHub converte Retry-After em segundos e não marca coleta como concluída',async t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  const client=new GitHubClient('',async()=>new Response('{}',{status:403,headers:{'retry-after':'2'}}));
+  await assert.rejects(()=>client.get('/repos/owner-a/same'),error=>error instanceof GitHubRateLimitError && error.retryAfterMs===2000);
+  const result=await pollLinkedRepositories(store,client);
+  assert.equal(result.milestones,0);
+  assert.equal(result.errors[0]?.retryAfterMs,2000);
+  assert.equal(store.history.hasSuccessfulPoll('42'),false);
+});
+
 test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados no backend',async t=>{
   const store=storeFor(t); const token=randomBytes(32).toString('hex');
   const {server,url}=await startReadOnlyServer(store,token); t.after(()=>server.close());
   const headers={Authorization:`Bearer ${token}`};
   const day=await fetch(`${url}/v1/history/day?date=2026-11-06&timeZone=America%2FSao_Paulo`,{headers});
   assert.equal(day.status,200); assert.equal((await day.json() as {timeZone:string}).timeZone,'America/Sao_Paulo');
+  assert.equal((await fetch(`${url}/v1/history/day?date=2026-02-30&timeZone=America%2FSao_Paulo`,{headers})).status,400);
+  assert.equal((await fetch(`${url}/v1/history/day?date=2026-11-06&timeZone=Fuso%2FInexistente`,{headers})).status,400);
   const replay=await fetch(`${url}/v1/history/replay?cursor=0&limit=10`,{headers});
   assert.equal((await replay.json() as {viewMode:string}).viewMode,'replay');
   assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'})).status,405);

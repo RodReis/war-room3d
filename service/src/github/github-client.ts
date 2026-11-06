@@ -1,6 +1,14 @@
 export interface GitHubResponse { status: number; headers: Headers; body: unknown }
 export type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
+export class GitHubRateLimitError extends Error {
+  readonly retryAfterMs: number;
+  constructor(retryAfterMs: number) {
+    super(`Limite GitHub atingido; tentar após ${retryAfterMs} ms`);
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 export class GitHubClient {
   private readonly token: string;
   private readonly fetcher: FetchLike;
@@ -21,8 +29,11 @@ export class GitHubClient {
     if (response.status === 401) throw new Error('Credencial GitHub recusada');
     if (response.status === 403 && (response.headers.get('x-ratelimit-remaining') === '0' || response.headers.has('retry-after'))) {
       const reset = Number(response.headers.get('x-ratelimit-reset'));
-      const retryAfter = Number(response.headers.get('retry-after'));
-      throw new Error(`Limite GitHub atingido; tentar após ${retryAfter || Math.max(0, reset * 1000 - Date.now())} ms`);
+      const rawRetryAfter = response.headers.get('retry-after');
+      const seconds = rawRetryAfter === null ? NaN : Number(rawRetryAfter);
+      const retryAfterMs = Number.isFinite(seconds) ? seconds * 1000 : rawRetryAfter ? Date.parse(rawRetryAfter) - Date.now() : 0;
+      const resetMs = Number.isFinite(reset) && reset > 0 ? reset * 1000 - Date.now() : 0;
+      throw new GitHubRateLimitError(Math.max(0, Math.ceil(retryAfterMs || 0), Math.ceil(resetMs)));
     }
     if (!response.ok) throw new Error(`GitHub API retornou HTTP ${response.status}`);
     return { status: response.status, headers: response.headers, body: await response.json() as unknown };

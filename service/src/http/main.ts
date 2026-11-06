@@ -22,13 +22,15 @@ try {
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
+  let nextPollAllowedAt = 0;
   if (githubConfigPath) {
     const client = new GitHubClient(githubToken ?? '');
     const poll = async (): Promise<void> => {
-      if (pollRunning) return;
+      if (pollRunning || Date.now() < nextPollAllowedAt) return;
       pollRunning = true;
       try {
         const result = await pollLinkedRepositories(store, client);
+        nextPollAllowedAt = Math.max(nextPollAllowedAt, ...result.errors.map(error => Date.now() + (error.retryAfterMs ?? 0)));
         process.stdout.write(`GitHub M3: ${result.repositories} repositórios, ${result.milestones} marcos novos, ${result.errors.length} falhas\n`);
       } catch { process.stdout.write('GitHub M3: coleta indisponível\n'); }
       finally { pollRunning = false; }

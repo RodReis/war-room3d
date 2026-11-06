@@ -55,6 +55,10 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
         const date = parsedUrl.searchParams.get('date');
         const timeZone = parsedUrl.searchParams.get('timeZone');
         if (!date || !timeZone || [...parsedUrl.searchParams.keys()].some(k => !['date','timeZone'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`) : new Date(NaN);
+        if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0,10) !== date) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        try { new Intl.DateTimeFormat('pt-BR', {timeZone}).format(parsedDate); }
+        catch (error) { if (error instanceof RangeError) { sendJson(response, 400, {code:'invalid_query'}); return; } throw error; }
         sendJson(response, 200, store.history.daySummary(date, timeZone)); return;
       }
       if (parsedUrl.pathname === '/v1/history/replay') {

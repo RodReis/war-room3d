@@ -19,7 +19,14 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 
 ## 06/11/2026 — Primeira fatia M1 em revisão
 
-- Issue [#2](https://github.com/RodReis/war-room3d/issues/2); [PR #8](https://github.com/RodReis/war-room3d/pull/8) aberta no HEAD remoto `3e12a38add6c33db8b0abd478f24089f2f490ede`, sem merge.
+- Issue [#2](https://github.com/RodReis/war-room3d/issues/2); [PR #8](https://github.com/RodReis/war-room3d/pull/8) aberta no HEAD remoto `abb61b4fb56b79160af131ba3054e2569f5018af`, sem merge.
 - Validação local sintética: contratos 7/7; serviço 19/19 e typecheck aprovado no Windows x64 com Node.js 24.15.0. Detalhes e limites em [contrato/store M1](validation/m1/contrato-store.md).
 - Adaptadores reais, HTTP/SSE, Unity live, build M1 e p95 serviço→HUD não executados. Nenhuma sessão pessoal ou ativo de `docs/arte` foi publicado.
+- Aceite funcional do PI pendente; a issue continua aberta.
+
+## 06/11/2026 — Primeira fatia M2 em revisão
+
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #9](https://github.com/RodReis/war-room3d/pull/9) em revisão com correção de cena em `1ecd8c0673ca6e61411f8c13aea7e9d380b0c9dc`, sobre a PR #8, sem merge.
+- Contratos 8/8, serviço 30/30 e typecheck, Unity EditMode 6/6, PlayMode 4/4 e build Windows x64 concluídos após correção do carregador serializado e dois achados da revisão automática. [Resultado e limites](validation/m2/resultado.md).
+- Data center Unity usa fixture ilustrativa; a sonda host leu memória local pontualmente no teste, HTTP usou fake e Docker/banco permanecem desativados. O [levantamento](validation/m2/laboratorio.md) documenta a falta de proxy mínimo e papel de monitoração.
 - Aceite funcional do PI pendente; a issue continua aberta.

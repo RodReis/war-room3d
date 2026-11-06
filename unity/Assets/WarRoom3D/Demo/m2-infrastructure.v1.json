@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "demo",
+  "resources": [
+    { "resourceId": "host-lab", "name": "Host de laboratório", "kind": "host", "environmentId": "lab", "health": "sem_dados", "freshness": "sem_dados", "coverage": "sem_dados", "sourceId": "host-demo", "observedAt": "", "evidenceRef": "", "indicator": "", "hasValue": false, "value": 0, "unit": "", "dependentProjectIds": ["api-core", "design-system"] },
+    { "resourceId": "docker-lab", "name": "Docker de laboratório", "kind": "docker", "environmentId": "lab", "health": "sem_dados", "freshness": "expirada", "coverage": "perdida", "sourceId": "docker-demo", "observedAt": "2026-11-06T14:00:00Z", "evidenceRef": "prova-demo-docker", "indicator": "", "hasValue": false, "value": 0, "unit": "", "dependentProjectIds": ["api-core"] },
+    { "resourceId": "api-lab", "name": "API de laboratório", "kind": "api", "environmentId": "lab", "health": "saudavel", "freshness": "atual", "coverage": "atual", "sourceId": "http-demo", "observedAt": "2026-11-06T15:59:50Z", "evidenceRef": "prova-demo-http", "indicator": "latency", "hasValue": true, "value": 23.4, "unit": "ms", "dependentProjectIds": ["api-core", "design-system"] },
+    { "resourceId": "db-lab", "name": "Banco compartilhado", "kind": "database", "environmentId": "lab", "health": "indisponivel", "freshness": "atual", "coverage": "atual", "sourceId": "db-demo", "observedAt": "2026-11-06T16:00:00Z", "evidenceRef": "prova-demo-banco", "indicator": "", "hasValue": false, "value": 0, "unit": "", "dependentProjectIds": ["api-core", "design-system"] },
+    { "resourceId": "db-homolog", "name": "Banco de homologação", "kind": "database", "environmentId": "homolog", "health": "sem_dados", "freshness": "sem_dados", "coverage": "sem_dados", "sourceId": "db-demo-homolog", "observedAt": "", "evidenceRef": "", "indicator": "", "hasValue": false, "value": 0, "unit": "", "dependentProjectIds": ["app-mobile"] }
+  ],
+  "incidents": [
+    { "incidentId": "incidente-demo-banco", "resourceId": "db-lab", "projectIds": ["api-core", "design-system"] }
+  ]
+}

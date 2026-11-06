@@ -2,7 +2,7 @@
 
 ## Estado e princípio
 
-A M0 tem código e provas em `docs/validation/m0/resultado.md`. Os cenários das etapas seguintes definem provas, não resultados executados. Cada relatório informa `pass`, `fail` ou `not_run`, versão do código, ambiente, comando e evidência. Um check verde de CI não substitui aceite visual e funcional.
+A M0 tem código e provas em `docs/validation/m0/resultado.md`. A primeira fatia M1 tem [provas sintéticas](validation/m1/contrato-store.md) e a M2 tem [provas de domínio e demonstração](validation/m2/resultado.md). Os demais cenários definem provas, não resultados executados. Cada relatório informa `pass`, `fail` ou `not_run`, versão do código, ambiente, comando e evidência. Um check verde de CI não substitui aceite visual e funcional.
 
 | Etapa | Provas essenciais |
 |---|---|

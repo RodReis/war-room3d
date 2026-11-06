@@ -31,6 +31,15 @@ namespace WarRoom3D
             ApplyPose();
         }
 
+        public void FocusCore()
+        {
+            focus = new Vector3(0, 0.8f, 0);
+            yaw = 40f;
+            pitch = 42f;
+            distance = 13f;
+            ApplyPose();
+        }
+
         public void ResetView()
         {
             focus = new Vector3(0, 0.7f, 0);

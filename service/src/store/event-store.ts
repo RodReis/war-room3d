@@ -3,6 +3,7 @@ import { Ajv2020 } from 'ajv/dist/2020.js';
 import { readFileSync } from 'node:fs';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
 import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type SessionState, type Presence } from '../domain/session-reducer.ts';
+import { InfrastructureStore } from '../infra/infrastructure-store.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -45,6 +46,7 @@ type Row = Record<string, unknown>;
 
 export class EventStore {
   private readonly db: Database.Database;
+  readonly infrastructure: InfrastructureStore;
 
   constructor(databasePath: string) {
     if (!databasePath) throw new Error('Caminho do banco obrigatório');
@@ -53,6 +55,12 @@ export class EventStore {
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
+    const schemaVersion = this.number('schema_version');
+    if (schemaVersion > 2) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion < 2) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
+    })();
+    this.infrastructure = new InfrastructureStore(this.db);
   }
 
   close(): void { this.db.close(); }
@@ -203,7 +211,7 @@ export class EventStore {
     return Boolean(source?.last_unavailable_at && compareTimestamp(event.observedAt, source.last_unavailable_at) <= 0);
   }
 
-  snapshot(): Row {
+  snapshot(now: string = new Date().toISOString()): Row {
     const projects = (this.db.prepare('SELECT project_id, name FROM projects ORDER BY project_id').all() as { project_id: string; name: string }[]).map(row => ({ projectId: row.project_id, name: row.name }));
     const roomPlacements = (this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[]).map(row => ({ projectId: row.project_id, sectorId: row.sector_id, slotId: row.slot_id, layoutVersion: row.layout_version }));
     const sessions = (this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[]).map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));
@@ -213,7 +221,8 @@ export class EventStore {
       const event = JSON.parse(row.event_json) as NormalizedEvent;
       return { eventId: event.eventId, streamSequence: row.stream_sequence, type: event.type, observedAt: event.observedAt, ...(event.projectId ? { projectId: event.projectId } : {}), ...(event.sessionKey ? { sessionKey: event.sessionKey } : {}), ...(event.agentKey ? { agentKey: event.agentKey } : {}), provenance: event.provenance };
     });
-    return { schemaVersion: '1.0', mode: 'live', revision: this.number('revision'), streamSequence: this.number('stream_sequence'), projects, roomPlacements, sessions, agents, tasks: [], invocations: [], feed, sources, capabilities: ['sessions', 'agents', 'feed'] };
+    return { schemaVersion: '1.0', mode: 'live', revision: this.number('revision'), streamSequence: this.number('stream_sequence'), projects, roomPlacements, sessions, agents, tasks: [], invocations: [], feed, sources,
+      ...this.infrastructure.snapshot(now), capabilities: ['sessions', 'agents', 'feed', 'infrastructure'] };
   }
 
   quarantineCount(): number {

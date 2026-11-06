@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement name="surface" class="surface" picking-mode="Ignore">
         <ui:VisualElement name="header" class="header">
-            <ui:Label text="WAR-ROOM3D / M0" class="eyebrow" />
+            <ui:Label text="WAR-ROOM3D / M2 · DEMONSTRAÇÃO" class="eyebrow" />
             <ui:Label text="Quartel-general" class="heading" />
             <ui:Label name="demo-seal" text="CONCEITO · DADOS ILUSTRATIVOS" class="seal" />
         </ui:VisualElement>
@@ -22,8 +22,27 @@
             <ui:Label name="agent-tree" class="activity" />
             <ui:Label text="FEED · HORÁRIOS ILUSTRATIVOS" class="eyebrow section-space" />
             <ui:Label name="feed" class="activity" />
+            <ui:Label text="INFRAESTRUTURA VINCULADA" class="eyebrow section-space" />
+            <ui:Label name="infrastructure-alert" class="activity" />
             <ui:Button name="enter-button" text="Entrar na sala" class="primary-button" />
+            <ui:Button name="center-button" text="Abrir data center" class="primary-button" />
             <ui:Button name="back-button" text="Voltar ao quartel" class="primary-button" />
+          </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:VisualElement name="resource-panel" class="project-panel resource-panel">
+          <ui:ScrollView class="project-content">
+            <ui:Label text="Quartel-general / Data center" class="eyebrow" />
+            <ui:Label text="Recursos e dependências" class="section-title" />
+            <ui:Label name="resource-filter" text="Filtro: todos os recursos" class="hint" />
+            <ui:Button name="resource-project-button" text="Desta sala" class="primary-button" />
+            <ui:Button name="resource-all-button" text="Todos os recursos" class="primary-button" />
+            <ui:Label text="RECURSOS · EXEMPLO" class="eyebrow section-space" />
+            <ui:ScrollView name="resource-list" class="project-list" />
+            <ui:Label text="RECURSO SELECIONADO" class="eyebrow section-space" />
+            <ui:Label name="resource-name" text="Selecione um recurso" class="project-name" />
+            <ui:Label name="resource-status" text="Sem dados · exemplo" class="status" />
+            <ui:Label name="resource-detail" text="" class="activity" />
+            <ui:Button name="resource-back-button" text="Voltar ao quartel" class="primary-button" />
           </ui:ScrollView>
         </ui:VisualElement>
         <ui:VisualElement name="control-panel" class="control-panel">

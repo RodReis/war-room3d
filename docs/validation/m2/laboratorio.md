@@ -13,4 +13,13 @@ Fonte: checkout e Compose do candidato indicados pelo PI, `docker info`/`docker 
 
 O processo proxy ainda herda a permissão ampla do usuário local sobre o daemon. A autorização mínima foi comprovada **na interface do conector**, não como restrição do sistema operacional à identidade do proxy; este componente precisa de execução isolada e gestão de segredo antes de instalação contínua. O token do ensaio foi gerado em memória, não publicado nem persistido. [Detalhes e limites](docker-proxy.md).
 
-Para ativar conectores reais continuamente: registrar alvo por ambiente, fonte, capacidade de leitura comprovada, credencial opaca protegida quando necessária, intervalo, timeout e evidência de revogação. O transporte M1/Unity live também precisa estar disponível.
+## Escopo adicional autorizado e observado em 06/11/2026
+
+O PI autorizou leitura pontual dos dois serviços de outros checkouts identificados pelos labels do mesmo Compose. Executei o proxy local separadamente para cada **diretório de trabalho exato**, com token efêmero em memória. As duas chamadas autenticadas a `GET /v1/snapshot` retornaram `200`, cada uma com somente o contêiner do respectivo escopo. Nenhuma rota de inspeção bruta, log, variável de ambiente ou volume foi consultada.
+
+| Alvo autorizado | Resultado pontual | O que a evidência permite afirmar |
+|---|---|---|
+| Servidor de jogo do checkout adicional | Contêiner `exited` e healthcheck `unhealthy`; sem porta publicada enquanto parado | Serviço indisponível neste instante. O código expõe transporte de jogo UDP e métricas opcionais em log, não um endpoint HTTP de saúde ativo; a sonda HTTP não foi executada |
+| Banco do outro checkout adicional | Contêiner `running`, healthcheck Docker `healthy`, porta limitada a loopback | Healthcheck do contêiner saudável neste instante. Não comprova consulta SQL, permissões de leitura, latência nem integridade dos dados |
+
+O ensaio não criou conta, papel de banco, credencial, conexão SQL, processo persistente ou coleta periódica. Para a API, é necessário alvo HTTP autorizado e ativo ou um conector específico para o protocolo do serviço. Para o banco, são necessários papel de monitoração com permissões comprovadas e consulta aprovada antes de medir saúde por SQL. O proxy Docker ainda requer identidade de sistema isolada e gestão de segredo para execução contínua. [A cena Unity live](unity-live.md) já consome o transporte em ensaio sintético; ela não foi alimentada por esses serviços reais.

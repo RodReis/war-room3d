@@ -48,3 +48,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #12](https://github.com/RodReis/war-room3d/pull/12) aberta sobre #11 no HEAD remoto inicial `da3d0c53ead2e6b5dd942799a8be3c03d68b2f76`, sem merge e sem checks configurados.
 - Cena live separada da demonstração, cliente de snapshot HTTP/SSE com reconexão e HUD de infraestrutura. Dois achados da revisão automática foram corrigidos: atualização periódica para expiração e contagem separada de agentes incertos. EditMode 9/9, PlayMode 7/7, incluindo servidor sintético em loopback; build Windows x64 de 172.230.310 bytes após revisão. [Prova e limites](validation/m2/unity-live.md).
 - API/banco reais, coleta Docker contínua sob identidade isolada, prova visual/frame time do Player e aceite funcional do PI permanecem pendentes.
+
+## 06/11/2026 — Observação pontual adicional do laboratório M2
+
+- O PI ampliou a autorização de leitura pontual para o servidor de jogo e o banco em dois checkouts distintos do Compose compartilhado. [PR #13](https://github.com/RodReis/war-room3d/pull/13) documental aberta sobre #12 no HEAD remoto inicial `e1e1e6a2693bc401cb9d02bcebd0374508cefee1`, sem merge ou checks configurados.
+- Proxy Docker autenticado e efêmero retornou `200` para cada escopo exato, um contêiner por checkout: servidor `exited/unhealthy` sem porta publicada; banco `running/healthy` no healthcheck Docker. [Evidência e limites](validation/m2/laboratorio.md).
+- Nenhuma consulta SQL, log, variável de ambiente, volume ou comando dentro de contêiner foi usado. Saúde HTTP/SQL reais, coleta contínua isolada e aceite funcional do PI permanecem pendentes.

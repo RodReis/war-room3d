@@ -15,12 +15,14 @@ Issue [#2](https://github.com/RodReis/war-room3d/issues/2). Esta fatia não obse
 |---|---|---|
 | Contratos M0 e M1 | `cd contracts && npm ci && npm test` | `pass`, 7/7 |
 | Tipos TypeScript | `cd service && npm run typecheck` | `pass` |
-| Domínio e SQLite Windows | `cd service && npm test` | `pass`, 15/15 |
+| Domínio e SQLite Windows | `cd service && npm test` | `pass`, 19/19 |
 | Adaptadores Claude/Codex | — | `not_run`; fatia posterior |
 | HTTP/SSE e Unity live | — | `not_run`; fatias posteriores |
 | Sessões reais | — | `not_run`; requer laboratório e escopo de leitura explícitos |
 
 Ambiente: Windows x64, Node.js 24.15.0, npm 11.12.1. Banco de teste criado em diretório temporário e removido após cada caso. Nenhuma conta, transcrição ou sessão pessoal foi lida. As imagens e os GLBs em `docs/arte` foram vistos como referência de experiência e permanecem ignorados pelo Git; não compõem esta entrega.
+
+A revisão automática inicial da PR #8 identificou três regressões reproduzíveis. Os testes passaram a cobrir precisão fracionária dos horários, precedência temporal da perda de fonte e preservação do vínculo pai/filho em atualizações sem parentesco; o código foi corrigido no mesmo branch.
 
 ## Limites para a próxima fatia
 

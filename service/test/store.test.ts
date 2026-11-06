@@ -81,6 +81,18 @@ test('reinício recupera estado e cursor; filho antes do pai é resolvido depois
   reopened.close();
 });
 
+test('atualização de presença preserva parentesco informado antes', t => {
+  const { store } = temporaryStore(t);
+  store.registerProject({ projectId: fixture.projectId!, name: 'api', canonicalPath: 'C:\\Projetos\\api' });
+  store.apply(fixture, cursor(100));
+  const child = { ...fixture, eventId: 'filho-1', sourceEventId: 'filho-1', type: 'agent.observed', agentKey: 'filho', payload: { parentAgentKey: 'pai' } };
+  store.apply(child, cursor(150));
+  store.apply({ ...child, eventId: 'filho-2', sourceEventId: 'filho-2', type: 'agent.working', payload: {}, observedAt: '2026-11-06T15:01:00Z' }, cursor(200));
+  assert.deepEqual((store.snapshot().agents as { parentAgentKey?: string; parentStatus: string }[])[0], {
+    agentKey: 'filho', sessionKey: 'sessao-a', parentAgentKey: 'pai', presence: 'trabalhando', parentStatus: 'vinculo_pendente'
+  });
+});
+
 test('falha após inserção reverte evento, revisão e cursor juntos', t => {
   const { store } = temporaryStore(t);
   store.registerProject({ projectId: fixture.projectId!, name: 'api', canonicalPath: 'C:\\Projetos\\api' });
@@ -131,6 +143,23 @@ test('perda de fonte marca desconhecido, sem encerrar sessão', t => {
   assert.equal((snapshot.agents as { presence: string }[])[0].presence, 'desconhecida');
   assert.equal((snapshot.sources as { status: string }[])[0].status, 'indisponivel');
   assert.equal(validateSnapshot(snapshot), true, JSON.stringify(validateSnapshot.errors));
+});
+
+test('evento tardio não reativa fonte perdida nem sessão', t => {
+  const { store } = temporaryStore(t);
+  store.registerProject({ projectId: fixture.projectId!, name: 'api', canonicalPath: 'C:\\Projetos\\api' });
+  store.apply({ ...fixture, type: 'session.working' }, cursor(100));
+  store.apply({ ...fixture, eventId: 'fonte-perdida', sourceEventId: 'fonte-perdida', type: 'source.unavailable', projectId: undefined, sessionKey: undefined, provider: undefined, observedAt: '2026-11-06T15:02:00Z' }, cursor(150));
+  store.apply({ ...fixture, eventId: 'tardio', sourceEventId: 'tardio', type: 'session.working', observedAt: '2026-11-06T15:01:00Z', receivedAt: '2026-11-06T15:03:00Z' }, cursor(200));
+  store.apply({ ...fixture, eventId: 'agente-tardio', sourceEventId: 'agente-tardio', type: 'agent.working', agentKey: 'agente-tardio', observedAt: '2026-11-06T15:01:01Z', receivedAt: '2026-11-06T15:03:01Z' }, cursor(220));
+  let snapshot = store.snapshot();
+  assert.equal((snapshot.sessions as { presence: string }[])[0].presence, 'desconhecida');
+  assert.equal((snapshot.agents as unknown[]).length, 0);
+  assert.equal((snapshot.sources as { status: string }[])[0].status, 'indisponivel');
+  store.apply({ ...fixture, eventId: 'novo', sourceEventId: 'novo', type: 'session.working', observedAt: '2026-11-06T15:03:01Z', receivedAt: '2026-11-06T15:03:02Z' }, cursor(250));
+  snapshot = store.snapshot();
+  assert.equal((snapshot.sessions as { presence: string }[])[0].presence, 'trabalhando');
+  assert.equal((snapshot.sources as { status: string }[])[0].status, 'atual');
 });
 
 test('encerramento explícito encerra presença visual de agentes', t => {

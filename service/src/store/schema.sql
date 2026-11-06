@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS sources (
   source_id TEXT PRIMARY KEY,
   source_version TEXT NOT NULL,
   status TEXT NOT NULL CHECK(status IN ('atual', 'desatualizado', 'indisponivel')),
+  status_at TEXT NOT NULL,
+  last_unavailable_at TEXT,
   last_received TEXT,
   last_applied TEXT
 );
@@ -48,7 +50,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   provider TEXT NOT NULL CHECK(provider IN ('claude', 'codex')),
   presence TEXT NOT NULL,
   freshness TEXT NOT NULL,
-  last_seen TEXT NOT NULL
+  last_seen TEXT NOT NULL,
+  source_unavailable_at TEXT
 );
 CREATE TABLE IF NOT EXISTS agents (
   agent_key TEXT PRIMARY KEY,

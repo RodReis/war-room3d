@@ -38,3 +38,18 @@ test('subagente sem pai conhecido mantém vínculo pendente', () => {
   assert.equal(parentStatus('filho', 'pai', new Set(['pai'])), 'vinculado');
   assert.equal(parentStatus('pai', null, new Set()), 'principal');
 });
+
+test('frações de segundo são ordenadas como instantes', () => {
+  const working = reduceSession(null, 'session.working', '2026-11-06T15:00:00Z');
+  const waiting = reduceSession(working, 'session.waiting', '2026-11-06T15:00:00.500Z');
+  assert.equal(waiting.presence, 'aguardando');
+  assert.deepEqual(reduceSession(waiting, 'session.working', '2026-11-06T15:00:00.100Z'), waiting);
+});
+
+test('evento atrasado não restaura presença após perda de fonte', () => {
+  const working = reduceSession(null, 'session.working', '2026-11-06T15:00:00Z');
+  const lost = reduceSession(working, 'source.unavailable', '2026-11-06T15:02:00Z');
+  assert.deepEqual(reduceSession(lost, 'session.working', '2026-11-06T15:01:00Z'), lost);
+  const recovered = reduceSession(lost, 'session.working', '2026-11-06T15:03:00Z');
+  assert.deepEqual([recovered.presence, recovered.freshness, recovered.sourceUnavailableAt], ['trabalhando', 'atual', null]);
+});

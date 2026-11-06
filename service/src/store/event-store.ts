@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import { readFileSync } from 'node:fs';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
-import { reduceSession, parentStatus, type SessionSignal, type SessionState, type Presence } from '../domain/session-reducer.ts';
+import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type SessionState, type Presence } from '../domain/session-reducer.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -134,11 +134,17 @@ export class EventStore {
       this.db.prepare('INSERT INTO events(event_id, source_id, dedupe_key, stream_sequence, event_json) VALUES (?, ?, ?, ?, ?)')
         .run(event.eventId, event.sourceId, dedupeKey, sequence, JSON.stringify(event));
       this.applyState(event);
-      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, last_received, last_applied) VALUES (?, ?, 'atual', ?, ?)
+      const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null } | undefined;
+      const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) > 0;
+      const status = statusIsNewer ? (event.type === 'source.unavailable' ? 'indisponivel' : 'atual') : priorSource.status;
+      const statusAt = statusIsNewer ? event.observedAt : priorSource.status_at;
+      const lastUnavailableAt = event.type === 'source.unavailable' && (!priorSource?.last_unavailable_at || compareTimestamp(event.observedAt, priorSource.last_unavailable_at) > 0)
+        ? event.observedAt : priorSource?.last_unavailable_at ?? null;
+      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, status_at, last_unavailable_at, last_received, last_applied) VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(source_id) DO UPDATE SET source_version = excluded.source_version,
-          status = excluded.status, last_received = excluded.last_received, last_applied = excluded.last_applied`)
-        .run(event.sourceId, event.sourceVersion, event.receivedAt, event.receivedAt);
-      if (event.type === 'source.unavailable') this.db.prepare("UPDATE sources SET status = 'indisponivel' WHERE source_id = ?").run(event.sourceId);
+          status = excluded.status, status_at = excluded.status_at, last_unavailable_at = excluded.last_unavailable_at,
+          last_received = excluded.last_received, last_applied = excluded.last_applied`)
+        .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt);
       this.advanceCursor(cursor);
       return { applied: true, revision: this.next('revision'), streamSequence: sequence };
     });
@@ -147,31 +153,33 @@ export class EventStore {
 
   private applyState(event: NormalizedEvent): void {
     if (event.type.startsWith('session.')) {
-      const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string } | undefined;
+      if (this.isOlderThanSourceLoss(event)) return;
+      const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null } | undefined;
       if (row && (row.project_id !== event.projectId || row.source_id !== event.sourceId || row.provider !== event.provider)) throw new Error('Identidade de sessão colide com outro contexto');
-      const current: SessionState | null = row ? { presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen } : null;
+      const current: SessionState | null = row ? { presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen, sourceUnavailableAt: row.source_unavailable_at } : null;
       const next = reduceSession(current, event.type as SessionSignal, event.observedAt);
       const provider = event.provider!;
-      this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(session_key) DO UPDATE SET presence = excluded.presence, freshness = excluded.freshness, last_seen = excluded.last_seen`)
-        .run(event.sessionKey, event.projectId, event.sourceId, provider, next.presence, next.freshness, next.lastSeen);
+      this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_key) DO UPDATE SET presence = excluded.presence, freshness = excluded.freshness, last_seen = excluded.last_seen, source_unavailable_at = excluded.source_unavailable_at`)
+        .run(event.sessionKey, event.projectId, event.sourceId, provider, next.presence, next.freshness, next.lastSeen, next.sourceUnavailableAt);
       if (next.presence === 'encerrada') this.db.prepare("UPDATE agents SET presence = 'encerrada' WHERE session_key = ? AND presence != 'encerrada'").run(event.sessionKey);
     } else if (event.type.startsWith('agent.')) {
+      if (this.isOlderThanSourceLoss(event)) return;
       const session = this.db.prepare('SELECT project_id, source_id, provider, presence FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: Presence } | undefined;
       if (session && (session.project_id !== event.projectId || session.source_id !== event.sourceId || session.provider !== event.provider)) throw new Error('Agente aponta para sessão de outro contexto');
       if (session?.presence === 'encerrada') return;
       if (!session) {
         const provider = event.provider!;
-        this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen)
-          VALUES (?, ?, ?, ?, 'desconhecida', 'desconhecido', ?)`).run(event.sessionKey, event.projectId, event.sourceId, provider, event.observedAt);
+        this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at)
+          VALUES (?, ?, ?, ?, 'desconhecida', 'desconhecido', ?, NULL)`).run(event.sessionKey, event.projectId, event.sourceId, provider, event.observedAt);
       }
       const known = new Set((this.db.prepare('SELECT agent_key FROM agents WHERE session_key = ?').all(event.sessionKey) as { agent_key: string }[]).map(row => row.agent_key));
-      const parent = event.payload.parentAgentKey ?? null;
-      const status = parentStatus(event.agentKey!, parent, known);
       const presence = event.type.replace('agent.', '') === 'ended' ? 'encerrada' : event.type.replace('agent.', '') === 'working' ? 'trabalhando' : event.type.replace('agent.', '') === 'waiting' ? 'aguardando' : 'observada';
-      const previous = this.db.prepare('SELECT session_key, presence, last_seen FROM agents WHERE agent_key = ?').get(event.agentKey) as { session_key: string; presence: Presence; last_seen: string } | undefined;
+      const previous = this.db.prepare('SELECT session_key, parent_agent_key, presence, last_seen FROM agents WHERE agent_key = ?').get(event.agentKey) as { session_key: string; parent_agent_key: string | null; presence: Presence; last_seen: string } | undefined;
       if (previous && previous.session_key !== event.sessionKey) throw new Error('Agente aponta para outra sessão');
-      if (previous?.presence === 'encerrada' || (previous && event.observedAt < previous.last_seen)) return;
+      if (previous?.presence === 'encerrada' || (previous && compareTimestamp(event.observedAt, previous.last_seen) < 0)) return;
+      const parent = event.payload.parentAgentKey ?? previous?.parent_agent_key ?? null;
+      const status = parentStatus(event.agentKey!, parent, known);
       this.db.prepare(`INSERT INTO agents(agent_key, session_key, parent_agent_key, presence, parent_status, last_seen) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(agent_key) DO UPDATE SET parent_agent_key = excluded.parent_agent_key, presence = excluded.presence,
           parent_status = excluded.parent_status, last_seen = excluded.last_seen`)
@@ -179,13 +187,20 @@ export class EventStore {
       this.db.prepare("UPDATE agents SET parent_status = 'vinculado' WHERE session_key = ? AND parent_agent_key = ? AND parent_status = 'vinculo_pendente'")
         .run(event.sessionKey, event.agentKey);
     } else if (event.type === 'source.unavailable') {
-      const rows = this.db.prepare("SELECT session_key, presence, freshness, last_seen FROM sessions WHERE source_id = ? AND presence != 'encerrada'").all(event.sourceId) as { session_key: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string }[];
+      const rows = this.db.prepare("SELECT session_key, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE source_id = ? AND presence != 'encerrada'").all(event.sourceId) as { session_key: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null }[];
       for (const row of rows) {
-        const next = reduceSession({ presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }, 'source.unavailable', event.observedAt);
-        this.db.prepare('UPDATE sessions SET presence = ?, freshness = ? WHERE session_key = ?').run(next.presence, next.freshness, row.session_key);
-        this.db.prepare("UPDATE agents SET presence = 'desconhecida' WHERE session_key = ? AND presence != 'encerrada'").run(row.session_key);
+        const next = reduceSession({ presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen, sourceUnavailableAt: row.source_unavailable_at }, 'source.unavailable', event.observedAt);
+        this.db.prepare('UPDATE sessions SET presence = ?, freshness = ?, source_unavailable_at = ? WHERE session_key = ?').run(next.presence, next.freshness, next.sourceUnavailableAt, row.session_key);
+        if (next.presence === 'desconhecida' && next.sourceUnavailableAt === event.observedAt) {
+          this.db.prepare("UPDATE agents SET presence = 'desconhecida' WHERE session_key = ? AND presence != 'encerrada'").run(row.session_key);
+        }
       }
     }
+  }
+
+  private isOlderThanSourceLoss(event: NormalizedEvent): boolean {
+    const source = this.db.prepare('SELECT last_unavailable_at FROM sources WHERE source_id = ?').get(event.sourceId) as { last_unavailable_at: string | null } | undefined;
+    return Boolean(source?.last_unavailable_at && compareTimestamp(event.observedAt, source.last_unavailable_at) <= 0);
   }
 
   snapshot(): Row {

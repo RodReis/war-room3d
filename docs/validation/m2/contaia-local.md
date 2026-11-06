@@ -1,6 +1,6 @@
 # M2 — consulta pontual ao laboratório ContaIA
 
-Data: 06/11/2026. O PI corrigiu o alvo de laboratório para o checkout local do ContaIA e autorizou leitura e consultas. Este registro contém somente estado de saúde e origem técnica; não publica credenciais, dados de negócio nem respostas completas de serviços.
+Data: 06/11/2026. O PI corrigiu o alvo de laboratório para o checkout local do ContaIA e autorizou leitura e consultas. Este registro contém somente estado de saúde e origem técnica; não publica credenciais, dados de negócio nem respostas completas de serviços. A execução posterior do Player está em [prova separada](player-operacional.md).
 
 | Fonte | Consulta somente de leitura | Resultado pontual | Limite |
 |---|---|---|---|

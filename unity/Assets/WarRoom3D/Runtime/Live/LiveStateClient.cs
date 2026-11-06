@@ -17,6 +17,7 @@ namespace WarRoom3D
 
         public LiveSnapshot Snapshot { get; private set; }
         public bool Connected { get; private set; }
+        public double LastSnapshotToHudMs { get; private set; }
         public string ConnectionMessage { get; private set; } = "Aguardando configuração live";
         public event Action<LiveSnapshot> SnapshotChanged;
         public event Action<bool, string> ConnectionChanged;
@@ -87,6 +88,8 @@ namespace WarRoom3D
                 request.redirectLimit = 0;
                 request.timeout = 5;
                 request.SetRequestHeader("Authorization", "Bearer " + token);
+                LastSnapshotToHudMs = 0;
+                var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
                 yield return request.SendWebRequest();
                 activeRequest = null;
                 if (request.result != UnityWebRequest.Result.Success || request.responseCode != 200)
@@ -97,6 +100,8 @@ namespace WarRoom3D
                 try
                 {
                     AcceptSnapshot(request.downloadHandler.text);
+                    LastSnapshotToHudMs = (System.Diagnostics.Stopwatch.GetTimestamp() - startedAt) * 1000.0 /
+                        System.Diagnostics.Stopwatch.Frequency;
                 }
                 catch (ArgumentException) { SetConnection(false, "Contrato live incompatível"); }
             }

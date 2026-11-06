@@ -60,3 +60,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - [PR #14](https://github.com/RodReis/war-room3d/pull/14) aberta sobre #13 no HEAD remoto inicial `d6c0177bcc6de3c3fe2658b68901a6ec218e7ae4`, sem merge e sem checks configurados.
 - Sonda limitada a loopback, consulta `SELECT 1` em transação `READ ONLY`, timeout e senha por callback injetada. Um achado P1 da revisão automática sobre `pg.Client` sem listener de erro ocioso foi corrigido; `npm ci` sem vulnerabilidades reportadas, typecheck e 42/42 testes do serviço passaram. [Prova e limites](validation/m2/database-probe.md).
 - Não houve conexão SQL real, papel/consulta de monitoração verificados ou integração com armazenamento local de segredo. Aceite funcional do PI permanece pendente.
+
+## 06/11/2026 — API de produção observada pontualmente para M2
+
+- O PI autorizou consultar uma API própria em produção e seu checkout local. [PR #15](https://github.com/RodReis/war-room3d/pull/15) documental aberta sobre #14 no HEAD remoto inicial `a8ca4294e3c1a5c3cfb5d7e97de868b42f7a509b`, sem merge ou checks configurados.
+- Três GET com timeout de 5 s: liveness e readiness `200`; a sonda M2 persistiu `saudavel`, frescor e cobertura atuais em SQLite temporário. Sem autenticação, dados de negócio ou escrita. [Evidência e limites](validation/m2/api-producao.md).
+- Readiness relata banco, Redis e storage indiretamente; SQL direto, coleta contínua, Player Unity ligado à fonte e aceite funcional do PI permanecem pendentes.

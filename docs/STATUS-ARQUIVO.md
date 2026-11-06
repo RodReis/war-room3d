@@ -36,3 +36,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #10](https://github.com/RodReis/war-room3d/pull/10) aberta sobre #9, sem merge.
 - Proxy local em processo separado e sonda de leitura restrita ao projeto Compose e diretório exato do checkout autorizado. Um ensaio real pontual confirmou recusa 401/404 e leitura de contêiner parado, persistida em SQLite temporário. Typecheck e 34/34 testes do serviço; [prova e limites](validation/m2/docker-proxy.md).
 - A identidade Windows do proxy ainda alcança o daemon com permissão ampla; não há instalação de coleta contínua, conector SQL, transporte M1/Unity live ou aceite funcional do PI.
+
+## 06/11/2026 — Transporte de estado M2 em revisão
+
+- Issue [#3](https://github.com/RodReis/war-room3d/issues/3); [PR #11](https://github.com/RodReis/war-room3d/pull/11) aberta sobre #10 no HEAD remoto `81a785c15bd5316952122228917139b65c673833`, sem merge.
+- Snapshot HTTP autenticado e avisos SSE persistidos com sequência M1/M2; migração SQLite 0003 exige snapshot novo de clientes antigos. Contratos 8/8, serviço typecheck e 38/38; [prova e limites](validation/m2/transport.md).
+- Unity live, fontes reais de sessão/API/banco, ensaio de carga, CI e aceite funcional do PI permanecem pendentes.

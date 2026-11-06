@@ -4,6 +4,7 @@ import { compareTimestamp } from '../domain/session-reducer.ts';
 import { affectedBy } from './dependency-graph.ts';
 import { reduceHealth, type Reading } from './health-reducer.ts';
 import { parseInventory, type Dependency, type Inventory, type ProjectResource, type Resource } from './inventory.ts';
+import { appendStateChange, type StateChangeType } from '../store/change-log.ts';
 
 type Row = Record<string, unknown>;
 
@@ -39,6 +40,11 @@ export class InfrastructureStore {
     for (const edge of inventory.dependencies)
       this.db.prepare('INSERT INTO infra_dependencies VALUES (?, ?, ?, ?)').run(edge.dependentResourceId, edge.dependencyResourceId, edge.origin, edge.confidence);
     this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
+    this.recordChange('dependency.changed', null, new Date().toISOString());
+  }
+
+  private recordChange(type: StateChangeType, resourceId: string | null, observedAt: string): void {
+    appendStateChange(this.db, type, resourceId, observedAt);
   }
 
   recordReading(input: Reading, recordedAt: string = new Date().toISOString()): boolean {
@@ -81,6 +87,7 @@ export class InfrastructureStore {
           this.db.prepare('INSERT INTO infra_incidents VALUES (?, ?, ?, ?, ?, NULL)').run(randomUUID(), input.resourceId, input.observedAt, input.health, input.evidenceRef);
       }
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
+      this.recordChange('resource.changed', input.resourceId, input.observedAt);
       return true;
     })();
   }
@@ -94,6 +101,8 @@ export class InfrastructureStore {
       this.db.prepare(`INSERT INTO infra_source_status(source_id, last_lost_at) VALUES (?, ?)
         ON CONFLICT(source_id) DO UPDATE SET last_lost_at = excluded.last_lost_at`).run(sourceId, lostAt);
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
+      const resources = this.db.prepare('SELECT resource_id FROM infra_resources WHERE source_id = ? AND active = 1 ORDER BY resource_id').all(sourceId) as { resource_id: string }[];
+      for (const resource of resources) this.recordChange('resource.changed', resource.resource_id, lostAt);
       return true;
     })();
   }
@@ -108,6 +117,7 @@ export class InfrastructureStore {
       this.db.prepare(`INSERT INTO infra_resource_status(resource_id, last_failed_at) VALUES (?, ?)
         ON CONFLICT(resource_id) DO UPDATE SET last_failed_at = excluded.last_failed_at`).run(resourceId, failedAt);
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
+      this.recordChange('resource.changed', resourceId, failedAt);
       return true;
     })();
   }

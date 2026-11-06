@@ -16,13 +16,13 @@ updated: 2026-11-06
 
 ## A Fazer
 
-### Sem épico
-
-- M1 — Quartel vivo e observação de agentes (#2)
+_(vazio)_
 
 ## Em Andamento
 
-_(vazio)_
+### Sem épico
+
+- M1 — Quartel vivo e observação de agentes (#2)
 
 ## Feito
 

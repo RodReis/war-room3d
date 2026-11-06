@@ -25,11 +25,15 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       pullRequests.sort((a,b)=>(a.merged_at??a.updated_at).localeCompare(b.merged_at??b.updated_at)||a.id-b.id);
       workflowRuns.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id-b.id||a.run_attempt-b.run_attempt);
       for (const link of projectLinks) {
-        const ingestionMode = !lastSuccessAt || link.linkedAt>lastSuccessAt ? 'backfill' : 'live';
-        for (const pr of pullRequests) if (store.history.recordGithubMilestone({...normalizePullRequest(repositoryId, link.projectId, pr),ingestionMode})) milestones++;
+        const isInitialForProject = !lastSuccessAt || link.linkedAt>lastSuccessAt;
+        const modeFor = (occurredAt:string): 'backfill'|'live' => isInitialForProject || occurredAt<=lastSuccessAt ? 'backfill' : 'live';
+        for (const pr of pullRequests) {
+          const normalized = normalizePullRequest(repositoryId, link.projectId, pr);
+          if (store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
+        }
         for (const run of workflowRuns) {
           const normalized = normalizeWorkflowRun(repositoryId, link.projectId, run);
-          if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode})) milestones++;
+          if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
         }
       }
       store.history.markPollSuccess(repositoryId);

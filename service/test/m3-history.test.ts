@@ -141,12 +141,14 @@ test('primeira coleta é backfill; novas transições são live sem repetir efei
   const store=storeFor(t);
   store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
   let phase=0;
+  const freshAt=new Date(Date.now()+1000).toISOString();
   const client=new GitHubClient('',async input=>{
     const url=String(input);
     if(url.endsWith('/repos/owner-a/same')) return new Response(JSON.stringify({id:42}),{status:200});
     if(url.includes('/pulls?')) return new Response(JSON.stringify([
       {id:1,number:1,state:'closed',merged_at:'2026-11-05T12:00:00Z',updated_at:'2026-11-05T12:00:00Z',html_url:'https://github.com/owner-a/same/pull/1'},
-      ...(phase ? [{id:2,number:2,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/owner-a/same/pull/2'}] : [])
+      ...(phase ? [{id:2,number:2,state:'closed',merged_at:freshAt,updated_at:freshAt,html_url:'https://github.com/owner-a/same/pull/2'}] : []),
+      ...(phase>1 ? [{id:3,number:3,state:'closed',merged_at:'2026-11-05T13:00:00Z',updated_at:'2026-11-05T13:00:00Z',html_url:'https://github.com/owner-a/same/pull/3'}] : [])
     ]),{status:200});
     return new Response(JSON.stringify({workflow_runs:[]}),{status:200});
   });
@@ -158,6 +160,9 @@ test('primeira coleta é backfill; novas transições são live sem repetir efei
   const milestones=replay.events as {ingestionMode:string;effects:{ingestionMode:string}[]}[];
   assert.deepEqual(milestones.map(x=>x.ingestionMode),['backfill','live']);
   assert.deepEqual(milestones.map(x=>x.effects[0]?.ingestionMode),['backfill','live']);
+  phase=2;
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
+  assert.equal((store.history.replay(0,10).events as {ingestionMode:string}[])[2]?.ingestionMode,'backfill');
   assert.equal((await pollLinkedRepositories(store,client)).milestones,0);
 });
 

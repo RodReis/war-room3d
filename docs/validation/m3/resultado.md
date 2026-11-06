@@ -12,6 +12,7 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 | Repositório explicitamente vinculado | `pass` | Teste sintético usa ID opaco do GitHub; nome igual não cria associação |
 | Deduplicação de marco importado | `pass` | Chave por repositório/entidade/transição; desvincular preserva marco histórico |
 | Repositório compartilhado | `pass` | Dois projetos vinculados ao mesmo ID recebem marcos e efeitos próprios no teste sintético |
+| Evento tardio GitHub | `pass` | Marco descoberto após poll anterior, mas com horário anterior a ele, entra como `backfill` e não anima no live |
 | Paginação e proteção de credencial | `pass` | HTTP fake cobre páginas, `ETag`/`304` por página, token recusado, bloqueio de link para outra origem, nova associação de projeto e invalidação de cache após falha parcial |
 | Cadastro GitHub sem sonda M2 | `pass` | Configuração local ignorada pelo Git; SQLite em memória retornou um projeto `contaia` e repositório `1371493574` |
 | Meu dia | `partial` | União temporal de sessões sobrepostas e fuso IANA; sessão aberta sem encerramento retorna duração indisponível e perda da fonte encerra o intervalo observado. Tempo de agente derivado de eventos; cobertura fica `unknown` enquanto janelas esperadas não forem persistidas |

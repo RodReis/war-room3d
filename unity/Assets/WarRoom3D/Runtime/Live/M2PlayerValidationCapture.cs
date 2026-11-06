@@ -20,6 +20,8 @@ namespace WarRoom3D
         private string captureView;
         private int captureDurationSeconds;
         private bool previousRunInBackground;
+        private bool vSyncOverridden;
+        private int previousVSyncCount;
         private readonly List<RenderObservation> renderObservations = new List<RenderObservation>();
         private int disconnectCount;
 
@@ -78,6 +80,19 @@ namespace WarRoom3D
             capture.captureName = name;
             var requestedView = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VIEW");
             capture.captureView = requestedView == "project" || requestedView == "project-bottom" ? requestedView : "center";
+            var requestedVSync = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VSYNC_COUNT");
+            if (!string.IsNullOrEmpty(requestedVSync))
+            {
+                if (requestedVSync != "0" && requestedVSync != "1")
+                {
+                    Debug.LogError("M2 Player: VSync de validação inválido");
+                    Application.Quit(11);
+                    return;
+                }
+                capture.previousVSyncCount = QualitySettings.vSyncCount;
+                capture.vSyncOverridden = true;
+                QualitySettings.vSyncCount = int.Parse(requestedVSync);
+            }
             var duration = Environment.GetEnvironmentVariable("WR3D_VALIDATION_DURATION_SECONDS");
             if (!string.IsNullOrEmpty(duration))
             {
@@ -102,6 +117,7 @@ namespace WarRoom3D
                 client.ConnectionChanged -= ObserveConnection;
             }
             if (captureDurationSeconds > 0) Application.runInBackground = previousRunInBackground;
+            if (vSyncOverridden) QualitySettings.vSyncCount = previousVSyncCount;
         }
 
         private void ObserveSnapshot(LiveSnapshot snapshot)

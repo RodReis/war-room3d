@@ -126,7 +126,7 @@ try {
       p99Ms: percentile(latencies, 0.99), maxMs: latencies.at(-1),
       over2s: latencies.filter(milliseconds => milliseconds > 2000).length, samplesMs: latencies },
     sequenceCoverageP95Within2s: percentile(latencies, 0.95) <= 2000,
-    frameIntervalP95Within16_67Ms: report.p95FrameMs <= 1000 / 60,
+    frameIntervalP95Within16_67Ms: report.p95FrameMs <= 16.67,
     validity: { allSequencesCovered: latencies.length === planned, clockStable: maxClockDriftMs <= 50,
       fullDuration: report.sampledDurationSeconds >= seconds, playerConnected: report.connected,
       backgroundExecutionEnabled: report.runInBackground === true,

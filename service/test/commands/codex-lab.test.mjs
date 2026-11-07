@@ -50,8 +50,8 @@ test('modo padrão não inicia CLI mesmo com caminho inexistente', () => {
 
 test('cada MCP herdado recebe override explícito, sem exportar transportes ou credenciais', () => {
   const args = buildCodexOverrides([{name: 'server.with.dot', command: 'secret', enabled: true}, {name: 'second'}], cwd);
-  assert.ok(args.includes('mcp_servers."server.with.dot".enabled=false'));
-  assert.ok(args.includes('mcp_servers."second".enabled=false'));
+  assert.ok(args.includes('mcp_servers={"server.with.dot"={enabled=false},"second"={enabled=false}}'));
+  assert.equal(args.filter(value => value.startsWith('mcp_servers=')).length, 1);
   assert.equal(args.join(' ').includes('secret'), false);
   for (const inventory of [null, {}, [{name: ''}], [{name: 'bad\nname'}]])
     assert.throws(() => buildCodexOverrides(inventory, cwd), /inventory_unverified/);

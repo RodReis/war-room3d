@@ -27,11 +27,12 @@ export function buildCodexOverrides(inventory, cwd) {
     throw new Error('inventory_unverified');
   const values = [...disabledFeatures.map(name => `features.${name}=false`), 'features.skip_host_skill_discovery=true',
     'web_search="disabled"', 'approval_policy="never"', 'sandbox_mode="read-only"', 'project_doc_max_bytes=0',
-    'developer_instructions=""', 'notify=[]', 'model_provider="openai"', 'history.persistence="none"', 'analytics.enabled=false', 'mcp_servers={}',
+    'developer_instructions=""', 'notify=[]', 'model_provider="openai"', 'history.persistence="none"', 'analytics.enabled=false',
     `sqlite_home=${JSON.stringify(path.join(cwd, 'state'))}`, `log_dir=${JSON.stringify(path.join(cwd, 'log'))}`,
     'experimental_thread_store={type="in_memory",id="wr3d-m4-codex-lab"}',
     'otel.exporter="none"', 'otel.trace_exporter="none"', 'otel.log_user_prompt=false',
-    ...inventory.map(server => `mcp_servers.${JSON.stringify(server.name)}.enabled=false`)];
+    // O CLI divide caminhos em pontos literais; IDs citados só funcionam dentro do valor TOML.
+    'mcp_servers={' + inventory.map(server => `${JSON.stringify(server.name)}={enabled=false}`).join(',') + '}'];
   return values.flatMap(value => ['-c', value]);
 }
 

@@ -12,13 +12,15 @@ export class InfrastructureStore {
   private readonly db: Database.Database;
   constructor(db: Database.Database) { this.db = db; }
 
-  replaceInventory(input: unknown): void {
+  replaceInventory(input: unknown, knownAt = new Date().toISOString()): void {
+    try { compareTimestamp(knownAt,knownAt); }
+    catch { throw new Error('Data do inventário inválida'); }
     const knownProjects = new Set((this.db.prepare('SELECT project_id FROM projects').all() as { project_id: string }[]).map(row => row.project_id));
     const inventory = parseInventory(input, knownProjects);
-    this.db.transaction(() => this.writeInventory(inventory))();
+    this.db.transaction(() => this.writeInventory(inventory, knownAt))();
   }
 
-  private writeInventory(inventory: Inventory): void {
+  private writeInventory(inventory: Inventory, knownAt: string): void {
     this.db.prepare('UPDATE infra_environments SET active = 0').run();
     this.db.prepare('UPDATE infra_resources SET active = 0').run();
     for (const item of inventory.environments)
@@ -39,6 +41,7 @@ export class InfrastructureStore {
       this.db.prepare('INSERT INTO infra_project_resources VALUES (?, ?, ?, ?)').run(link.projectId, link.resourceId, link.origin, link.confidence);
     for (const edge of inventory.dependencies)
       this.db.prepare('INSERT INTO infra_dependencies VALUES (?, ?, ?, ?)').run(edge.dependentResourceId, edge.dependencyResourceId, edge.origin, edge.confidence);
+    this.db.prepare('INSERT INTO infra_inventory_versions(known_at,inventory_json) VALUES (?,?)').run(knownAt,JSON.stringify(inventory));
     this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
     this.recordChange('dependency.changed', null, new Date().toISOString());
   }
@@ -100,6 +103,8 @@ export class InfrastructureStore {
       if (row && compareTimestamp(lostAt, row.last_lost_at) <= 0) return false;
       this.db.prepare(`INSERT INTO infra_source_status(source_id, last_lost_at) VALUES (?, ?)
         ON CONFLICT(source_id) DO UPDATE SET last_lost_at = excluded.last_lost_at`).run(sourceId, lostAt);
+      this.db.prepare("INSERT INTO infra_status_events(kind,subject_id,observed_at,recorded_at) VALUES ('source_lost',?,?,?)")
+        .run(sourceId,lostAt,new Date().toISOString());
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
       const resources = this.db.prepare('SELECT resource_id FROM infra_resources WHERE source_id = ? AND active = 1 ORDER BY resource_id').all(sourceId) as { resource_id: string }[];
       for (const resource of resources) this.recordChange('resource.changed', resource.resource_id, lostAt);
@@ -116,6 +121,8 @@ export class InfrastructureStore {
       if (row && compareTimestamp(failedAt, row.last_failed_at) <= 0) return false;
       this.db.prepare(`INSERT INTO infra_resource_status(resource_id, last_failed_at) VALUES (?, ?)
         ON CONFLICT(resource_id) DO UPDATE SET last_failed_at = excluded.last_failed_at`).run(resourceId, failedAt);
+      this.db.prepare("INSERT INTO infra_status_events(kind,subject_id,observed_at,recorded_at) VALUES ('resource_failed',?,?,?)")
+        .run(resourceId,failedAt,new Date().toISOString());
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
       this.recordChange('resource.changed', resourceId, failedAt);
       return true;
@@ -143,6 +150,42 @@ export class InfrastructureStore {
       .filter(row => resources.some(resource => resource.resourceId === row.resourceId))
       .map(row => ({ ...row, ...affectedBy(row.resourceId as string, dependencies, projectResources) }));
     return { environments, resources, projectResources, dependencies, resourceStates, incidents };
+  }
+
+  historicalSnapshot(at: string): Row {
+    const versions=this.db.prepare('SELECT id,known_at,inventory_json FROM infra_inventory_versions WHERE substr(known_at,1,19)<=?')
+      .all(at.slice(0,19)) as {id:number;known_at:string;inventory_json:string}[];
+    const version=versions.filter(row=>compareTimestamp(row.known_at,at)<=0)
+      .sort((a,b)=>compareTimestamp(b.known_at,a.known_at)||b.id-a.id)[0];
+    if(!version)return {infrastructureReference:'unavailable',environments:[],resources:[],projectResources:[],dependencies:[],resourceStates:[],incidents:[]};
+    const inventory=JSON.parse(version.inventory_json) as Inventory;
+    const readings=this.db.prepare('SELECT resource_id AS resourceId,source_id AS sourceId,source_version AS sourceVersion,health,observed_at AS observedAt,evidence_ref AS evidenceRef,indicator,value,unit FROM infra_readings WHERE substr(observed_at,1,19)<=? ORDER BY id')
+      .all(at.slice(0,19)) as Reading[];
+    const latest=new Map<string,Reading>();
+    for(const reading of readings)if(compareTimestamp(reading.observedAt,at)<=0){
+      const prior=latest.get(reading.resourceId);
+      if(!prior || compareTimestamp(reading.observedAt,prior.observedAt)>0)latest.set(reading.resourceId,reading);
+    }
+    const statusRows=this.db.prepare('SELECT kind,subject_id,observed_at FROM infra_status_events WHERE substr(observed_at,1,19)<=? ORDER BY id')
+      .all(at.slice(0,19)) as {kind:string;subject_id:string;observed_at:string}[];
+    const losses=new Map<string,string>();const failures=new Map<string,string>();
+    for(const row of statusRows)if(compareTimestamp(row.observed_at,at)<=0){
+      const target=row.kind==='source_lost'?losses:failures;
+      const prior=target.get(row.subject_id);
+      if(!prior || compareTimestamp(row.observed_at,prior)>0)target.set(row.subject_id,row.observed_at);
+    }
+    const resourceStates=inventory.resources.map(resource=>({resourceId:resource.resourceId,
+      dependentProjectIds:affectedBy(resource.resourceId,inventory.dependencies,inventory.projectResources).projectIds,
+      ...reduceHealth(latest.get(resource.resourceId)?.sourceId===resource.sourceId?latest.get(resource.resourceId)!:null,
+        laterOf(losses.get(resource.sourceId),failures.get(resource.resourceId)),resource.staleAfterMs,at,resource.sourceId)}));
+    const incidents=(this.db.prepare('SELECT incident_id AS incidentId,resource_id AS resourceId,opened_at AS openedAt,opened_health AS openedHealth,evidence_ref AS evidenceRef,resolved_at AS resolvedAt FROM infra_incidents WHERE substr(opened_at,1,19)<=? ORDER BY opened_at')
+      .all(at.slice(0,19)) as {incidentId:string;resourceId:string;openedAt:string;openedHealth:string;evidenceRef:string;resolvedAt:string|null}[])
+      .filter(row=>inventory.resources.some(resource=>resource.resourceId===row.resourceId) && compareTimestamp(row.openedAt,at)<=0 &&
+        (!row.resolvedAt || compareTimestamp(row.resolvedAt,at)>0))
+      .map(row=>({...row,resolvedAt:null,...affectedBy(row.resourceId,inventory.dependencies,inventory.projectResources)}));
+    return {infrastructureReference:'recorded',infrastructureKnownAt:version.known_at,
+      environments:inventory.environments,resources:inventory.resources,projectResources:inventory.projectResources,
+      dependencies:inventory.dependencies,resourceStates,incidents};
   }
 }
 

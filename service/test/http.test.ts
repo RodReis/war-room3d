@@ -89,7 +89,7 @@ test('SSE exige novo snapshot para cursor futuro ou fora da janela', async t => 
   assert.deepEqual(await expired.json(), { code: 'resync_required' });
 });
 
-test('migração de banco M2 força snapshot novo antes de SSE', async t => {
+test('migração de M3 preserva snapshot e cursor SSE existentes', async t => {
   const directory = mkdtempSync(path.join(tmpdir(), 'wr3d-http-migration-'));
   const databasePath = path.join(directory, 'state.db');
   let migrated: EventStore | null = null;
@@ -104,18 +104,17 @@ test('migração de banco M2 força snapshot novo antes de SSE', async t => {
   const oldSequence = original.snapshot().streamSequence as number;
   original.close();
   const db = new Database(databasePath);
-  db.exec("DROP TABLE state_changes; DELETE FROM meta WHERE key = 'transport_baseline'; UPDATE meta SET value = 2 WHERE key = 'schema_version'");
+  db.exec("DROP TABLE github_entity_cursors; DROP TABLE history_github_observations; DROP TABLE project_repository_link_periods; DROP TABLE github_page_cache; DROP TABLE github_poll_attempts; DROP TABLE github_poll_state; DROP TABLE history_effects; DROP TABLE history_incidents; DROP TABLE history_milestones; DROP TABLE project_repositories; UPDATE meta SET value = 3 WHERE key = 'schema_version'");
   db.close();
   migrated = new EventStore(databasePath);
-  assert.equal(migrated.transportBaseline(), oldSequence);
+  assert.equal(migrated.transportBaseline(), -1);
   const current = migrated.snapshot().streamSequence as number;
-  assert.equal(current, oldSequence + 1);
+  assert.equal(current, oldSequence);
   const token = randomBytes(32).toString('hex');
   const started = await startReadOnlyServer(migrated, token);
   server = started.server;
   const url = started.url;
   const headers = { Authorization: `Bearer ${token}` };
-  assert.equal((await fetch(`${url}/v1/events`, { headers: { ...headers, 'Last-Event-ID': String(oldSequence) } })).status, 409);
   const controller = new AbortController();
   const fresh = await fetch(`${url}/v1/events`, { headers: { ...headers, 'Last-Event-ID': String(current) }, signal: controller.signal });
   assert.equal(fresh.status, 200);

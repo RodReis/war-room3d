@@ -19,6 +19,14 @@ test('evento de sessão e recurso sem sessão seguem contratos separados', () =>
   assert.equal(event({ ...resource, resourceId: undefined }), false);
 });
 
+test('observação GitHub do transcript exige identidade canônica sem conteúdo bruto', () => {
+  const observation = { ...session, type: 'github.observed', projectId: 'p1', provider: undefined, sessionKey: undefined,
+    payload: { repositoryId: 'repo-1', entityType: 'pull_request', entityId: '101', transition: 'merged' } };
+  assert.equal(event(observation), true, JSON.stringify(event.errors));
+  assert.equal(event({ ...observation, payload: { ...observation.payload, entityId: undefined } }), false);
+  assert.equal(event({ ...observation, payload: { ...observation.payload, prompt: 'segredo-sintetico' } }), false);
+});
+
 test('envelope rejeita dados ausentes, versão incompatível e payload bruto', () => {
   for (const candidate of [
     { ...session, sourceId: undefined },

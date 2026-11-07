@@ -13,7 +13,7 @@
     "sourceVersion": { "$ref": "#/$defs/id" },
     "sourceSequence": { "type": "integer", "minimum": 0 },
     "streamSequence": { "type": "integer", "minimum": 1 },
-    "type": { "enum": ["session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "source.unavailable", "source.recovered", "resource.observed"] },
+    "type": { "enum": ["session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "source.unavailable", "source.recovered", "resource.observed", "github.observed"] },
     "observedAt": { "$ref": "#/$defs/time" },
     "occurredAt": { "$ref": "#/$defs/time" },
     "receivedAt": { "$ref": "#/$defs/time" },
@@ -32,7 +32,11 @@
       "additionalProperties": false,
       "properties": {
         "parentAgentKey": { "$ref": "#/$defs/id" },
-        "reason": { "enum": ["explicit", "source_lost", "source_recovered"] }
+        "reason": { "enum": ["explicit", "source_lost", "source_recovered"] },
+        "repositoryId": { "$ref": "#/$defs/id" },
+        "entityType": { "enum": ["pull_request", "workflow"] },
+        "entityId": { "$ref": "#/$defs/id" },
+        "transition": { "$ref": "#/$defs/id" }
       }
     },
     "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/id" }, "maxItems": 16 }
@@ -41,6 +45,7 @@
     { "if": { "properties": { "type": { "type": "string", "pattern": "^(session|agent)\\." } } }, "then": { "required": ["projectId", "sessionKey", "provider"] } },
     { "if": { "properties": { "type": { "type": "string", "pattern": "^agent\\." } } }, "then": { "required": ["agentKey"] } },
     { "if": { "properties": { "type": { "const": "resource.observed" } } }, "then": { "required": ["resourceId", "environmentId"] } },
+    { "if": { "properties": { "type": { "const": "github.observed" } } }, "then": { "required": ["projectId"], "properties": { "payload": { "type": "object", "required": ["repositoryId", "entityType", "entityId", "transition"] } } } },
     { "if": { "properties": { "ingestionMode": { "const": "demo" } } }, "then": { "properties": { "provenance": { "const": "illustrative" } } } },
     { "if": { "properties": { "ingestionMode": { "enum": ["live", "backfill", "resync"] } } }, "then": { "properties": { "provenance": { "not": { "const": "illustrative" } } } } }
   ],

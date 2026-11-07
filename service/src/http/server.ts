@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { EventStore, StreamChange } from '../store/event-store.ts';
+import { AGGREGATE_RETENTION_DAYS, REPLAY_RETENTION_DAYS, retentionCutoffs } from '../history/history.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/snapshot.v1.schema.json', import.meta.url), 'utf8'));
 const validateSnapshot = new Ajv2020({ strict: true }).compile(schema);
@@ -29,11 +30,72 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
     response.setHeader('X-Content-Type-Options', 'nosniff');
     const supplied = request.headers.authorization?.startsWith('Bearer ') ? Buffer.from(request.headers.authorization.slice(7)) : Buffer.alloc(0);
     if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { response.writeHead(401).end(); return; }
-    if (request.method !== 'GET') { response.writeHead(405, { Allow: 'GET' }).end(); return; }
-    if (request.headers['content-length'] || request.headers['transfer-encoding'] || !request.url || request.url.includes('?')) {
-      response.writeHead(404).end(); return;
+    if (!request.url) { response.writeHead(404).end(); return; }
+    if ((request.method === 'POST' && request.url === '/v1/github/repositories') || (request.method === 'DELETE' && request.url === '/v1/github/repositories')) {
+      const length = Number(request.headers['content-length'] ?? 0);
+      if (!Number.isSafeInteger(length) || length < 1 || length > 4096 || request.headers['transfer-encoding']) { response.writeHead(413).end(); return; }
+      let raw = '';
+      request.setEncoding('utf8');
+      request.on('data', chunk => { raw += chunk; if (Buffer.byteLength(raw) > 4096) request.destroy(); });
+      request.on('end', () => {
+        try {
+          const input = JSON.parse(raw) as { repositoryId: string; owner?: string; name?: string; projectId: string };
+          if (!input || typeof input.repositoryId !== 'string' || typeof input.projectId !== 'string') throw new Error('Corpo inválido');
+          if (request.method === 'DELETE') { sendJson(response, 200, { removed: store.history.unlinkRepository(input.repositoryId, input.projectId) }); return; }
+          if (typeof input.owner !== 'string' || typeof input.name !== 'string') throw new Error('Vínculo precisa de owner e name');
+          sendJson(response, 201, store.history.linkRepository({ repositoryId: input.repositoryId, owner: input.owner, name: input.name, projectId: input.projectId }));
+        } catch (error) { sendJson(response, 400, { code: 'invalid_repository_link', message: error instanceof Error ? error.message : 'Entrada inválida' }); }
+      });
+      return;
     }
+    if (request.method !== 'GET') { response.writeHead(405, { Allow: 'GET, POST, DELETE' }).end(); return; }
+    if (request.headers['content-length'] || request.headers['transfer-encoding']) { response.writeHead(404).end(); return; }
     try {
+      const parsedUrl = new URL(request.url, 'http://127.0.0.1');
+      if (parsedUrl.pathname === '/v1/history/day') {
+        const date = parsedUrl.searchParams.get('date');
+        const timeZone = parsedUrl.searchParams.get('timeZone');
+        const projectId = parsedUrl.searchParams.get('projectId');
+        if (!date || !timeZone || (projectId !== null && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(projectId)) ||
+            [...parsedUrl.searchParams.keys()].some(k => !['date','timeZone','projectId'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`) : new Date(NaN);
+        if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0,10) !== date) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        try { new Intl.DateTimeFormat('pt-BR', {timeZone}).format(parsedDate); }
+        catch (error) { if (error instanceof RangeError) { sendJson(response, 400, {code:'invalid_query'}); return; } throw error; }
+        try { sendJson(response, 200, store.history.daySummary(date, timeZone, new Date().toISOString(), projectId??undefined)); }
+        catch (error) {
+          if (error instanceof Error && error.message==='Projeto desconhecido') sendJson(response, 400, {code:'invalid_query'});
+          else if (error instanceof Error && error.message==='Agregado expirado') sendJson(response, 410, {code:'aggregate_expired',evidenceStatus:'expired'});
+          else throw error;
+        }
+        return;
+      }
+      if (parsedUrl.pathname === '/v1/history/replay') {
+        const cursor = parseCursor(parsedUrl.searchParams.get('cursor') ?? '0');
+        const limit = Number(parsedUrl.searchParams.get('limit') ?? '500');
+        if (cursor === null || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000 || [...parsedUrl.searchParams.keys()].some(k => !['cursor','limit'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        try { sendJson(response, 200, store.history.replay(cursor, limit)); }
+        catch (error) { if (error instanceof Error && error.message==='Cursor de replay indisponível') sendJson(response, 409, {code:'resync_required'}); else throw error; }
+        return;
+      }
+      if (parsedUrl.pathname === '/v1/history/replay/state') {
+        const at = parsedUrl.searchParams.get('at');
+        if (!at || [...parsedUrl.searchParams.keys()].some(k => k !== 'at') ||
+            !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
+            new Date(at).toISOString().slice(0,19) !== at.slice(0,19)) {
+          sendJson(response, 400, { code: 'invalid_query' }); return;
+        }
+        try { sendJson(response, 200, store.historicalSnapshot(at)); }
+        catch (error) { if (error instanceof Error && error.message==='Instante de replay expirado') sendJson(response, 410, {code:'evidence_expired',evidenceStatus:'expired'}); else throw error; }
+        return;
+      }
+      if (parsedUrl.pathname === '/v1/history/retention' && !parsedUrl.search) {
+        sendJson(response, 200, {detailWindowDays:REPLAY_RETENTION_DAYS,aggregateWindowDays:AGGREGATE_RETENTION_DAYS,
+          ...retentionCutoffs(new Date().toISOString()),physicalCleanup:'partial'});
+        return;
+      }
+      if (parsedUrl.pathname === '/v1/github/repositories') { sendJson(response, 200, store.history.repositories()); return; }
+      if (parsedUrl.search) { response.writeHead(404).end(); return; }
       if (request.url === '/v1/health') { sendJson(response, 200, { status: 'ok' }); return; }
       if (request.url === '/v1/capabilities') {
         sendJson(response, 200, { schemaVersion: '1.0', capabilities: store.snapshot().capabilities }); return;

@@ -6,6 +6,8 @@ import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type
 import { InfrastructureStore } from '../infra/infrastructure-store.ts';
 import type { Inventory } from '../infra/inventory.ts';
 import { appendStateChange } from './change-log.ts';
+import { HistoryStore, retentionCutoffs } from '../history/history.ts';
+import type { RepositoryLink } from '../history/history.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -32,7 +34,7 @@ export interface NormalizedEvent {
   agentKey?: string;
   provenance: string;
   ingestionMode: string;
-  payload: { parentAgentKey?: string; reason?: string };
+  payload: { parentAgentKey?: string; reason?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
   evidenceRefs: string[];
   [key: string]: unknown;
 }
@@ -56,6 +58,7 @@ type Row = Record<string, unknown>;
 export class EventStore {
   private readonly db: Database.Database;
   readonly infrastructure: InfrastructureStore;
+  readonly history: HistoryStore;
 
   constructor(databasePath: string) {
     if (!databasePath) throw new Error('Caminho do banco obrigatório');
@@ -65,17 +68,61 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 3) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 15) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
     if (schemaVersion < 3) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0003_state_changes.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 4) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0004_history_github.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 5) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0005_collection_windows.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 6) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0006_github_page_cache.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 7) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0007_poll_cadence.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 8) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0008_repository_link_periods.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 9) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0009_replay_cursor.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 10) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0010_project_presence_evidence.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 11) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0011_infrastructure_history.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 12) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0012_room_placement_history.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 13) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0013_github_retry_deadline.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 14) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0014_github_observations.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 15) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0015_github_entity_cursors.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
+    this.history = new HistoryStore(this.db);
   }
 
   close(): void { this.db.close(); }
+
+  registerProjectsAndLinkRepositories(projects: readonly ProjectRecord[], repositories: readonly Omit<RepositoryLink, 'linkedAt'>[]): void {
+    this.db.transaction(() => {
+      for (const project of projects) this.registerProject(project);
+      for (const repository of repositories) this.history.linkRepository(repository);
+    })();
+  }
 
   registerProjectsAndReplaceInventory(projects: readonly ProjectRecord[], inventory: Inventory): void {
     this.db.transaction(() => {
@@ -97,15 +144,20 @@ export class EventStore {
     const paths = [record.canonicalPath, ...(record.aliases ?? [])].map(normalizeProjectPath);
     if (!record.projectId || !record.name) throw new Error('Projeto incompleto');
     const operation = this.db.transaction(() => {
+      const knownAt = new Date().toISOString();
       this.db.prepare('INSERT INTO projects(project_id, name) VALUES (?, ?)').run(record.projectId, record.name);
+      this.db.prepare("INSERT INTO project_presence_evidence(project_id,known_at,evidence_kind) VALUES (?,?,'registration')")
+        .run(record.projectId,knownAt);
       const addPath = this.db.prepare('INSERT INTO project_paths(path, project_id) VALUES (?, ?)');
       for (const candidate of paths) addPath.run(candidate, record.projectId);
       const index = (this.db.prepare('SELECT COUNT(*) AS count FROM room_placements').get() as { count: number }).count;
       const sectorId = `setor-${String(Math.floor(index / 6) + 1).padStart(2, '0')}`;
       const slotId = `slot-${String((index % 6) + 1).padStart(2, '0')}`;
       this.db.prepare('INSERT INTO room_placements VALUES (?, ?, ?, ?)').run(record.projectId, sectorId, slotId, '1');
+      this.db.prepare('INSERT INTO room_placement_versions(project_id,sector_id,slot_id,layout_version,known_at) VALUES (?,?,?,?,?)')
+        .run(record.projectId,sectorId,slotId,'1',knownAt);
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
-      appendStateChange(this.db, 'project.changed', record.projectId, new Date().toISOString());
+      appendStateChange(this.db, 'project.changed', record.projectId, knownAt);
     });
     operation();
   }
@@ -181,7 +233,9 @@ export class EventStore {
   }
 
   private applyState(event: NormalizedEvent): void {
-    if (event.type.startsWith('session.')) {
+    if (event.type === 'github.observed') {
+      this.history.recordGithubObservation({eventId:event.eventId,sourceId:event.sourceId,projectId:event.projectId!,repositoryId:event.payload.repositoryId!,entityType:event.payload.entityType!,entityId:event.payload.entityId!,transition:event.payload.transition!,observedAt:event.observedAt});
+    } else if (event.type.startsWith('session.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null } | undefined;
       if (row && (row.project_id !== event.projectId || row.source_id !== event.sourceId || row.provider !== event.provider)) throw new Error('Identidade de sessão colide com outro contexto');
@@ -234,6 +288,58 @@ export class EventStore {
 
   snapshot(now: string = new Date().toISOString()): Row {
     return this.db.transaction(() => this.snapshotInsideTransaction(now))();
+  }
+
+  historicalSnapshot(at: string, now = new Date().toISOString()): Row {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
+        new Date(at).toISOString().slice(0,19) !== at.slice(0,19))
+      throw new Error('Instante de replay inválido');
+    if (compareTimestamp(at,retentionCutoffs(now).detailCutoffAt)<0) throw new Error('Instante de replay expirado');
+    const input = this.db.transaction(() => ({
+      projects: this.db.prepare('SELECT project_id,name FROM projects ORDER BY project_id').all() as {project_id:string;name:string}[],
+      placements: this.db.prepare('SELECT id,project_id,sector_id,slot_id,layout_version,known_at FROM room_placement_versions WHERE substr(known_at,1,19)<=?')
+        .all(at.slice(0,19)) as {id:number;project_id:string;sector_id:string;slot_id:string;layout_version:string;known_at:string}[],
+      projectEvidence: this.db.prepare('SELECT project_id,known_at FROM project_presence_evidence').all() as {project_id:string;known_at:string}[],
+      githubProjects: this.db.prepare('SELECT project_id,occurred_at FROM history_milestones WHERE substr(occurred_at,1,19)<=?').all(at.slice(0,19)) as {project_id:string;occurred_at:string}[],
+      events: this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE substr(json_extract(event_json,'$.observedAt'),1,19)<=?").all(at.slice(0,19)) as {stream_sequence:number;event_json:string}[],
+      ciIncidents: this.history.ciIncidentsAt(at),
+      infrastructure: this.infrastructure.historicalSnapshot(at),
+      revision: this.number('revision'),
+      streamSequence: this.number('stream_sequence')
+    }))();
+    const historicalEvents = input.events.map(row=>({ ...row,event:JSON.parse(row.event_json) as NormalizedEvent }))
+      .filter(row=>compareTimestamp(row.event.observedAt,at)<=0)
+      .sort((a,b)=>compareTimestamp(a.event.observedAt,b.event.observedAt)||a.stream_sequence-b.stream_sequence);
+    const visibleProjects=new Set(input.projectEvidence.filter(row=>compareTimestamp(row.known_at,at)<=0).map(row=>row.project_id));
+    for(const row of historicalEvents)if(row.event.projectId)visibleProjects.add(row.event.projectId);
+    for(const row of input.githubProjects)if(compareTimestamp(row.occurred_at,at)<=0)visibleProjects.add(row.project_id);
+    const placements=new Map<string,(typeof input.placements)[number]>();
+    for(const row of input.placements)if(visibleProjects.has(row.project_id) && compareTimestamp(row.known_at,at)<=0){
+      const prior=placements.get(row.project_id);
+      if(!prior || compareTimestamp(row.known_at,prior.known_at)>0 || (compareTimestamp(row.known_at,prior.known_at)===0 && row.id>prior.id))
+        placements.set(row.project_id,row);
+    }
+    const projection = new EventStore(':memory:');
+    try {
+      projection.db.transaction(() => {
+        const project = projection.db.prepare('INSERT INTO projects(project_id,name) VALUES (?,?)');
+        const placement = projection.db.prepare('INSERT INTO room_placements(project_id,sector_id,slot_id,layout_version) VALUES (?,?,?,?)');
+        for (const row of input.projects) if(visibleProjects.has(row.project_id))project.run(row.project_id,row.name);
+        for (const row of placements.values())placement.run(row.project_id,row.sector_id,row.slot_id,row.layout_version);
+      })();
+      let replayOffset = 0;
+      for (const row of historicalEvents) {
+        projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
+      }
+      const state = projection.snapshot(at);
+      const activeSourceLosses=projection.db.prepare("SELECT source_id,last_unavailable_at FROM sources WHERE status='indisponivel' AND last_unavailable_at IS NOT NULL ORDER BY source_id")
+        .all() as {source_id:string;last_unavailable_at:string}[];
+      const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
+      const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
+      return { ...state, ...input.infrastructure, mode:'replay', at, layoutReference:visibleProjects.size===0?'unavailable':placements.size===visibleProjects.size?'recorded':placements.size?'partial':'unavailable', revision:input.revision, streamSequence:input.streamSequence,
+        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents',...(input.infrastructure.infrastructureReference==='recorded'?['infrastructure']:[])], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
+          reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
+    } finally { projection.close(); }
   }
 
   private snapshotInsideTransaction(now: string): Row {

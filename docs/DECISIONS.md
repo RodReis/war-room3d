@@ -29,6 +29,13 @@ Este registro distingue decisões de produto aprovadas de hipóteses técnicas a
 - **Decisão:** separar observado, inferido, declarado pelo usuário e ilustrativo; demo/replay isolados; dados ausentes não viram estado saudável.
 - **Consequência:** UI deve mostrar origem, horário, cobertura e limites de cada sinal.
 
+## ADR-005 — retenção inicial M3
+
+- **Estado:** política de produto aprovada pelo PI em 07/11/2026; exclusão física pendente de estado base e prova de reconstrução.
+- **Decisão:** replay detalhado disponível por 7 dias; agregados de Meu dia e incidentes resolvidos por 90 dias; incidentes abertos preservados. Evidência expirada recebe aviso explícito.
+- **Contexto:** apagar diretamente eventos M1 ou marcos CI antigos quebraria sessões abertas e incidentes que atravessam o corte. A PR #23 aplica os limites de consulta, oculta detalhes antigos de Meu dia e apaga apenas efeitos, incidentes resolvidos e tentativas de poll expirados; a limpeza restante exige compactação verificável.
+- **Consequência:** dados antigos continuam no SQLite até a rotina de compactação; não afirmar retenção física de 7/90 dias nem privacidade concluída nesta fatia.
+
 ## Pendências técnicas
 
 Versões finais dos pacotes, direitos dos GLBs, driver SQLite, backend de observabilidade real, fonte de segurança e política de empacotamento dependem das provas das respectivas etapas. Registrar cada decisão antes de implementá-la como padrão duradouro.

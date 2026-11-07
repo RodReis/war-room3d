@@ -80,3 +80,7 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 - No HEAD integrado `2cdc6d9`, contratos 8/8, serviço 48/48 e typecheck passaram localmente; Unity EditMode 9/9, PlayMode 7/7 e build Windows foram executados no checkout da fatia antes dos commits somente documentais. Não há workflow de CI; duas discussões de revisão foram resolvidas antes do merge.
 - O [ContaIA local](validation/m2/contaia-local.md) foi consultado pontualmente. A API real gerou snapshot M2 autenticado com saúde, cobertura e frescor atuais e zero sessões, usando SQLite em memória. O Vault selado gerou incidente somente nos projetos vinculados de um grafo sintético. Não houve instalação de coleta contínua.
 - SQL real depende de papel e referência de credencial; Docker contínuo depende de identidade isolada. O Player conectado, capturas e frame time seguem `not_run` porque o controle visual retornou `native pipe is unavailable`. A issue #3 permanece aberta; aceite funcional e operacional do PI pendente, com critérios restantes também na [#16](https://github.com/RodReis/war-room3d/issues/16).
+
+## 06/11/2026 — correção de estado remoto M1 durante M3
+
+- A [issue #2](https://github.com/RodReis/war-room3d/issues/2) consta `CLOSED` desde 19:09:48 UTC, com comentário do PI de que o planejamento terminou. O fechamento não demonstra adaptadores reais de transcript, que permanecem pendentes no checkout; `STATUS.md` e `DEVELOPMENT.md` foram corrigidos sem alterar a decisão remota do PI.

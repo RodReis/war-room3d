@@ -214,7 +214,7 @@ Fontes selecionadas são habilitadas pelo usuário. Não instalar hooks globalme
 
 Guardar metadados normalizados, identificadores e referências de evidência. Transcripts completos e logs volumosos não são copiados integralmente por padrão. Segredos, cookies, tokens, strings de conexão e conteúdo sensível devem ser redigidos antes de persistir/exibir/exportar. Referências de evidência devem ser novamente autorizadas ao abrir.
 
-Retenção inicial proposta: eventos/snapshots de replay por 7 dias; agregados de Meu dia por 90 dias; trilha de comandos por 90 dias; incidentes abertos preservados e incidentes resolvidos por 90 dias. Conteúdo bruto segue a política da fonte. Permitir diminuir retenção e excluir dados explicitamente. A expiração de evidência deve ficar visível, sem deixar link aparentemente válido.
+Retenção inicial aprovada pelo PI em 07/11/2026: eventos/snapshots de replay por 7 dias; agregados de Meu dia por 90 dias; trilha de comandos por 90 dias; incidentes abertos preservados e incidentes resolvidos por 90 dias. Conteúdo bruto segue a política da fonte. Permitir diminuir retenção e excluir dados explicitamente. A expiração de evidência deve ficar visível, sem deixar link aparentemente válido. A implementação e as provas de exclusão física permanecem registradas por etapa; a aprovação da política não equivale à conclusão técnica da retenção.
 
 Orçamento local inicial proposto: 2 GB para histórico, excluindo arte. Ao atingir 80%, avisar; a 95%, compactar/remover apenas itens expirados. Sem espaço recuperável, sinalizar gravação interrompida e manter observação em memória limitada; não dizer que o histórico está completo. Comandos que exigem auditoria persistente ficam indisponíveis durante essa falha.
 

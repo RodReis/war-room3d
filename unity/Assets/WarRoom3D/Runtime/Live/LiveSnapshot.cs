@@ -9,6 +9,8 @@ namespace WarRoom3D
     {
         public string schemaVersion;
         public string mode;
+        public string layoutReference;
+        public string infrastructureReference;
         public int revision;
         public long streamSequence;
         public LiveProject[] projects;
@@ -19,16 +21,21 @@ namespace WarRoom3D
         public LiveResource[] resources;
         public LiveResourceState[] resourceStates;
         public LiveIncident[] incidents;
+        public ReplayCiIncident[] ciIncidents;
+        public ReplayCoverage coverage;
 
-        public static LiveSnapshot Parse(string json)
+        public static LiveSnapshot Parse(string json, string expectedMode = "live")
         {
             LiveSnapshot snapshot;
             try { snapshot = JsonUtility.FromJson<LiveSnapshot>(json); }
             catch (Exception) { throw new ArgumentException("Snapshot live inválido"); }
-            if (snapshot == null || snapshot.schemaVersion != "1.0" || snapshot.mode != "live" || snapshot.streamSequence < 0 ||
+            if (snapshot == null || snapshot.schemaVersion != "1.0" || snapshot.mode != expectedMode || snapshot.streamSequence < 0 ||
                 snapshot.projects == null || snapshot.roomPlacements == null || snapshot.sessions == null || snapshot.agents == null || snapshot.feed == null ||
                 snapshot.resources == null || snapshot.resourceStates == null || snapshot.incidents == null)
                 throw new ArgumentException("Contrato live incompatível");
+            if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null || snapshot.ciIncidents == null ||
+                (snapshot.infrastructureReference != "recorded" && snapshot.infrastructureReference != "unavailable")))
+                throw new ArgumentException("Cobertura do replay incompatível");
             var projects = new HashSet<string>();
             foreach (var project in snapshot.projects)
                 if (project == null || string.IsNullOrWhiteSpace(project.projectId) || string.IsNullOrWhiteSpace(project.name) || !projects.Add(project.projectId))
@@ -77,4 +84,6 @@ namespace WarRoom3D
         public string unit;
     }
     [Serializable] public sealed class LiveIncident { public string incidentId; public string resourceId; public string[] projectIds; }
+    [Serializable] public sealed class ReplayCoverage { public string status; public HistoryGap[] gaps; }
+    [Serializable] public sealed class ReplayCiIncident { public string incidentId; public string projectId; public string repositoryId; public long workflowId; public string @ref; public string openedAt; }
 }

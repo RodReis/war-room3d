@@ -115,6 +115,20 @@ namespace WarRoom3D
             SnapshotChanged?.Invoke(parsed);
         }
 
+        public UnityWebRequest CreateHistoryRequest(string path)
+        {
+            if (!configured || string.IsNullOrEmpty(path) || !path.StartsWith("/v1/history/", StringComparison.Ordinal) ||
+                path.Contains("//") || path.Contains(".."))
+                throw new ArgumentException("Consulta histórica inválida");
+            var request = UnityWebRequest.Get(baseUrl + path);
+            request.redirectLimit = 0;
+            request.timeout = 10;
+            request.SetRequestHeader("Authorization", "Bearer " + token);
+            return request;
+        }
+
+        public void RefreshNow() { refreshRequested = true; }
+
         private void OnDisable()
         {
             activeRequest?.Abort();

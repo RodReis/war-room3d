@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Ajv2020 } from 'ajv/dist/2020.js';
+import Database from 'better-sqlite3';
 import { EventStore } from '../src/store/event-store.ts';
 import { affectedBy } from '../src/infra/dependency-graph.ts';
 import { parseInventory, type Inventory } from '../src/infra/inventory.ts';
@@ -104,4 +105,62 @@ test('leitura no mesmo instante é idempotente ou colisão explícita', t => {
   assert.equal(store.infrastructure.recordReading(reading, later), false);
   assert.throws(() => store.infrastructure.recordReading({ ...reading, value: 200 }, later), /colide/);
   assert.deepEqual(store.snapshot(later), before);
+});
+
+test('replay de infraestrutura usa inventário, leitura, perda e vínculos no instante', t => {
+  const { store, databasePath } = temporaryStore(t);
+  for (let i = 1; i <= 3; i++) store.registerProject({ projectId: `p${i}`, name: `Projeto ${i}`, canonicalPath: `C:\\Projects\\p${i}` });
+  const base = Date.now() + 60000;
+  const time = (seconds: number) => new Date(base + seconds * 1000).toISOString();
+  assert.throws(()=>store.infrastructure.replaceInventory(inventory,'2026-11-06'),/Data do inventário inválida/);
+  assert.deepEqual([store.historicalSnapshot(time(-1)).infrastructureReference,
+    (store.historicalSnapshot(time(-1)).resources as unknown[]).length], ['unavailable', 0]);
+  store.infrastructure.replaceInventory(inventory, time(0));
+  const initial = store.historicalSnapshot(time(0));
+  assert.equal(initial.infrastructureReference, 'recorded');
+  assert.equal((initial.resources as unknown[]).length, inventory.resources.length);
+  assert.equal((initial.resourceStates as {resourceId:string;health:string}[]).find(row => row.resourceId === 'db-lab')?.health, 'sem_dados');
+  store.infrastructure.recordReading({ resourceId:'db-lab', sourceId:'probe-db', sourceVersion:'1', health:'degradado',
+    observedAt:time(1), evidenceRef:'falha-db' }, time(2));
+  const degraded = store.historicalSnapshot(time(1));
+  assert.equal((degraded.resourceStates as {resourceId:string;health:string}[]).find(row => row.resourceId === 'db-lab')?.health, 'degradado');
+  assert.deepEqual((degraded.incidents as {projectIds:string[]}[])[0]?.projectIds, ['p1','p2']);
+  store.infrastructure.markSourceLost('probe-db', time(3));
+  const lost = store.historicalSnapshot(time(3));
+  assert.deepEqual((lost.resourceStates as {resourceId:string;health:string;coverage:string}[]).filter(row => row.resourceId === 'db-lab').map(row => [row.health,row.coverage]),
+    [['sem_dados','perdida']]);
+  store.infrastructure.replaceInventory({ ...inventory, projectResources: inventory.projectResources.filter(link => link.projectId !== 'p2') }, time(4));
+  assert.deepEqual((store.historicalSnapshot(time(4)).incidents as {projectIds:string[]}[])[0]?.projectIds, ['p1']);
+  assert.deepEqual((store.historicalSnapshot(time(1)).incidents as {projectIds:string[]}[])[0]?.projectIds, ['p1','p2']);
+  store.infrastructure.recordReading({ resourceId:'db-lab', sourceId:'probe-db', sourceVersion:'1', health:'saudavel',
+    observedAt:time(5), evidenceRef:'recuperacao-db' }, time(6));
+  assert.equal((store.historicalSnapshot(time(5)).incidents as unknown[]).length, 0);
+  assert.equal((store.historicalSnapshot(time(3)).incidents as unknown[]).length, 1);
+  store.infrastructure.markResourceCollectionFailed('db-lab',time(7));
+  assert.equal((store.historicalSnapshot(time(7)).resourceStates as {resourceId:string;coverage:string}[])
+    .find(row=>row.resourceId==='db-lab')?.coverage,'perdida');
+  store.close();
+  const reopened=new EventStore(databasePath);
+  assert.equal((reopened.historicalSnapshot(time(1)).resourceStates as {resourceId:string;health:string}[])
+    .find(row=>row.resourceId==='db-lab')?.health,'degradado');
+  assert.equal((reopened.historicalSnapshot(time(7)).resourceStates as {resourceId:string;coverage:string}[])
+    .find(row=>row.resourceId==='db-lab')?.coverage,'perdida');
+  reopened.close();
+});
+
+test('migração v11 registra inventário legado só desde sua execução', t => {
+  const { store, databasePath } = temporaryStore(t);
+  register(store);
+  store.close();
+  const db = new Database(databasePath);
+  db.exec("DROP TABLE infra_inventory_versions; DROP TABLE infra_status_events; UPDATE meta SET value=10 WHERE key='schema_version'");
+  db.close();
+  const migrated = new EventStore(databasePath);
+  const check = new Database(databasePath);
+  const row = check.prepare('SELECT known_at FROM infra_inventory_versions').get() as {known_at:string};
+  check.close();
+  assert.equal(migrated.historicalSnapshot(new Date(Date.parse(row.known_at)-1).toISOString()).infrastructureReference,'unavailable');
+  assert.equal(migrated.historicalSnapshot(row.known_at).infrastructureReference,'recorded');
+  assert.equal((migrated.historicalSnapshot(row.known_at).resources as unknown[]).length,inventory.resources.length);
+  migrated.close();
 });

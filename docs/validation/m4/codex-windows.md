@@ -1,6 +1,39 @@
-# M4 — Codex Windows: duas tentativas sem envio
+# M4 — Codex Windows: recibo CLI comprovado
 
-Data: 07/11/2026. Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). Foram executadas duas tentativas, cada uma com autorização própria: `3152ccc` e `a837263`. **Ambas falharam no bootstrap, com mensagem `not_sent`. Nenhuma comprova recebimento pelo Codex.**
+Data: 07/11/2026. Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). **Resultado atual: `pass` pontual de recebimento CLI**, no código `858796786ee84bff6c317720ada0e99db1d22789`. Uma mensagem sintética, recibo RPC correlacionado, sem retry e ambos os processos encerrados. Não atesta conclusão do modelo, custo efetivo ou suporte a outras sessões.
+
+## Continuação autorizada e resultado final
+
+Após as duas autorizações individuais registradas abaixo, o PI instruiu **“ok, continua ate final sem parar”**. A continuação preservou o alvo Codex 0.166.0, autenticação atual do CLI, inspeção de 10 s, sessão de 30 s, thread nova efêmera, sandbox de leitura/`never`, recursos externos desativados e nenhuma retomada de conversas. Nenhuma credencial foi lida ou copiada manualmente.
+
+A inspeção instrumentada do perfil atual confirmou `initialize` e `config/read`, identificando 13 servidores MCP configurados. Duas incompatibilidades do roteiro foram reproduzidas e corrigidas antes do único envio:
+
+1. **Overrides MCP:** a versão 0.166.0 divide caminhos de override por pontos literais, sem interpretar aspas nos segmentos. `mcp_servers."nome".enabled=false` criava uma entrada diferente/inválida. O roteiro passou a gerar um único valor TOML `mcp_servers={"nome"={enabled=false},...}` com cada ID literal, preservando transportes da configuração inferior. Contraprova nativa com IDs sintéticos `alpha` e `server.with.dot`: nomes preservados, ambos desativados, transportes preservados e processo encerrado, sem thread/mensagem. Correção `b6d1fcc`.
+2. **Política global:** uma thread criada sem mensagem retornou diretório correto, `readOnly`, `networkAccess=false`, `never` e uma fonte de instruções. A verificação de identidade, sem ler/publicar seu conteúdo, confirmou o `AGENTS.md` global do próprio perfil nativo. `project_doc_max_bytes=0` não desativa essa política global. O roteiro preserva a governança do CLI autorizado e aceita somente os caminhos exatos `AGENTS.md`/`AGENTS.override.md` desse perfil; qualquer outra fonte continua impedindo envio. O padrão da função continua com allowlist vazia. Nenhuma política global foi alterada, renomeada ou removida. Correção `8587967`.
+
+Na continuação, o roteiro completo foi executado três vezes: `0450036` interrompeu antes da thread por override inválido; `b6d1fcc` interrompeu após criar thread, antes de mensagem, pela checagem da política global; `8587967` confirmou **a única mensagem enviada**. Os diagnósticos separados emitiram apenas consultas de configuração ou criação de thread descartável, sem `turn/start`. Não houve retry de mensagem enviada ou incerta.
+
+| Evidência do último ensaio | Resultado |
+|---|---|
+| Provedor / fonte executada | Codex `0.166.0` / `858796786ee84bff6c317720ada0e99db1d22789` |
+| Mensagem | Uma, com o texto sintético fixo do roteiro |
+| Auditoria | `requested → sending → confirmed`, uma transição `sending` |
+| Instantes UTC | `23:26:47.480` → `23:26:47.507`, intervalo de auditoria de 27 ms; não é latência de inferência |
+| Bootstrap / prazo | `bootstrapError=false`; nenhum prazo local venceu |
+| Isolamento conferido | 13 MCP desativados por ID; recursos externos desligados; thread nova, diretório próprio, `readOnly`, rede da sandbox bloqueada e `never` |
+| Encerramento | `inspectionProcessTerminated=true`, `processTerminated=true` |
+| Inferência / custo | `not_asserted` / não medido; não há teto monetário verificado |
+
+SHA-256 dos artefatos locais originais ignorados:
+
+- `result.json`: `e68e310f4ace5e6140d62ddc1445ce43373e5c6bf32ddbe4f91bc0805fc24953`.
+- `audit.jsonl`: `2bdf21fc685fbb3b5372e598e91ff3ac3030a9cb47ff64cc5eac8b920efba5ef`.
+
+Serviço **129/129**, testes do laboratório **15/15**, contratos **12/12** e typecheck aprovados. O conteúdo de stdout/stderr, configurações, instruções globais e identificadores nativos não foi publicado. As capacidades do serviço normal continuam indisponíveis sem supervisor, canal e prova da sessão atual; o alvo ensaiado já foi encerrado. Perguntas e permissões reais não foram habilitadas.
+
+## Histórico anterior ao recibo — preservar limites de cada tentativa
+
+As duas primeiras tentativas tiveram autorizações individuais e falharam no bootstrap com `not_sent`. Seus relatórios originais não foram reescritos. As hipóteses e ausências de diagnóstico abaixo descrevem aquele momento, sem substituir o resultado final acima.
 
 ## Segunda execução autorizada: `a837263`
 
@@ -20,7 +53,7 @@ Isso comprova a inicialização/leitura de configuração com perfil sintético.
 
 ### Instrumentação posterior
 
-O roteiro agora registra apenas nomes das etapas RPC, contadores de bytes, se o prazo local venceu e até oito classificações de pedidos inesperados por fase (`auth_refresh`, `attestation` ou `other`). Não responde a esses pedidos nem preserva IDs, parâmetros ou conteúdo dos pipes. Esses tipos são possibilidades previstas pelo diagnóstico, não pedidos observados na tentativa acima. Testes vermelhos reproduziram a falta dessas evidências; depois da alteração, **14/14 testes do laboratório, 128/128 do serviço e typecheck passaram**. Os limites de 10/30 s, checagens de isolamento, encerramento e ausência de retry permanecem. Essa instrumentação não foi executada novamente com o perfil atual. O bloqueio de bootstrap continua aberto, sem nova tentativa automática ou autorização pendente.
+Em `0450036`, o roteiro passou a registrar nomes das etapas RPC, contadores de bytes, se o prazo local venceu e até oito classificações de pedidos inesperados por fase (`auth_refresh`, `attestation` ou `other`). Não responde a esses pedidos nem preserva IDs, parâmetros ou conteúdo dos pipes. Esses tipos eram possibilidades de diagnóstico, não pedidos observados na tentativa acima. Testes vermelhos reproduziram a falta dessas evidências; naquela revisão, **14/14 testes do laboratório, 128/128 do serviço e typecheck passaram**. A investigação posterior e o recibo atual constam no início deste relatório.
 
 ## Primeira execução autorizada: `3152ccc`
 
@@ -54,3 +87,5 @@ A correção `a837263` foi executada uma vez após uma segunda autorização esp
 
 - [Roteiro e limites do laboratório](codex-laboratorio.md).
 - Ajuda do CLI instalado: `app-server --print-startup-config` valida e imprime requisitos sem iniciar o app-server; `--strict-config` recusa campos não reconhecidos pela versão.
+- [Overrides da versão 0.166.0](https://github.com/openai/codex/blob/rust-v0.166.0/codex-rs/config/src/overrides.rs): caminhos segmentados por pontos e valor TOML.
+- [Instruções globais nativas](https://github.com/openai/codex/blob/rust-v0.166.0/codex-rs/codex-home/src/instructions/mod.rs): leitura da política do próprio perfil, independente do limite de documentos do projeto.

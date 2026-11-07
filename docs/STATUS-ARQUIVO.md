@@ -2,6 +2,13 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Recibo Codex comprovado e revisão técnica M4
+
+- Continuação autorizada pelo PI até o fim, dentro do mesmo laboratório. Correções `b6d1fcc` (IDs MCP literais no valor TOML) e `858796786ee84bff6c317720ada0e99db1d22789` (política global nativa identificada por caminho exato), sem alterar perfil global ou retomar conversas.
+- Uma mensagem sintética Codex 0.166.0 confirmada por resposta RPC: `requested → sending → confirmed`, uma tentativa, ambos os processos encerrados e sem retry. Auditoria entre 23:26:47.480 e 23:26:47.507 UTC; intervalo não mede inferência. [Relatório, hashes e histórico das tentativas sem envio](validation/m4/codex-windows.md).
+- Serviço 129/129, contratos 12/12 e typecheck aprovados. [Revisão dos cinco critérios técnicos](validation/m4/resultado.md), preservando limites das provas sintéticas/Windows. C# inalterado após as provas anteriores.
+- Não habilita a sessão encerrada nem outra sessão no produto. Perguntas/permissões reais e vínculo operacional M1 não comprovados; issue #5 aberta, sem merge ou aceite funcional.
+
 ## 07/11/2026 — Segunda tentativa Codex e contraprova sem credenciais
 
 - Nova autorização específica do PI e uma execução de `a8372638fe88c3f7d560401773915fd04c596853`: `not_sent`, `bootstrap_unconfirmed`, código 1. Processo de inspeção encerrado, sem segundo processo/thread/mensagem/auditoria ou retry. Etapa interna e causa não registradas; [relatório e hashes](validation/m4/codex-windows.md).

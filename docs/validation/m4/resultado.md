@@ -49,3 +49,19 @@ Revisão visual sintética: as imagens mostraram o resultado da mensagem anterio
 Arquivos de cenas/configurações reserializados pelo Editor foram restaurados após os ensaios; a cena live existente instala o painel pelo código de inicialização. Builds, XMLs, imagens e bancos permanecem fora do Git. Não houve alteração dos checkouts anteriores nem merge desta entrega.
 
 As provas não equivalem a suporte operacional Claude/Codex nem aceite funcional do PI. Issue #5 permanece aberta até os critérios e o aceite aplicáveis.
+
+## Revisão técnica dos critérios da issue #5
+
+Esta seção consolida a revisão após os ensaios de mensagens reais. Os números iniciais acima são históricos, não substituem a validação posterior: serviço **129/129**, contratos **12/12** e typecheck aprovados; C# permaneceu inalterado após as provas Windows já descritas.
+
+| Critério | Evidência técnica | Limite |
+|---|---|---|
+| Capacidade não comprovada indisponível | Registry/gateway/HTTP e presenters rejeitam ausência, expiração, revogação, versão/alvo divergentes; exports reais padrão vazios | Prova descartável encerrada não habilita outra sessão |
+| Clique duplo sem duplicação | Concorrência/idempotência e reinício nos testes do gateway; Player sintético com uma emissão no fake | Não é promessa de exactly-once externo |
+| Timeout pós-envio incerto, sem retry | Testes de gateway/canal/adaptadores registram `unknown`; nenhum fallback/reenvio automático | Cenário de timeout com mensagem real não foi induzido |
+| Demo/replay recusados no servidor | Testes HTTP/gateway e invalidação no Player | Player usa fixture identificada |
+| Windows por provedor com versão, permissões, falhas e auditoria | [Claude 2.1.319](claude-windows.md) e [Codex 0.166.0](codex-windows.md), uma mensagem em cada alvo novo, recibos correlacionados e encerramento | Perguntas/permissões reais não comprovadas; conclusão do modelo e custo não medidos |
+
+A revisão corrigiu os achados reproduzidos durante a execução: validade da própria prévia após espera SQLite; resposta Codex sem `items`; overrides MCP com IDs citados em caminhos; política global nativa confundida com fonte arbitrária de instruções. As duas últimas correções foram verificadas por testes vermelhos/positivos, contraprova nativa sem inferência e recibo do alvo descartável.
+
+Sem supervisor/canal/prova da sessão atual, o serviço normal mantém Claude/Codex indisponíveis. Não foram adicionados hooks, retomada de conversas ou administração de processos ao produto. Vínculo operacional com sessões M1, perguntas/permissões reais e aceite funcional do PI continuam separados desta entrega técnica. Não houve merge ou fechamento da issue.

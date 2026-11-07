@@ -13,13 +13,13 @@ updated: 2026-11-07
 
 ## A Fazer
 
-### Sem épico
-
-- M4 — Mensagens e permissões assistidas (#5)
+_(vazio)_
 
 ## Em Andamento
 
-_(vazio)_
+### Sem épico
+
+- M4 — Mensagens e permissões assistidas (#5)
 
 ## Feito
 

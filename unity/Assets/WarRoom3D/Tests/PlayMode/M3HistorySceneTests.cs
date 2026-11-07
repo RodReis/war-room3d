@@ -144,10 +144,12 @@ namespace WarRoom3D.Tests
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && root.Q<Label>("effect-banner").style.display.value != DisplayStyle.Flex) yield return null;
                 Assert.That(root.Q<Label>("effect-banner").text, Does.Contain("PR mergeado"));
+                Assert.That(GameObject.Find("EffectBeacon:p1"), Is.Not.Null);
                 client.AcceptSnapshot(Snapshot(3));
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("effect-banner").text.Contains("CI falhou")) yield return null;
                 Assert.That(root.Q<Label>("effect-banner").text, Does.Contain("CI falhou"));
+                Assert.That(GameObject.Find("EffectBeacon:p1"), Is.Not.Null);
             }
             finally
             {
@@ -176,9 +178,9 @@ namespace WarRoom3D.Tests
                     var body = first != null && first.Contains("/v1/history/replay/state?at=") ?
                         "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"layoutReference\":\"current\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[],\"coverage\":{\"status\":\"unknown\",\"gaps\":[]}}" :
                         first != null && first.Contains("/v1/history/replay?cursor=2") ?
-                        "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
+                        "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?cursor=1") ?
-                        "{\"viewMode\":\"replay\",\"fromSequence\":1,\"throughSequence\":2,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":2,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"merge-2\",\"effectType\":\"merge.celebration\",\"ingestionMode\":\"live\",\"durationMs\":8000}]}]}" :
+                        "{\"viewMode\":\"replay\",\"fromSequence\":1,\"throughSequence\":2,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":2,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"merge-2\",\"effectType\":\"merge.celebration\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"durationMs\":8000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":0,\"throughSequence\":1,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":1,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\",\"effects\":[]}]}" :
                         "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"waitingDurationMs\":1800000,\"waitingDurationKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2,\"gaps\":[{\"sourceId\":\"source1\",\"start\":\"2026-11-06T15:00:00Z\",\"end\":\"2026-11-06T15:05:00Z\",\"reason\":\"source_unavailable\"}]},\"githubCoverage\":{\"status\":\"partial\",\"attempts\":2,\"successfulAttempts\":1,\"failedAttempts\":1,\"gaps\":[{\"repositoryId\":\"42\",\"start\":\"2026-11-06T15:01:00Z\",\"end\":\"2026-11-06T15:06:00Z\",\"reason\":\"rate_limited\"}]},\"milestones\":[],\"incidentMarkers\":[]}";

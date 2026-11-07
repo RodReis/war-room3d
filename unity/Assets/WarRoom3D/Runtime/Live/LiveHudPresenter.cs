@@ -48,7 +48,7 @@ namespace WarRoom3D
             history.Configure(root, client);
             history.ReplayChanged += OnReplayChanged;
             history.ReplayStateChanged += RenderReplayState;
-            gameObject.AddComponent<EffectDirector>().Configure(root, client, history);
+            gameObject.AddComponent<EffectDirector>().Configure(root, client, history, sector);
             client.SnapshotChanged += Render;
             client.ConnectionChanged += OnConnection;
             if (client.Snapshot != null) Render(client.Snapshot);

@@ -12,6 +12,7 @@ namespace WarRoom3D
         private readonly HashSet<string> shownCauses = new HashSet<string>();
         private LiveStateClient client;
         private HistoryHudPresenter history;
+        private SectorBuilder sector;
         private Label banner;
         private Button toggle;
         private long cursor;
@@ -20,11 +21,14 @@ namespace WarRoom3D
         private bool reduced;
         private float hideAt;
         private string activeType;
+        private GameObject beacon;
+        private Material beaconMaterial;
 
-        public void Configure(VisualElement root, LiveStateClient liveClient, HistoryHudPresenter historyPresenter)
+        public void Configure(VisualElement root, LiveStateClient liveClient, HistoryHudPresenter historyPresenter, SectorBuilder sectorBuilder)
         {
             client = liveClient ?? throw new ArgumentNullException(nameof(liveClient));
             history = historyPresenter ?? throw new ArgumentNullException(nameof(historyPresenter));
+            sector = sectorBuilder ?? throw new ArgumentNullException(nameof(sectorBuilder));
             banner = root?.Q<Label>("effect-banner") ?? throw new ArgumentException("Banner de efeito ausente");
             toggle = root.Q<Button>("effects-toggle") ?? throw new ArgumentException("Controle de efeito ausente");
             banner.style.display = DisplayStyle.None;
@@ -104,18 +108,53 @@ namespace WarRoom3D
             banner.EnableInClassList("effect-alarm", effect.effectType == "ci.alarm");
             banner.style.display = DisplayStyle.Flex;
             hideAt = Time.realtimeSinceStartup + (reduced ? 1f : Mathf.Clamp(effect.durationMs / 1000f, 1f, 60f));
+            ShowBeacon(effect);
             return true;
         }
 
         private void Update()
         {
+            if (beacon != null && !reduced)
+                beacon.transform.localScale = Vector3.one * (0.55f + 0.12f * Mathf.Sin(Time.realtimeSinceStartup * 8f));
             if (banner != null && activeType != null && Time.realtimeSinceStartup >= hideAt) Hide();
+        }
+
+        private void ShowBeacon(HistoryEffect effect)
+        {
+            ClearBeacon();
+            var snapshot = client.Snapshot;
+            if (snapshot?.roomPlacements == null || string.IsNullOrEmpty(effect.projectId)) return;
+            var placement = Array.Find(snapshot.roomPlacements, item => item.projectId == effect.projectId && item.sectorId == "setor-01");
+            if (placement == null || !sector.Rooms.TryGetValue(placement.slotId, out var room)) return;
+            beacon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            beacon.name = "EffectBeacon:" + effect.projectId;
+            beacon.transform.SetParent(room, false);
+            beacon.transform.localPosition = new Vector3(0, 2.8f, 0);
+            beacon.transform.localScale = Vector3.one * 0.55f;
+            var collider = beacon.GetComponent<Collider>();
+            if (collider != null) Destroy(collider);
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (shader == null) { ClearBeacon(); return; }
+            var color = effect.effectType == "ci.alarm" ? new Color(0.95f, 0.14f, 0.08f) : new Color(1f, 0.72f, 0.18f);
+            beaconMaterial = new Material(shader) { color = color };
+            beaconMaterial.EnableKeyword("_EMISSION");
+            beaconMaterial.SetColor("_EmissionColor", color * 1.4f);
+            beacon.GetComponent<Renderer>().sharedMaterial = beaconMaterial;
+        }
+
+        private void ClearBeacon()
+        {
+            if (beacon != null) Destroy(beacon);
+            if (beaconMaterial != null) Destroy(beaconMaterial);
+            beacon = null;
+            beaconMaterial = null;
         }
 
         private void Hide()
         {
             activeType = null;
             if (banner != null) { banner.style.display = DisplayStyle.None; banner.EnableInClassList("effect-alarm", false); }
+            ClearBeacon();
         }
 
         private void OnDisable()

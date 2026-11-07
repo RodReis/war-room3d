@@ -2,6 +2,13 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — M4 em revisão técnica, provedores reais indisponíveis
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24) em rascunho; código publicado em `e1eccbce8190fba1f66f6f7055641988b8e84338`, sem merge.
+- Gateway de prévia/validação, idempotência, auditoria SQLite v16, recuperação incerta e API com credencial separada. Painel Unity ligado à cena live, com contexto/consequência e bloqueio demo/replay.
+- Provas locais: contratos 12/12, serviço 101/101 e typecheck; Unity EditMode 15/15, PlayMode 12/12; build Windows 172.334.593 bytes. Player sintético: clique duplo produz uma emissão no fake, mensagem confirmada, prévia de permissão e invalidação por replay/projeto; quatro capturas 1280×720. Gate negativo recusa sucesso sem confirmação. [Resultado e limites](validation/m4/resultado.md).
+- Claude/Codex reais sem prova de interface/versão/sessão; os adaptadores continuam indisponíveis. Sem hooks ou comandos a sessões pessoais. Interação nativa por mouse/teclado não executada por indisponibilidade do Computer Use. Issue aberta com `proplan:doing`; aceite funcional do PI pendente. CI deve ser conferido no SHA atual da PR.
+
 ## 06/11/2026 — Fundação documental
 
 - PRD/GDD e planos M0–M5 aprovados como referência de planejamento e publicados no repositório.

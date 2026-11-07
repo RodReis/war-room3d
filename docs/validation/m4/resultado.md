@@ -1,6 +1,6 @@
 # M4 — Interação assistida, issue #5
 
-Data: 07/11/2026. Base `c059be7`. Windows x64, Node.js 24.15.0, Unity 6000.3.27f1 / URP 17.3.0. Escopo autorizado: analisar e implementar a issue #5. Provedores reais permanecem sem habilitação; [matriz de capacidades](provider-matrix.md).
+Data: 07/11/2026. [PR #24](https://github.com/RodReis/war-room3d/pull/24), código em `e1eccbce8190fba1f66f6f7055641988b8e84338`. Base inicial `c059be7`; rebase sobre `64f8985` alterou apenas a projeção documental ProPlan da base. Windows x64, Node.js 24.15.0, Unity 6000.3.27f1 / URP 17.3.0. Escopo autorizado: analisar e implementar a issue #5. Provedores reais permanecem sem habilitação; [matriz de capacidades](provider-matrix.md).
 
 ## Implementação
 
@@ -28,7 +28,7 @@ Data: 07/11/2026. Base `c059be7`. Windows x64, Node.js 24.15.0, Unity 6000.3.27f
 | Gate negativo do Player | `pass` | `WR3D_M4_LAB_REJECT=1`, `Logs/m4-player-reviewed-negative/`: `receipt_missing`, Player exit 21 e script exit 1; o fake recebeu uma tentativa. O gate não trata recusa como sucesso |
 | Interação nativa com mouse/teclado | `not_run` | Computer Use retornou `Computer Use native pipe is unavailable` nas duas interfaces disponíveis |
 | Claude/Codex reais | `not_run` | Sem autorização de laboratório específico e sem adaptação M1 real; indisponíveis no produto normal |
-| CI no HEAD publicado | Ver PR | Conferir checks e SHA na PR; os resultados desta tabela são locais |
+| CI do código `e1eccbc` | `pass` | [Run 42387444297](https://github.com/RodReis/war-room3d/actions/runs/42387444297): Contratos 6 s e Serviço 12 s, ambos `SUCCESS`. Commits documentais posteriores exigem conferir novamente o HEAD na PR |
 
 ## Operação e limites
 

@@ -463,6 +463,29 @@ test('limite GitHub converte Retry-After em segundos e não marca coleta como co
   assert.deepEqual(coverage.gaps,[]);
 });
 
+test('GitHub 429 e limite secundário 403 aplicam pausa; coleta de PR e CI não concorre',async t=>{
+  const tooMany=new GitHubClient('',async()=>new Response('{}',{status:429,headers:{'retry-after':'3'}}));
+  await assert.rejects(()=>tooMany.get('/repos/owner-a/same'),error=>error instanceof GitHubRateLimitError && error.retryAfterMs===3000);
+  const secondary=new GitHubClient('',async()=>new Response(JSON.stringify({message:'You have exceeded a secondary rate limit.'}),{status:403}));
+  await assert.rejects(()=>secondary.get('/repos/owner-a/same'),error=>error instanceof GitHubRateLimitError && error.retryAfterMs===60000);
+  const denied=new GitHubClient('',async()=>new Response(JSON.stringify({message:'Resource not accessible'}),{status:403}));
+  await assert.rejects(()=>denied.get('/repos/owner-a/same'),/HTTP 403/);
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  let active=0,maxActive=0;
+  const client=new GitHubClient('',async input=>{
+    active++;maxActive=Math.max(maxActive,active);
+    await new Promise(resolve=>setTimeout(resolve,5));
+    active--;
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/same'))return new Response(JSON.stringify({id:42}),{status:200});
+    if(url.includes('/pulls?'))return new Response('[]',{status:200});
+    return new Response(JSON.stringify({workflow_runs:[]}),{status:200});
+  });
+  assert.equal((await pollLinkedRepositories(store,client)).errors.length,0);
+  assert.equal(maxActive,1);
+});
+
 test('ETag por página evita reprocessar respostas 304 e preserva próxima página',async()=>{
   const requests: {url:string;etag:string|undefined}[]=[];
   const client=new GitHubClient('',async (input,init)=>{

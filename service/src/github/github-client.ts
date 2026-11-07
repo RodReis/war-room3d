@@ -45,13 +45,19 @@ export class GitHubClient {
     const response = await this.fetcher(new URL(url, this.base), { headers });
     if (response.status === 304) return { status: 304, headers: response.headers, body: null };
     if (response.status === 401) throw new Error('Credencial GitHub recusada');
-    if (response.status === 403 && (response.headers.get('x-ratelimit-remaining') === '0' || response.headers.has('retry-after'))) {
-      const reset = Number(response.headers.get('x-ratelimit-reset'));
+    if (response.status === 403 || response.status === 429) {
+      const remaining = response.headers.get('x-ratelimit-remaining');
       const rawRetryAfter = response.headers.get('retry-after');
-      const seconds = rawRetryAfter === null ? NaN : Number(rawRetryAfter);
-      const retryAfterMs = Number.isFinite(seconds) ? seconds * 1000 : rawRetryAfter ? Date.parse(rawRetryAfter) - Date.now() : 0;
-      const resetMs = Number.isFinite(reset) && reset > 0 ? reset * 1000 - Date.now() : 0;
-      throw new GitHubRateLimitError(Math.max(0, Math.ceil(retryAfterMs || 0), Math.ceil(resetMs)));
+      const secondary = response.status === 403 && remaining !== '0' && !rawRetryAfter &&
+        /secondary rate limit|abuse detection|rate limit exceeded/i.test(await response.text());
+      if (response.status === 429 || remaining === '0' || rawRetryAfter || secondary) {
+        const reset = Number(response.headers.get('x-ratelimit-reset'));
+        const seconds = rawRetryAfter === null ? NaN : Number(rawRetryAfter);
+        const retryAfterMs = Number.isFinite(seconds) ? seconds * 1000 : rawRetryAfter ? Date.parse(rawRetryAfter) - Date.now() : 0;
+        const resetMs = Number.isFinite(reset) && reset > 0 ? reset * 1000 - Date.now() : 0;
+        const fallbackMs = (!rawRetryAfter && remaining !== '0') || (retryAfterMs <= 0 && resetMs <= 0) ? 60000 : 0;
+        throw new GitHubRateLimitError(Math.max(fallbackMs, Math.ceil(retryAfterMs || 0), Math.ceil(resetMs)));
+      }
     }
     if (!response.ok) throw new Error(`GitHub API retornou HTTP ${response.status}`);
     return { status: response.status, headers: response.headers, body: await response.json() as unknown };

@@ -153,7 +153,7 @@ test('migração v11 registra inventário legado só desde sua execução', t =>
   register(store);
   store.close();
   const db = new Database(databasePath);
-  db.exec("DROP TABLE infra_inventory_versions; DROP TABLE infra_status_events; UPDATE meta SET value=10 WHERE key='schema_version'");
+  db.exec("DROP TABLE history_github_observations; DROP TABLE infra_inventory_versions; DROP TABLE infra_status_events; UPDATE meta SET value=10 WHERE key='schema_version'");
   db.close();
   const migrated = new EventStore(databasePath);
   const check = new Database(databasePath);

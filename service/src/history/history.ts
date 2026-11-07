@@ -147,6 +147,19 @@ export class HistoryStore {
     return operation();
   }
 
+  recordGithubObservation(input: { eventId:string; sourceId:string; repositoryId:string; projectId:string; entityType:'pull_request'|'workflow'; entityId:string; transition:string; observedAt:string }): void {
+    this.db.prepare(`INSERT INTO history_github_observations(event_id,source_id,repository_id,project_id,entity_type,entity_id,transition,observed_at)
+      VALUES (?,?,?,?,?,?,?,?)`).run(input.eventId,input.sourceId,input.repositoryId,input.projectId,input.entityType,input.entityId,input.transition,input.observedAt);
+  }
+
+  githubObservationEvidence(input: { repositoryId:string; projectId:string; entityType:string; entityId:string; transition:string }, detailCutoffAt:string): {eventId:string;sourceId:string;observedAt:string}[] {
+    return (this.db.prepare(`SELECT event_id,source_id,observed_at FROM history_github_observations
+      WHERE repository_id=? AND project_id=? AND entity_type=? AND entity_id=? AND transition=? AND julianday(observed_at)>=julianday(?)
+      ORDER BY observed_at,event_id LIMIT 16`)
+      .all(input.repositoryId,input.projectId,input.entityType,input.entityId,input.transition,detailCutoffAt) as {event_id:string;source_id:string;observed_at:string}[])
+      .map(row=>({eventId:row.event_id,sourceId:row.source_id,observedAt:row.observed_at}));
+  }
+
   private recordEffectAndIncident(input: { repositoryId:string; projectId:string; entityType:'pull_request'|'workflow'; entityId:string; transition:string; occurredAt:string; payload:Record<string,unknown>; ingestionMode?:'live'|'backfill' }): void {
     const mode=input.ingestionMode??'live';
     if (input.entityType === 'pull_request' && input.transition === 'merged') {
@@ -201,7 +214,7 @@ export class HistoryStore {
         {causationId:r.causation_id,effectType:r.effect_type,projectId:r.project_id,occurredAt:r.occurred_at,durationMs:r.duration_ms,ingestionMode:r.ingestion_mode,parameters:JSON.parse(r.parameters_json)}]);
       const items = [
         ...events.map(r => ({ sequence:r.stream_sequence, item:{eventId:r.event_id,streamSequence:r.stream_sequence,...JSON.parse(r.event_json) as object,viewMode:'replay'} })),
-        ...milestones.map(r => ({ sequence:r.stream_sequence, item:{kind:'github.milestone',repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode,effects:effectsBySequence.get(r.stream_sequence)??[],streamSequence:r.stream_sequence,viewMode:'replay'} }))
+        ...milestones.map(r => ({ sequence:r.stream_sequence, item:{kind:'github.milestone',repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode,transcriptEvidence:this.githubObservationEvidence({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition},detailCutoffAt),effects:effectsBySequence.get(r.stream_sequence)??[],streamSequence:r.stream_sequence,viewMode:'replay'} }))
       ].sort((a,b)=>a.sequence-b.sequence);
       const page=items.slice(0,limit);
       return { viewMode:'replay' as const,fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };

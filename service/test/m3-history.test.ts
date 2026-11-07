@@ -171,7 +171,7 @@ test('migração v7 preserva vínculo existente na cobertura filtrada',t=>{
   original.history.markPollSuccess('42','2026-11-06T12:00:00Z',[],60000,'2026-11-06T12:00:01Z');
   original.close();
   const legacy=new Database(databasePath);
-  legacy.exec("DROP TABLE project_repository_link_periods; UPDATE meta SET value=7 WHERE key='schema_version'");
+  legacy.exec("DROP TABLE history_github_observations; DROP TABLE project_repository_link_periods; UPDATE meta SET value=7 WHERE key='schema_version'");
   legacy.close();
   migrated=new EventStore(databasePath);
   const coverage=migrated.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z','p1').githubCoverage as {attempts:number};
@@ -246,7 +246,7 @@ test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
   store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy-layout'});
   store.close();
   const db=new Database(dbPath);
-  db.exec("DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");
+  db.exec("DROP TABLE history_github_observations; DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");
   db.close();
   store=new EventStore(dbPath);
   const check=new Database(dbPath);
@@ -269,7 +269,7 @@ test('migração v9 registra presença de projeto antigo só a partir da migraç
   store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy'});
   store.close();
   const db=new Database(dbPath);
-  db.exec("DROP TABLE project_presence_evidence; UPDATE meta SET value=9 WHERE key='schema_version'");
+  db.exec("DROP TABLE history_github_observations; DROP TABLE project_presence_evidence; UPDATE meta SET value=9 WHERE key='schema_version'");
   db.close();
   store=new EventStore(dbPath);
   const past=store.historicalSnapshot(new Date(Date.now()-86400000).toISOString()) as {projects:unknown[]};
@@ -303,6 +303,34 @@ test('mesmo repositório vinculado a dois projetos preserva dois marcos e duas c
   assert.equal((firstPage.events[0] as {effects:unknown[]}).effects.length,1);
   assert.ok(firstPage.nextCursor);
   assert.equal((store.history.replay(firstPage.nextCursor!,1).events[0] as {effects:unknown[]}).effects.length,1);
+});
+
+test('transcript antes ou depois da API preserva um marco confirmado e uma celebração',t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'repo-1',owner:'owner',name:'repo',projectId:'p1'});
+  const at='2026-11-06T15:00:00Z';
+  const now='2026-11-07T15:00:00Z';
+  const observe=(eventId:string,entityId:string,offset:number,observedAt=at)=>store.apply({schemaVersion:'1.0',eventId,sourceEventId:eventId,
+    sourceId:'transcript-1',sourceVersion:'test',type:'github.observed',projectId:'p1',observedAt,receivedAt:at,
+    provenance:'observed',ingestionMode:'live',payload:{repositoryId:'repo-1',entityType:'pull_request',entityId,transition:'merged'},evidenceRefs:[]},
+    {sourceId:'transcript-1',fileKey:'synthetic',generation:1,offset});
+  const confirm=(entityId:string)=>store.history.recordGithubMilestone({repositoryId:'repo-1',projectId:'p1',entityType:'pull_request',entityId,
+    transition:'merged',occurredAt:at,payload:{number:Number(entityId)}});
+  assert.equal(observe('observado-1','101',1).applied,true);
+  assert.equal(store.history.replay(0,500,now).events.filter(e=>(e as {kind?:string}).kind==='github.milestone').length,0);
+  assert.equal(confirm('101'),true);
+  assert.equal(confirm('101'),false);
+  assert.equal(confirm('102'),true);
+  assert.equal(observe('observado-2','102',2).applied,true);
+  assert.equal(observe('observado-2','102',3).reason,'duplicate');
+  assert.equal(observe('observado-antigo','103',4,'2026-10-20T15:00:00Z').applied,true);
+  assert.equal(confirm('103'),true);
+  const milestones=store.history.replay(0,500,now).events.filter(e=>(e as {kind?:string}).kind==='github.milestone') as
+    {entityId:string;effects:{effectType:string}[];transcriptEvidence:{eventId:string;sourceId:string}[]}[];
+  assert.deepEqual(milestones.map(m=>m.entityId),['101','102','103']);
+  assert.deepEqual(milestones.map(m=>m.transcriptEvidence.map(e=>e.eventId)),[['observado-1'],['observado-2'],[]]);
+  assert.ok(milestones.every(m=>m.effects.length===1 && m.effects[0]?.effectType==='merge.celebration'));
+  assert.equal((store.history.daySummary('2026-11-06','UTC',now) as {milestones:unknown[]}).milestones.length,3);
 });
 
 test('polling simulado valida ID real, reconhece merge fora da sessão e não resolve CI de outro workflow',async t=>{

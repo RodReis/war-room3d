@@ -2,19 +2,20 @@
 
 Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`, sincronizada com `main` em `d584f45d75e6180248fd5b00e77d3d0655dc7522`.
 
-Atualização de 07/11/2026: PI aprovou a política inicial 7/90 dias; os limites de consulta abaixo estão implementados, com exclusão física ainda pendente.
+Atualização de 07/11/2026: PI aprovou a política inicial 7/90 dias; os limites de consulta abaixo estão implementados, com exclusão física integral ainda pendente.
 
 ## Evidência executada
 
 | Prova | Estado | Evidência |
 |---|---|---|
 | TypeScript estrito do serviço | `pass` | `cd service; npm run typecheck` |
-| Testes do serviço | `pass` | `cd service; npm test`; 83/83, Node 24.15.0 |
-| Contratos compartilhados | `pass` | `cd contracts; npm test`; 8/8 |
+| Testes do serviço | `pass` | `cd service; npm test`; 84/84, Node 24.15.0 |
+| Contratos compartilhados | `pass` | `cd contracts; npm test`; 9/9 |
 | Limites 7/90 de consulta | `pass` sintético | Replay omite eventos/marcos anteriores a 7 dias; projeção antiga responde `410 evidence_expired`; Meu dia entre 7 e 90 dias expõe contagens de marcos sem payload/URL, e dia expirado responde `410 aggregate_expired`. O serviço publica os cortes em `/v1/history/retention`; teste M3 com relógio fixo e HTTP autenticado. Manutenção remove efeitos expirados após 7 dias, incidentes resolvidos e tentativas de poll após 90 dias; incidente aberto permanece |
-| CI da PR #23 | `pass` pontual | [Run 42328279199](https://github.com/RodReis/war-room3d/actions/runs/42328279199), SHA `137e415784fa15d4c97a477ead329446b7080e20`: Contratos 5 s e Serviço 11 s, ambos `success`. Alterações posteriores exigem nova execução no HEAD |
+| CI da PR #23 | `pass` no HEAD anterior | [Run 42366963618](https://github.com/RodReis/war-room3d/actions/runs/42366963618), SHA `ad72f7e33b4eedd260e7b59c70930a54fad44c2b`: Contratos 7 s e Serviço 15 s, ambos `success`. O novo commit desta fatia exige CI própria no HEAD |
 | Repositório explicitamente vinculado | `pass` | Teste sintético usa ID opaco do GitHub; nome igual não cria associação |
 | Deduplicação de marco importado | `pass` | Chave por repositório/entidade/transição; desvincular preserva marco histórico |
+| Sinal de transcript e API GitHub | `pass` sintético | Evento normalizado `github.observed` guarda fonte, projeto e identidade GitHub explícita. O transcript sozinho não confirma merge nem gera efeito. API antes ou depois do sinal produz um marco confirmado e uma celebração; replay associa os IDs de evidência dentro da janela de 7 dias. O teste não representa um adaptador real de transcript |
 | Repositório compartilhado | `pass` | Dois projetos vinculados ao mesmo ID recebem marcos e efeitos próprios no teste sintético |
 | Evento tardio GitHub | `pass` | Marco descoberto após poll anterior, mas ocorrido antes do início dele, entra como `backfill` e não anima no live. Merge ocorrido durante a coleta anterior e visto só na próxima entra como `live`; o corte usa o início da última coleta bem-sucedida, preservado após reinício |
 | Paginação e proteção de credencial | `pass` | HTTP fake cobre páginas, `ETag`/`304` por página, token recusado, bloqueio de link para outra origem, nova associação de projeto e invalidação de cache após falha parcial. Cache ETag persiste só com poll concluído e sobrevive reinício em teste SQLite. PR e workflow são consultados em série; `403` secundário e `429` interrompem a rodada antes de outros repositórios e pausam a próxima conforme [limites REST do GitHub](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api). Prazo de pausa agora persiste no SQLite e é restaurado no reinício |
@@ -31,7 +32,7 @@ Atualização de 07/11/2026: PI aprovou a política inicial 7/90 dias; os limite
 ## Limites conhecidos
 
 - O PR adiciona serviço e painel Unity de consulta, mas não conclui o aceite da issue #4. O painel mostra marcos do dia, navega eventos, busca instante UTC e reproduz 1×/60×/180×/600×. A cena projeta marcadores de sessões apenas quando há posição registrada no instante; ainda não recupera presença completa de infraestrutura na cena 3D. O estado de infraestrutura na API usa inventários versionados e leituras observadas.
-- GitHub grava marcos de PR e tentativas concluídas de workflow. Deduplicação cruzada com eventos de transcript ainda não existe. Falha abre incidente por repositório/projeto/workflow/ref; sucesso posterior da mesma trilha resolve. Falhas históricas não viram incidentes ativos do dia atual. Meu dia e replay derivam intervalos CI dos marcos ordenados por instante, inclusive falhas tardias, sem alterar o incidente operacional atual.
+- GitHub grava marcos de PR e tentativas concluídas de workflow. A deduplicação cruzada agora tem contrato e store para observações normalizadas com o mesmo ID remoto da API, mas os adaptadores reais de transcript ainda não emitem esse tipo; portanto a prova é sintética. O sinal isolado permanece não confirmado. Falha abre incidente por repositório/projeto/workflow/ref; sucesso posterior da mesma trilha resolve. Falhas históricas não viram incidentes ativos do dia atual. Meu dia e replay derivam intervalos CI dos marcos ordenados por instante, inclusive falhas tardias, sem alterar o incidente operacional atual.
 - Os adaptadores reais de transcript Claude/Codex M1 seguem pendentes segundo `docs/DEVELOPMENT.md`. A issue #2 foi fechada pelo PI com comentário de planejamento; esse estado remoto não comprova ingestão operacional de sessões para a deduplicação cruzada M3.
 - Celebração de merge (8s) e alarme CI (5s) ficam persistidos com causa. `EffectDirector` apresenta banner e marcador emissivo 3D breve na sala vinculada no live, com redução de duração, prioridade de alarme e sem disparar backfill/replay; Unity também exibe texto equivalente no replay. A versão 3D é um sinal simples, ainda sem aceite visual do PI. Exclusão física após expiração e snapshots materializados faltam. A projeção temporal recalcula eventos e marcos desde o início e requer medição de desempenho com histórico maior.
 - Meu dia não afirma cobertura completa, custos ou produção de tokens. O store registra cadência e tentativas GitHub; declara lacuna apenas entre coletas observadas, pois vínculo de repositório não comprova que o coletor continuou habilitado após o último poll. Perda explícita de fonte gera segmento de lacuna; janelas esperadas de transcript ainda não existem.

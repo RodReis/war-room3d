@@ -34,7 +34,7 @@ export interface NormalizedEvent {
   agentKey?: string;
   provenance: string;
   ingestionMode: string;
-  payload: { parentAgentKey?: string; reason?: string };
+  payload: { parentAgentKey?: string; reason?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
   evidenceRefs: string[];
   [key: string]: unknown;
 }
@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 13) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 14) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -104,6 +104,9 @@ export class EventStore {
     })();
     if (schemaVersion < 13) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0013_github_retry_deadline.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 14) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0014_github_observations.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -227,7 +230,9 @@ export class EventStore {
   }
 
   private applyState(event: NormalizedEvent): void {
-    if (event.type.startsWith('session.')) {
+    if (event.type === 'github.observed') {
+      this.history.recordGithubObservation({eventId:event.eventId,sourceId:event.sourceId,projectId:event.projectId!,repositoryId:event.payload.repositoryId!,entityType:event.payload.entityType!,entityId:event.payload.entityId!,transition:event.payload.transition!,observedAt:event.observedAt});
+    } else if (event.type.startsWith('session.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null } | undefined;
       if (row && (row.project_id !== event.projectId || row.source_id !== event.sourceId || row.provider !== event.provider)) throw new Error('Identidade de sessão colide com outro contexto');

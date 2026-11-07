@@ -5,7 +5,7 @@ Data: 07/11/2026. Issue [#5](https://github.com/RodReis/war-room3d/issues/5). Es
 | Provedor / integração | Versão comprovada para comando | Mensagem | Pergunta | Permissão | Resultado |
 |---|---|---|---|---|---|
 | Claude Code real em laboratório | `2.1.319`, sessão nova encerrada ao final | Recibo CLI comprovado pontualmente; indisponível fora do alvo ensaiado | Indisponível | Indisponível | `pass` pontual: uma mensagem, eco correlacionado e auditoria; [prova Windows](claude-windows.md); não atesta conclusão do modelo |
-| Codex real | Sem prova de entrega; CLI local `0.166.0` | Indisponível | Indisponível | Indisponível | `not_run`: fábrica app-server preparada e schema local conferido; falta laboratório autorizado |
+| Codex real | Sem prova de entrega; CLI local `0.166.0` | Indisponível | Indisponível | Indisponível | `not_run`: [laboratório preparado](codex-laboratorio.md), pré-testes sintéticos e schema local; falta autorização específica e prova real |
 | Fábricas de canal vinculado | Codex `0.166.0`, Claude `2.1.319` | Testes sintéticos de protocolo | Indisponível | Indisponível | [Continuação](protocolos.md); não recebem canal/sessão automaticamente do serviço normal |
 | Adaptador falso dos testes | `fake-1`, `lab-1` / `test-1` | Exercitada sinteticamente | Exercitada sinteticamente | Exercitada sinteticamente | Testes de gateway/HTTP; nunca invoca CLI, hook, shell ou sessão real |
 | Laboratório explícito do Player | `synthetic-adapter-1` / `synthetic-1` | Disponível só no laboratório | Disponível só no laboratório | Disponível só no laboratório | `service/scripts/m4-synthetic-lab.mjs`; tokens e SQLite temporários, sem provedor externo |

@@ -18,7 +18,7 @@ Permissão e pergunta permanecem indisponíveis nesta fatia. Não inferir confir
 - [x] Implementar fábricas em `codex.ts`/`claude.ts`, mantendo exports padrão indisponíveis.
 - [x] Integrar adaptador de protocolo com gateway/auditoria no teste sintético; clique duplo, timeout e revogação não podem duplicar mensagem.
 - [x] Preparar roteiro reproduzível para laboratório real, com destinatários descartáveis e limites explícitos. O ensaio real exige autorização específica conforme AGENTS.md; autenticações e sessões pessoais não serão inspecionadas.
-- [ ] Validar contratos/serviço, revisar diff, atualizar matriz/evidências, publicar na mesma PR e conferir CI no HEAD.
+- [x] Validar contratos/serviço, revisar diff, atualizar matriz/evidências, publicar na mesma PR e conferir CI no HEAD. Protocolos em `e769409`, prova Claude em `bec34ae`, ambos com CI aprovado; laboratório Codex posterior em [evidência própria](../../validation/m4/codex-laboratorio.md).
 
 ## Fontes
 

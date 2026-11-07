@@ -7,6 +7,10 @@ import Ajv from 'ajv';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const directory = path.join(root, 'Logs', 'm4-protocol-codex-0.166.0');
 const samples = [
+  ['v1/InitializeParams', {clientInfo:{name:'war-room3d-m4-lab',version:'1.0.0'}}],
+  ['v2/ConfigReadParams', {cwd:root,includeLayers:false}],
+  ['v2/ThreadStartParams', {cwd:root,ephemeral:true,approvalPolicy:'never',sandbox:'read-only',
+    developerInstructions:'Laboratório sintético. Não use ferramentas nem leia arquivos. Responda somente ao texto sintético recebido.'}],
   ['v2/TurnStartParams', {threadId:'synthetic-thread',input:[{type:'text',text:'Mensagem sintética M4'}],clientUserMessageId:'00000000-0000-4000-8000-000000000001'}],
   ['v2/TurnStartResponse', {turn:{id:'synthetic-turn',status:'inProgress',items:[]}}],
   ['v2/TurnSteerParams', {threadId:'synthetic-thread',expectedTurnId:'synthetic-turn',input:[{type:'text',text:'Mensagem sintética M4'}]}],

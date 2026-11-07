@@ -43,7 +43,7 @@ Outra regressão de protocolo confirmou que uma resposta Codex sem `items` obrig
 - `--safe-mode`, `--restricted`, `--tools ""`, MCP vazio e estrito, permissões `dontAsk`/`none`; limite de US$ 0,10 pelo CLI e timeout local de 30 s. Sem alteração de configurações persistentes.
 - Grava intenção/estados redigidos antes/depois do envio. Nunca grava stdout/stderr bruto, token ou conteúdo de conversas. A confirmação significa recebimento correlacionado; não atesta conclusão de inferência. O processo descartável de laboratório é encerrado ao final; esse ciclo não é uma função do produto.
 
-Após o PI autorizar o escopo acima, o roteiro foi executado uma vez com `--run` no código `e769409`: recibo `confirmed`, sem retry e processo descartável encerrado. [Auditoria, hashes e limites](claude-windows.md). Não há autorização para outro envio. Preparação Codex está limitada ao schema e adaptador até definir isolamento e laboratório próprios, sem reutilizar autorização de Claude.
+Após o PI autorizar o escopo acima, o roteiro foi executado uma vez com `--run` no código `e769409`: recibo `confirmed`, sem retry e processo descartável encerrado. [Auditoria, hashes e limites](claude-windows.md). Não há autorização para outro envio. O [laboratório Codex](codex-laboratorio.md) agora possui roteiro opt-in e pré-testes sintéticos; o envio real permanece `not_run`, sem reutilizar autorização de Claude. Seus limites de sandbox, ferramentas internas residuais e ausência de teto monetário são explícitos.
 
 ## Fontes de protocolo
 

@@ -10,11 +10,12 @@ updated: 2026-11-07
 ### Sem épico
 
 - M5 — Logs, rede e segurança operacional (#6)
-- M4 — Mensagens e permissões assistidas (#5)
 
 ## A Fazer
 
-_(vazio)_
+### Sem épico
+
+- M4 — Mensagens e permissões assistidas (#5)
 
 ## Em Andamento
 

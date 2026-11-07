@@ -160,18 +160,23 @@ export class HistoryStore {
 
   replay(cursor: number, limit = 500): { viewMode: 'replay'; fromSequence: number; throughSequence: number; events: unknown[]; nextCursor: number | null; hasMore: boolean } {
     if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw new Error('Cursor de replay inválido');
-    const events = this.db.prepare('SELECT event_id, stream_sequence, event_json FROM events WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as EventRow[];
-    const milestones = this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode,stream_sequence FROM history_milestones WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string;stream_sequence:number}[];
-    const effects = this.db.prepare('SELECT causation_id,effect_type,project_id,occurred_at,duration_ms,parameters_json,ingestion_mode,stream_sequence FROM history_effects WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {causation_id:string;effect_type:string;project_id:string;occurred_at:string;duration_ms:number;parameters_json:string;ingestion_mode:string;stream_sequence:number}[];
-    const effectsBySequence = new Map<number,unknown[]>();
-    for (const r of effects) effectsBySequence.set(r.stream_sequence,[...(effectsBySequence.get(r.stream_sequence)??[]),
-      {causationId:r.causation_id,effectType:r.effect_type,projectId:r.project_id,occurredAt:r.occurred_at,durationMs:r.duration_ms,ingestionMode:r.ingestion_mode,parameters:JSON.parse(r.parameters_json)}]);
-    const items = [
-      ...events.map(r => ({ sequence:r.stream_sequence, item:{eventId:r.event_id,streamSequence:r.stream_sequence,...JSON.parse(r.event_json) as object,viewMode:'replay'} })),
-      ...milestones.map(r => ({ sequence:r.stream_sequence, item:{kind:'github.milestone',repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode,effects:effectsBySequence.get(r.stream_sequence)??[],streamSequence:r.stream_sequence,viewMode:'replay'} }))
-    ].sort((a,b)=>a.sequence-b.sequence);
-    const page=items.slice(0,limit);
-    return { viewMode:'replay',fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };
+    return this.db.transaction(() => {
+      const baseline=(this.db.prepare("SELECT value FROM meta WHERE key='replay_baseline'").get() as {value:number}).value;
+      const current=(this.db.prepare("SELECT value FROM meta WHERE key='stream_sequence'").get() as {value:number}).value;
+      if(cursor<baseline || cursor>current)throw new Error('Cursor de replay indisponível');
+      const events = this.db.prepare('SELECT event_id, stream_sequence, event_json FROM events WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as EventRow[];
+      const milestones = this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode,stream_sequence FROM history_milestones WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string;stream_sequence:number}[];
+      const effects = this.db.prepare('SELECT causation_id,effect_type,project_id,occurred_at,duration_ms,parameters_json,ingestion_mode,stream_sequence FROM history_effects WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {causation_id:string;effect_type:string;project_id:string;occurred_at:string;duration_ms:number;parameters_json:string;ingestion_mode:string;stream_sequence:number}[];
+      const effectsBySequence = new Map<number,unknown[]>();
+      for (const r of effects) effectsBySequence.set(r.stream_sequence,[...(effectsBySequence.get(r.stream_sequence)??[]),
+        {causationId:r.causation_id,effectType:r.effect_type,projectId:r.project_id,occurredAt:r.occurred_at,durationMs:r.duration_ms,ingestionMode:r.ingestion_mode,parameters:JSON.parse(r.parameters_json)}]);
+      const items = [
+        ...events.map(r => ({ sequence:r.stream_sequence, item:{eventId:r.event_id,streamSequence:r.stream_sequence,...JSON.parse(r.event_json) as object,viewMode:'replay'} })),
+        ...milestones.map(r => ({ sequence:r.stream_sequence, item:{kind:'github.milestone',repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode,effects:effectsBySequence.get(r.stream_sequence)??[],streamSequence:r.stream_sequence,viewMode:'replay'} }))
+      ].sort((a,b)=>a.sequence-b.sequence);
+      const page=items.slice(0,limit);
+      return { viewMode:'replay' as const,fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };
+    })();
   }
 
   ciIncidentsAt(at: string): Omit<CiIncidentInterval,'resolvedAt'>[] {

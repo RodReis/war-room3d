@@ -530,3 +530,32 @@ test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados n
   assert.equal((await fetch(`${url}/v1/history/replay/state?at=invalid`,{headers})).status,400);
   assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'})).status,405);
 });
+
+test('replay recusa cursor expirado ou futuro e aceita limite da janela',async t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-replay-cursor-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  const store=new EventStore(dbPath);
+  let server: Awaited<ReturnType<typeof startReadOnlyServer>>['server']|null=null;
+  t.after(()=>{server?.closeAllConnections();server?.close();store.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\synthetic'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  assert.equal(store.history.recordGithubMilestone({repositoryId:'42',projectId:'p1',entityType:'pull_request',entityId:'7',
+    transition:'merged',occurredAt:'2026-11-06T15:00:00Z',payload:{number:7}}),true);
+  const db=new Database(dbPath);
+  db.prepare("UPDATE meta SET value=2 WHERE key='transport_baseline'").run();
+  assert.equal(store.history.replay(0,10).events.length,1);
+  db.prepare("UPDATE meta SET value=1 WHERE key='replay_baseline'").run();
+  db.close();
+  assert.throws(()=>store.history.replay(0,10),/indisponível/);
+  assert.equal(store.history.replay(1,10).events.length,1);
+  assert.throws(()=>store.history.replay(3,10),/indisponível/);
+  const token=randomBytes(32).toString('hex');
+  const started=await startReadOnlyServer(store,token);server=started.server;
+  const headers={Authorization:`Bearer ${token}`};
+  for(const cursor of [0,3]){
+    const response=await fetch(`${started.url}/v1/history/replay?cursor=${cursor}`,{headers});
+    assert.equal(response.status,409);
+    assert.deepEqual(await response.json(),{code:'resync_required'});
+  }
+  assert.equal((await fetch(`${started.url}/v1/history/replay?cursor=1`,{headers})).status,200);
+});

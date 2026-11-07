@@ -69,7 +69,9 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
         const cursor = parseCursor(parsedUrl.searchParams.get('cursor') ?? '0');
         const limit = Number(parsedUrl.searchParams.get('limit') ?? '500');
         if (cursor === null || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000 || [...parsedUrl.searchParams.keys()].some(k => !['cursor','limit'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
-        sendJson(response, 200, store.history.replay(cursor, limit)); return;
+        try { sendJson(response, 200, store.history.replay(cursor, limit)); }
+        catch (error) { if (error instanceof Error && error.message==='Cursor de replay indisponível') sendJson(response, 409, {code:'resync_required'}); else throw error; }
+        return;
       }
       if (parsedUrl.pathname === '/v1/history/replay/state') {
         const at = parsedUrl.searchParams.get('at');

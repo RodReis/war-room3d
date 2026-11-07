@@ -19,6 +19,7 @@ namespace WarRoom3D
         public LiveResource[] resources;
         public LiveResourceState[] resourceStates;
         public LiveIncident[] incidents;
+        public ReplayCiIncident[] ciIncidents;
         public ReplayCoverage coverage;
 
         public static LiveSnapshot Parse(string json, string expectedMode = "live")
@@ -30,7 +31,7 @@ namespace WarRoom3D
                 snapshot.projects == null || snapshot.roomPlacements == null || snapshot.sessions == null || snapshot.agents == null || snapshot.feed == null ||
                 snapshot.resources == null || snapshot.resourceStates == null || snapshot.incidents == null)
                 throw new ArgumentException("Contrato live incompatível");
-            if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null))
+            if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null || snapshot.ciIncidents == null))
                 throw new ArgumentException("Cobertura do replay incompatível");
             var projects = new HashSet<string>();
             foreach (var project in snapshot.projects)
@@ -81,4 +82,5 @@ namespace WarRoom3D
     }
     [Serializable] public sealed class LiveIncident { public string incidentId; public string resourceId; public string[] projectIds; }
     [Serializable] public sealed class ReplayCoverage { public string status; public HistoryGap[] gaps; }
+    [Serializable] public sealed class ReplayCiIncident { public string incidentId; public string projectId; public string repositoryId; public long workflowId; public string @ref; public string openedAt; }
 }

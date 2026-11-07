@@ -224,6 +224,42 @@ test('falha CI mantém incidente; só rerun do mesmo workflow e ref resolve; rep
   assert.equal(replay.events.map(e=>(e as {effects?:unknown[]}).effects?.length??0).reduce((sum,count)=>sum+count,0),2);
 });
 
+test('incidente CI atravessa dias e replay mostra apenas o estado no instante',t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'repo-1',owner:'owner-a',name:'same',projectId:'p1'});
+  const base={repositoryId:'repo-1',projectId:'p1',entityType:'workflow' as const,entityId:'7:99:main:sha-a',
+    payload:{workflowId:7,runId:99,attempt:1,ref:'main',headSha:'sha-a',url:'https://github.com/o/r/actions/runs/99'}};
+  assert.equal(store.history.recordGithubMilestone({...base,transition:'attempt-1-failure',occurredAt:'2026-11-05T14:00:00Z'}),true);
+  const active=store.historicalSnapshot('2026-11-06T12:00:00Z') as {ciIncidents:{workflowId:number;ref:string}[]};
+  assert.deepEqual(active.ciIncidents.map(x=>[x.workflowId,x.ref]),[[7,'main']]);
+  const before=store.historicalSnapshot('2026-11-05T13:00:00Z') as {ciIncidents:unknown[]};
+  assert.deepEqual(before.ciIncidents,[]);
+  assert.equal(store.history.recordGithubMilestone({...base,transition:'attempt-2-success',occurredAt:'2026-11-07T14:00:00Z',
+    payload:{...base.payload,attempt:2}}),true);
+  const historical=store.historicalSnapshot('2026-11-06T12:00:00Z') as {ciIncidents:Record<string,unknown>[]};
+  assert.equal(historical.ciIncidents.length,1);
+  assert.equal('lastAttempt' in historical.ciIncidents[0]!,false);
+  assert.equal('evidenceUrl' in historical.ciIncidents[0]!,false);
+  const carried=store.history.daySummary('2026-11-06','UTC','2026-11-08T00:00:00Z').incidentMarkers as
+    {openedBeforeDay:boolean;resolvedAt:string|null;activeAtEnd:boolean}[];
+  assert.equal(carried.length,1);
+  assert.deepEqual([carried[0]!.openedBeforeDay,carried[0]!.resolvedAt,carried[0]!.activeAtEnd],[true,null,true]);
+  const resolved=store.history.daySummary('2026-11-07','UTC','2026-11-08T00:00:00Z').incidentMarkers as
+    {openedBeforeDay:boolean;resolvedAt:string|null;activeAtEnd:boolean}[];
+  assert.deepEqual([resolved[0]!.openedBeforeDay,resolved[0]!.resolvedAt,resolved[0]!.activeAtEnd],
+    [true,'2026-11-07T14:00:00Z',false]);
+  assert.equal((store.historicalSnapshot('2026-11-07T13:00:00Z') as {ciIncidents:unknown[]}).ciIncidents.length,1);
+  assert.equal((store.historicalSnapshot('2026-11-07T15:00:00Z') as {ciIncidents:unknown[]}).ciIncidents.length,0);
+  const lateBase={...base,entityId:'8:100:main:sha-b',payload:{...base.payload,workflowId:8,runId:100,headSha:'sha-b'}};
+  assert.equal(store.history.recordGithubMilestone({...lateBase,transition:'attempt-2-success',occurredAt:'2026-11-07T15:00:00Z',
+    payload:{...lateBase.payload,attempt:2}}),true);
+  assert.equal(store.history.recordGithubMilestone({...lateBase,transition:'attempt-1-failure',occurredAt:'2026-11-05T15:00:00Z'}),true);
+  const lateDay=store.history.daySummary('2026-11-06','UTC','2026-11-08T00:00:00Z').incidentMarkers as {workflowId:number}[];
+  assert.deepEqual(lateDay.map(x=>x.workflowId),[7,8]);
+  assert.deepEqual((store.historicalSnapshot('2026-11-06T12:00:00Z') as {ciIncidents:{workflowId:number}[]}).ciIncidents.map(x=>x.workflowId),[7,8]);
+  assert.equal((store.historicalSnapshot('2026-11-07T16:00:00Z') as {ciIncidents:unknown[]}).ciIncidents.length,0);
+});
+
 test('primeira coleta é backfill; novas transições são live sem repetir efeito',async t=>{
   const store=storeFor(t);
   store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});

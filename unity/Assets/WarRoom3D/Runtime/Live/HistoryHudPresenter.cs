@@ -145,14 +145,15 @@ namespace WarRoom3D
                     " · projeto " + milestone.projectId + (milestone.ingestionMode == "backfill" ? " · histórico importado" : "")));
             }
             foreach (var incident in day.incidentMarkers)
-                timeline.Add(new Label(incident.openedAt + " · CI com falha · workflow " + incident.workflowId +
-                    " · " + incident.@ref + (string.IsNullOrEmpty(incident.resolvedAt) ? " · sem recuperação registrada" : " · recuperado " + incident.resolvedAt)));
+                timeline.Add(new Label((incident.openedBeforeDay ? "CI ativo desde " : "CI com falha em ") + incident.openedAt +
+                    " · workflow " + incident.workflowId + " · " + incident.@ref +
+                    (string.IsNullOrEmpty(incident.resolvedAt) ? " · sem recuperação no período" : " · recuperado " + incident.resolvedAt)));
             foreach (var gap in day.coverage.gaps)
                 if (gap.reason == "source_unavailable")
                     timeline.Add(new Label(gap.start + "–" + gap.end + " · fonte " + gap.sourceId + " indisponível"));
             foreach (var gap in day.githubCoverage.gaps)
                 timeline.Add(new Label(gap.start + "–" + gap.end + " · janela GitHub sem coleta · repositório " + gap.repositoryId));
-            if (day.milestones.Length == 0 && day.incidentMarkers.Length == 0) timeline.Add(new Label("Nenhum marco registrado neste dia."));
+            if (timeline.contentContainer.childCount == 0) timeline.Add(new Label("Nenhum marco registrado neste dia."));
         }
 
         private IEnumerator LoadReplay(long cursor, long? previousCursor = null, bool backward = false)
@@ -302,6 +303,8 @@ namespace WarRoom3D
                         coverage.text = state.coverage.status == "gap"
                             ? "LACUNA · fonte indisponível em " + at + ". Estado exibido com incerteza."
                             : "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
+                        if (state.ciIncidents.Length > 0)
+                            coverage.text += " CI: " + state.ciIncidents.Length + " incidente(s) ativo(s) neste instante.";
                     }
                     catch (ArgumentException) { coverage.text = "Estado histórico incompatível."; }
                 }
@@ -391,7 +394,7 @@ namespace WarRoom3D
     [Serializable] public sealed class HistoryGithubCoverage { public string status; public int attempts; public int successfulAttempts; public int failedAttempts; public HistoryGap[] gaps; }
     [Serializable] public sealed class HistoryGap { public string sourceId; public string repositoryId; public string start; public string end; public string reason; }
     [Serializable] public sealed class HistoryMilestone { public string projectId; public string entityType; public string transition; public string occurredAt; public string ingestionMode; }
-    [Serializable] public sealed class HistoryIncident { public long workflowId; public string @ref; public string openedAt; public string resolvedAt; }
+    [Serializable] public sealed class HistoryIncident { public long workflowId; public string @ref; public string openedAt; public bool openedBeforeDay; public string resolvedAt; public bool activeAtEnd; }
     [Serializable]
     public sealed class HistoryReplayPage
     {

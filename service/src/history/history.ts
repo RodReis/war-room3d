@@ -12,6 +12,16 @@ export interface RepositoryLink {
   linkedAt: string;
 }
 
+interface CiIncidentInterval {
+  incidentId: string;
+  repositoryId: string;
+  projectId: string;
+  workflowId: number;
+  ref: string;
+  openedAt: string;
+  resolvedAt: string | null;
+}
+
 export class HistoryStore {
   private readonly db: Database.Database;
   constructor(db: Database.Database) { this.db = db; }
@@ -141,6 +151,37 @@ export class HistoryStore {
     return { viewMode:'replay',fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };
   }
 
+  ciIncidentsAt(at: string): Omit<CiIncidentInterval,'resolvedAt'>[] {
+    return this.ciIncidentIntervals().filter(row=>compareTimestamp(row.openedAt,at)<=0 &&
+      (!row.resolvedAt || compareTimestamp(row.resolvedAt,at)>0))
+      .map(({resolvedAt: _resolvedAt,...row})=>row);
+  }
+
+  private ciIncidentIntervals(): CiIncidentInterval[] {
+    const rows=this.db.prepare("SELECT repository_id,project_id,transition,occurred_at,payload_json,stream_sequence FROM history_milestones WHERE entity_type='workflow' AND (transition LIKE 'attempt-%-failure' OR transition LIKE 'attempt-%-success')").all() as
+      {repository_id:string;project_id:string;transition:string;occurred_at:string;payload_json:string;stream_sequence:number}[];
+    rows.sort((a,b)=>compareTimestamp(a.occurred_at,b.occurred_at)||
+      Number(a.transition.endsWith('-success'))-Number(b.transition.endsWith('-success'))||a.stream_sequence-b.stream_sequence);
+    const active=new Map<string,CiIncidentInterval>();
+    const intervals:CiIncidentInterval[]=[];
+    for(const row of rows){
+      const payload=JSON.parse(row.payload_json) as Record<string,unknown>;
+      const workflowId=Number(payload.workflowId);const runId=Number(payload.runId);
+      const attempt=Number(/^attempt-(\d+)-/.exec(row.transition)?.[1]);
+      const ref=typeof payload.ref==='string'?payload.ref:'';
+      if(![workflowId,runId,attempt].every(Number.isSafeInteger)||!ref)continue;
+      const key=JSON.stringify([row.repository_id,row.project_id,workflowId,ref]);
+      const current=active.get(key);
+      if(row.transition.endsWith('-failure')){
+        if(current)continue;
+        const interval={incidentId:JSON.stringify([row.project_id,row.repository_id,workflowId,ref,runId,attempt]),
+          repositoryId:row.repository_id,projectId:row.project_id,workflowId,ref,openedAt:row.occurred_at,resolvedAt:null};
+        active.set(key,interval);intervals.push(interval);
+      }else if(current){current.resolvedAt=row.occurred_at;active.delete(key);}
+    }
+    return intervals;
+  }
+
   daySummary(date: string, timeZone: string, now = new Date().toISOString()): Record<string, unknown> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data inválida');
     new Intl.DateTimeFormat('pt-BR', { timeZone }).format(new Date(`${date}T12:00:00Z`));
@@ -166,6 +207,12 @@ export class HistoryStore {
     const successfulAttempts = githubAttempts.filter(x=>x.status==='success');
     const failedAttempts = githubAttempts.filter(x=>x.status!=='success');
     const gaps = githubPollGaps(githubHistory,dayStart,dayEnd,Date.parse(now));
+    const asOfEnd = Math.min(dayEnd,Date.parse(now));
+    const incidentMarkers = this.ciIncidentIntervals().filter(row=>asOfEnd>dayStart && Date.parse(row.openedAt)<asOfEnd &&
+      (!row.resolvedAt || Date.parse(row.resolvedAt)>dayStart))
+      .map(row=>({...row,openedBeforeDay:Date.parse(row.openedAt)<dayStart,
+        resolvedAt:row.resolvedAt && Date.parse(row.resolvedAt)<asOfEnd ? row.resolvedAt : null,
+        activeAtEnd:!row.resolvedAt || Date.parse(row.resolvedAt)>asOfEnd}));
     return { date, timeZone, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
       agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
       waitingDurationMs:waitingMs,waitingDurationKnown:waitingMs!==null,
@@ -177,7 +224,7 @@ export class HistoryStore {
         lastSuccessfulPollAt:successfulAttempts.at(-1)?.completed_at??null,
         gaps },
       milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[]).map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
-      incidentMarkers: (this.db.prepare('SELECT incident_id,repository_id,project_id,workflow_id,run_id,ref,head_sha,opened_at,resolved_at,last_attempt,evidence_url FROM history_incidents WHERE (opened_at>=? AND opened_at<?) OR (resolved_at>=? AND resolved_at<?) ORDER BY opened_at').all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString(),new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {incident_id:string;repository_id:string;project_id:string;workflow_id:number;run_id:number;ref:string;head_sha:string;opened_at:string;resolved_at:string|null;last_attempt:number;evidence_url:string}[]).map(r=>({incidentId:r.incident_id,repositoryId:r.repository_id,projectId:r.project_id,workflowId:r.workflow_id,runId:r.run_id,ref:r.ref,headSha:r.head_sha,openedAt:r.opened_at,resolvedAt:r.resolved_at,lastAttempt:r.last_attempt,evidenceUrl:r.evidence_url})), costs: null };
+      incidentMarkers, costs: null };
   }
 }
 

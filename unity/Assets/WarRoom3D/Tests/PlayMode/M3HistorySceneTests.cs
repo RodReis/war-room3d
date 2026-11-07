@@ -99,6 +99,7 @@ namespace WarRoom3D.Tests
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Tempo decorrido"));
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Match("Espera observada: 0[.,]5 h"));
                 Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.childCount, Is.EqualTo(3));
+                Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.Q<Label>().text, Does.StartWith("CI ativo desde"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("lacuna"));
                 history.SendMessage("BeginReplay");
                 deadline = Time.realtimeSinceStartup + 5f;
@@ -114,6 +115,7 @@ namespace WarRoom3D.Tests
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-coverage").text.Contains("15:10:00Z")) yield return null;
                 Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Not.Null);
                 Assert.That(root.Q<Label>("history-coverage").text, Does.StartWith("LACUNA"));
+                Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("CI: 1 incidente(s) ativo(s)"));
                 history.SendMessage("CycleSpeed");
                 Assert.That(root.Q<Button>("history-speed").text, Is.EqualTo("60×"));
                 history.SendMessage("TogglePlayback");
@@ -166,8 +168,15 @@ namespace WarRoom3D.Tests
                         first != null && first.Contains("/v1/history/replay?") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":0,\"throughSequence\":1,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":1,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\",\"effects\":[]}]}" :
                         "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"waitingDurationMs\":1800000,\"waitingDurationKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2,\"gaps\":[{\"sourceId\":\"source1\",\"start\":\"2026-11-06T15:00:00Z\",\"end\":\"2026-11-06T15:05:00Z\",\"reason\":\"source_unavailable\"}]},\"githubCoverage\":{\"status\":\"partial\",\"attempts\":2,\"successfulAttempts\":1,\"failedAttempts\":1,\"gaps\":[{\"repositoryId\":\"42\",\"start\":\"2026-11-06T15:01:00Z\",\"end\":\"2026-11-06T15:06:00Z\",\"reason\":\"rate_limited\"}]},\"milestones\":[],\"incidentMarkers\":[]}";
+                    if (first != null && first.Contains("/v1/history/replay/state?at="))
+                        body = body.Replace("\"incidents\":[],\"coverage\"", "\"incidents\":[],\"ciIncidents\":[],\"coverage\"");
                     if (first != null && first.Contains("15%3A10%3A00Z"))
+                    {
                         body = body.Replace("\"status\":\"unknown\",\"gaps\":[]", "\"status\":\"gap\",\"gaps\":[{\"sourceId\":\"source1\",\"reason\":\"source_unavailable\"}]");
+                        body = body.Replace("\"ciIncidents\":[]", "\"ciIncidents\":[{\"incidentId\":\"ci-1\",\"projectId\":\"p1\",\"repositoryId\":\"42\",\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\"}]");
+                    }
+                    if (first != null && first.Contains("/v1/history/day?"))
+                        body = body.Replace("\"incidentMarkers\":[]", "\"incidentMarkers\":[{\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\",\"openedBeforeDay\":true,\"resolvedAt\":null,\"activeAtEnd\":true}]");
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                     await stream.WriteAsync(header, 0, header.Length);

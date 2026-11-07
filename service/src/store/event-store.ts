@@ -267,6 +267,7 @@ export class EventStore {
       projects: this.db.prepare('SELECT project_id,name FROM projects ORDER BY project_id').all() as {project_id:string;name:string}[],
       placements: this.db.prepare('SELECT project_id,sector_id,slot_id,layout_version FROM room_placements ORDER BY project_id').all() as {project_id:string;sector_id:string;slot_id:string;layout_version:string}[],
       events: this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE substr(json_extract(event_json,'$.observedAt'),1,19)<=?").all(at.slice(0,19)) as {stream_sequence:number;event_json:string}[],
+      ciIncidents: this.history.ciIncidentsAt(at),
       revision: this.number('revision'),
       streamSequence: this.number('stream_sequence')
     }))();
@@ -291,7 +292,7 @@ export class EventStore {
       const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
       const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
       return { ...state, mode:'replay', at, revision:input.revision, streamSequence:input.streamSequence,
-        feed, capabilities:['sessions','agents','feed'], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
+        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents'], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
           reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
     } finally { projection.close(); }
   }

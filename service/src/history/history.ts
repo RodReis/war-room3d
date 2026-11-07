@@ -121,12 +121,21 @@ export class HistoryStore {
       .map(row=>({url:row.url,etag:row.etag,next:row.next_url}));
   }
 
-  pruneExpired(now = new Date().toISOString()): { effects: number; resolvedIncidents: number; pollAttempts: number } {
+  pruneExpired(now = new Date().toISOString()): { effects: number; resolvedIncidents: number; pollAttempts: number; scrubbedMilestones: number; scrubbedEventEvidence: number; observations: number } {
     const {detailCutoffAt,aggregateCutoffAt}=retentionCutoffs(now);
     return this.db.transaction(() => ({
       effects:this.db.prepare('DELETE FROM history_effects WHERE julianday(occurred_at)<julianday(?)').run(detailCutoffAt).changes,
       resolvedIncidents:this.db.prepare('DELETE FROM history_incidents WHERE resolved_at IS NOT NULL AND julianday(resolved_at)<julianday(?)').run(aggregateCutoffAt).changes,
-      pollAttempts:this.db.prepare('DELETE FROM github_poll_attempts WHERE julianday(completed_at)<julianday(?)').run(aggregateCutoffAt).changes
+      pollAttempts:this.db.prepare('DELETE FROM github_poll_attempts WHERE julianday(completed_at)<julianday(?)').run(aggregateCutoffAt).changes,
+      scrubbedMilestones:this.db.prepare(`UPDATE history_milestones SET payload_json=CASE WHEN entity_type='workflow'
+        THEN json_object('workflowId',json_extract(payload_json,'$.workflowId'),'runId',json_extract(payload_json,'$.runId'),
+          'ref',json_extract(payload_json,'$.ref'),'_retention','aggregate')
+        ELSE json_object('_retention','aggregate') END
+        WHERE julianday(occurred_at)<julianday(?) AND json_extract(payload_json,'$._retention') IS NULL`).run(detailCutoffAt).changes,
+      scrubbedEventEvidence:this.db.prepare(`UPDATE events SET event_json=json_set(event_json,'$.evidenceRefs',json('[]'))
+        WHERE julianday(json_extract(event_json,'$.observedAt'))<julianday(?)
+        AND json_array_length(json_extract(event_json,'$.evidenceRefs'))>0`).run(detailCutoffAt).changes,
+      observations:this.db.prepare('DELETE FROM history_github_observations WHERE julianday(observed_at)<julianday(?)').run(detailCutoffAt).changes
     }))();
   }
 

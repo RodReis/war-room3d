@@ -798,6 +798,43 @@ test('retenção 7/90 oculta detalhe antigo, preserva contagem e sinaliza evidê
   store.history.recordGithubMilestone({...workflow,entityId:'closed-success',transition:'attempt-1-success',occurredAt:'2026-01-01T12:05:00Z'});
   store.history.recordGithubMilestone({...workflow,entityId:'open-failure',transition:'attempt-1-failure',occurredAt:'2026-01-01T12:10:00Z',payload:{...workflow.payload,workflowId:8}});
   store.history.markPollSuccess('42','2026-01-01T12:00:00Z',[],60000,'2026-01-01T12:00:01Z');
-  assert.deepEqual(store.history.pruneExpired(now),{effects:4,resolvedIncidents:1,pollAttempts:1});
-  assert.deepEqual(store.history.pruneExpired(now),{effects:0,resolvedIncidents:0,pollAttempts:0});
+  assert.deepEqual(store.history.pruneExpired(now),{effects:4,resolvedIncidents:1,pollAttempts:1,scrubbedMilestones:5,scrubbedEventEvidence:0,observations:0});
+  assert.deepEqual(store.history.pruneExpired(now),{effects:0,resolvedIncidents:0,pollAttempts:0,scrubbedMilestones:0,scrubbedEventEvidence:0,observations:0});
+  assert.equal(store.history.ciIncidentsAt(now).some(incident=>incident.workflowId===8),true);
+});
+
+test('manutenção elimina URLs e evidência de transcript expirada sem perder contagem e incidente aberto',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-retention-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  const store=new EventStore(dbPath);
+  let db:Database.Database|null=null;
+  t.after(()=>{db?.close();store.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\synthetic'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  const at='2026-10-20T15:00:00Z';
+  store.apply({schemaVersion:'1.0',eventId:'transcript-old',sourceId:'transcript',sourceVersion:'test',
+    type:'github.observed',observedAt:at,receivedAt:at,projectId:'p1',provenance:'observed',ingestionMode:'backfill',
+    payload:{repositoryId:'42',entityType:'pull_request',entityId:'11',transition:'merged'},evidenceRefs:['private-ref']},
+    {sourceId:'transcript',fileKey:'synthetic',generation:1,offset:1});
+  store.history.recordGithubMilestone({repositoryId:'42',projectId:'p1',entityType:'pull_request',entityId:'11',
+    transition:'merged',occurredAt:at,payload:{url:'https://example.test/private-old'}});
+  store.history.recordGithubMilestone({repositoryId:'42',projectId:'p1',entityType:'workflow',entityId:'run-1',
+    transition:'attempt-1-failure',occurredAt:at,payload:{workflowId:8,runId:1,ref:'main',headSha:'secret-sha',url:'https://example.test/private-ci'}});
+  store.history.recordGithubMilestone({repositoryId:'42',projectId:'p1',entityType:'workflow',entityId:'run-2',
+    transition:'attempt-1-success',occurredAt:'2026-10-21T15:00:00Z',payload:{workflowId:9,runId:2,ref:'main',headSha:'secret-sha',url:'https://example.test/private-ci'}});
+  db=new Database(dbPath);
+  assert.equal((db.prepare('SELECT COUNT(*) AS count FROM history_github_observations').get() as {count:number}).count,1);
+  const pruned=store.history.pruneExpired('2026-11-07T15:00:00Z');
+  assert.deepEqual({scrubbedMilestones:pruned.scrubbedMilestones,scrubbedEventEvidence:pruned.scrubbedEventEvidence,observations:pruned.observations},
+    {scrubbedMilestones:3,scrubbedEventEvidence:1,observations:1});
+  const stored=JSON.stringify({events:db.prepare('SELECT event_json FROM events').all(),milestones:db.prepare('SELECT payload_json FROM history_milestones').all()});
+  assert.doesNotMatch(stored,/private-old|private-ci|secret-sha|private-ref/);
+  assert.equal((db.prepare('SELECT COUNT(*) AS count FROM history_github_observations').get() as {count:number}).count,0);
+  assert.equal((store.history.daySummary('2026-10-20','UTC','2026-11-07T15:00:00Z') as {milestoneCounts:{count:number}[]}).milestoneCounts.reduce((sum,row)=>sum+row.count,0),2);
+  assert.equal(store.history.ciIncidentsAt('2026-11-07T15:00:00Z').some(incident=>incident.workflowId===8),true);
+  assert.equal(store.history.pruneExpired('2026-11-07T15:00:00Z').scrubbedMilestones,0);
+  store.history.recordGithubMilestone({repositoryId:'42',projectId:'p1',entityType:'workflow',entityId:'late-run',
+    transition:'attempt-1-failure',occurredAt:'2026-10-20T14:00:00Z',
+    payload:{workflowId:9,runId:3,ref:'main',headSha:'late-sha',url:'https://example.test/late'}});
+  assert.equal(store.history.ciIncidentsAt('2026-11-07T15:00:00Z').some(incident=>incident.workflowId===9),false);
 });

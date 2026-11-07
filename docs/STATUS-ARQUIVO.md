@@ -2,6 +2,39 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Recibo Codex comprovado e revisão técnica M4
+
+- Continuação autorizada pelo PI até o fim, dentro do mesmo laboratório. Correções `b6d1fcc` (IDs MCP literais no valor TOML) e `858796786ee84bff6c317720ada0e99db1d22789` (política global nativa identificada por caminho exato), sem alterar perfil global ou retomar conversas.
+- Uma mensagem sintética Codex 0.166.0 confirmada por resposta RPC: `requested → sending → confirmed`, uma tentativa, ambos os processos encerrados e sem retry. Auditoria entre 23:26:47.480 e 23:26:47.507 UTC; intervalo não mede inferência. [Relatório, hashes e histórico das tentativas sem envio](validation/m4/codex-windows.md).
+- Serviço 129/129, contratos 12/12 e typecheck aprovados. [Revisão dos cinco critérios técnicos](validation/m4/resultado.md), preservando limites das provas sintéticas/Windows. C# inalterado após as provas anteriores.
+- Não habilita a sessão encerrada nem outra sessão no produto. Perguntas/permissões reais e vínculo operacional M1 não comprovados; issue #5 aberta, sem merge ou aceite funcional.
+
+## 07/11/2026 — Segunda tentativa Codex e contraprova sem credenciais
+
+- Nova autorização específica do PI e uma execução de `a8372638fe88c3f7d560401773915fd04c596853`: `not_sent`, `bootstrap_unconfirmed`, código 1. Processo de inspeção encerrado, sem segundo processo/thread/mensagem/auditoria ou retry. Etapa interna e causa não registradas; [relatório e hashes](validation/m4/codex-windows.md).
+- Perfil Codex novo e vazio, credenciais somente em arquivo e sem cópia de autenticação: `initialize` e `config/read` confirmados, zero servidores MCP, processo encerrado, sem thread ou inferência. Isola diferenças de perfil/ambiente, sem identificar a causa no contexto atual.
+- Instrumentação posterior registra etapas, contadores/prazo e classes fixas de pedidos inesperados, sem dados dos pipes ou respostas a pedidos do CLI. Serviço 128/128 e typecheck aprovados; sem nova execução autenticada. Capacidades reais indisponíveis, PR #24 em rascunho e issue #5 aberta, sem merge ou aceite.
+
+## 07/11/2026 — Pré-teste Codex autorizado sem envio M4
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), roteiro executado uma vez em `3152cccf2f58419665d7c0afd1e1735fcdd6e1dd`, sem merge.
+- Autorização específica do PI para dois processos próprios, uma thread nova e uma mensagem sintética. A configuração legada `features.rmcp_client` foi recusada por `--strict-config`; o primeiro processo foi encerrado, sem segundo processo, thread ou mensagem. Resultado `not_sent`, código 1; [relatório e hash](validation/m4/codex-windows.md).
+- Correção do roteiro preserva as verificações de isolamento, não altera configuração global e distingue falha de bootstrap de envio incerto. Serviço 126/126 e typecheck aprovados; consulta nativa somente de metadados com configuração corrigida retornou código 0. Sem nova execução `--run` ou inferência; prova real Codex e aceite do PI continuam pendentes.
+
+## 07/11/2026 — Recibo Claude autorizado em laboratório M4
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), código executado `e7694095f3f247f8b59e8fc2806d5ab8a2657ffc`, sem merge.
+- PI autorizou uma sessão nova descartável Claude Code 2.1.319, autenticação atual do CLI, uma mensagem sintética e limite de US$ 0,10, com ferramentas/hooks/MCP desativados e sem retomar conversas existentes. O roteiro foi executado uma vez.
+- Recibo CLI `confirmed`, correlacionado por UUID, sessão e conteúdo; auditoria `requested → sending → confirmed` em 2,027 s, sem retry e saída 0. Processo descartável encerrado; custo efetivo e conclusão de inferência não atestados. [Prova Windows](validation/m4/claude-windows.md).
+- Não habilita outra sessão no produto. Perguntas/permissões reais, Codex, vínculo operacional M1 e aceite do PI continuam pendentes. Serviço/contratos sem alteração neste registro; a documentação passa novamente pelo CI no HEAD da PR.
+
+## 07/11/2026 — M4 em revisão técnica, provedores reais indisponíveis
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24) em rascunho; código publicado em `e1eccbce8190fba1f66f6f7055641988b8e84338`, sem merge.
+- Gateway de prévia/validação, idempotência, auditoria SQLite v16, recuperação incerta e API com credencial separada. Painel Unity ligado à cena live, com contexto/consequência e bloqueio demo/replay.
+- Provas locais: contratos 12/12, serviço 101/101 e typecheck; Unity EditMode 15/15, PlayMode 12/12; build Windows 172.334.593 bytes. Player sintético: clique duplo produz uma emissão no fake, mensagem confirmada, prévia de permissão e invalidação por replay/projeto; quatro capturas 1280×720. Gate negativo recusa sucesso sem confirmação. [Resultado e limites](validation/m4/resultado.md).
+- Claude/Codex reais sem prova de interface/versão/sessão; os adaptadores continuam indisponíveis. Sem hooks ou comandos a sessões pessoais. Interação nativa por mouse/teclado não executada por indisponibilidade do Computer Use. Issue aberta com `proplan:doing`; aceite funcional do PI pendente. CI deve ser conferido no SHA atual da PR.
+
 ## 06/11/2026 — Fundação documental
 
 - PRD/GDD e planos M0–M5 aprovados como referência de planejamento e publicados no repositório.

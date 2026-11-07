@@ -18,6 +18,7 @@ function lab(change = {}) {
     otel: {exporter: 'none', trace_exporter: 'none', log_user_prompt: false}, ...change.config};
   const channel = {connectionId: 'synthetic-connection', isOpen: true, async exchange(frame) {
     sent.push(frame);
+    if (change.bootstrapDisconnect && frame.method === 'initialize') throw new Error('delivery_unconfirmed');
     const result = frame.method === 'initialize' ? {userAgent: 'codex/0.166.0'} :
       frame.method === 'config/read' ? {config} : frame.method === 'thread/start' ? {
         cwd, approvalPolicy: 'never', sandbox: {type: 'readOnly', networkAccess: false}, instructionSources: [],
@@ -130,7 +131,7 @@ test('processo próprio é encerrado também após falha ou timeout, sem shell e
         if (failure === 'timeout') await new Promise(resolve => signal.addEventListener('abort', resolve, {once: true}));
         throw new Error('synthetic_failure');
       }, (_binary, args, options) => {
-        assert.deepEqual(args, ['app-server', '--strict-config', '--listen', 'stdio://']);
+        assert.deepEqual(args, ['app-server', '--listen', 'stdio://']);
         assert.equal(options.windowsHide, true);
         assert.equal(options.shell, undefined);
         assert.equal(options.env.CODEX_SQLITE_HOME, path.join(cwd, 'state'));
@@ -141,4 +142,11 @@ test('processo próprio é encerrado também após falha ou timeout, sem shell e
     assert.equal(child.stdin.writableEnded, true);
     child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
   }
+});
+
+test('fechamento no bootstrap é distinguido de uma tentativa de mensagem', async () => {
+  const fixture = lab({bootstrapDisconnect: true});
+  await assert.rejects(fixture.run(), /bootstrap_unconfirmed/);
+  assert.deepEqual(fixture.sent.map(frame => frame.method), ['initialize']);
+  assert.equal(fixture.audit.length, 0);
 });

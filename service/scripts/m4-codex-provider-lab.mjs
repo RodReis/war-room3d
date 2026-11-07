@@ -51,7 +51,9 @@ function assertIsolation(config, cwd) {
 async function readConfig({channel, cwd, signal, notify}) {
   const rpc = async (method, params) => {
     const id = 'lab-' + randomUUID();
-    const reply = await channel.exchange({id, method, params}, frame => frame.id === id && !Object.hasOwn(frame, 'method'), signal);
+    let reply;
+    try { reply = await channel.exchange({id, method, params}, frame => frame.id === id && !Object.hasOwn(frame, 'method'), signal); }
+    catch { throw new Error('bootstrap_unconfirmed'); }
     if (Object.hasOwn(reply, 'error') || !reply.result || typeof reply.result !== 'object' || Array.isArray(reply.result))
       throw new Error('bootstrap_unconfirmed');
     return reply.result;
@@ -111,7 +113,8 @@ function metadata(binary, args, cwd) {
 }
 
 export async function usingCodexAppServer({binary, overrides, cwd, timeoutMs, onStopped}, body, spawnProcess = spawn) {
-  const child = spawnProcess(binary, [...overrides, 'app-server', '--strict-config', '--listen', 'stdio://'],
+  // Chaves legadas ignoradas pelo CLI não invalidam o perfil do usuário. As condições de isolamento são verificadas via config/read.
+  const child = spawnProcess(binary, [...overrides, 'app-server', '--listen', 'stdio://'],
     {cwd, windowsHide: true, env: {...process.env, CODEX_SQLITE_HOME: path.join(cwd, 'state')}, stdio: ['pipe', 'pipe', 'pipe']});
   const exited = new Promise(resolve => { child.once('exit', () => resolve(true)); child.once('error', () => resolve(true)); });
   child.stderr.on('data', () => { /* Sem saída bruta, caminhos de perfil ou credenciais. */ });

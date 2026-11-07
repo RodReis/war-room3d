@@ -1,6 +1,6 @@
 # M4 — laboratório Codex preparado
 
-Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). Data: 07/11/2026. **Recebimento real Codex: `not_run`.** A autorização Claude foi consumida no ensaio anterior e não cobre este laboratório.
+Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). Data: 07/11/2026. **Recebimento real Codex não comprovado.** A [tentativa especificamente autorizada](codex-windows.md), no código `3152ccc`, parou no bootstrap com `not_sent`; nenhum segundo processo/thread/mensagem. O roteiro corrigido abaixo não foi reexecutado com `--run`.
 
 ## Roteiro revisável
 
@@ -27,10 +27,10 @@ O mapa MCP é mesclado por configuração; uma tabela vazia não comprova remoç
 
 ## Validação realizada sem ensaio autenticado ou envio Codex
 
-- Onze testes do laboratório: modo padrão não inicia CLI; inventário restrito a configuração; um envio sintético bem sucedido; correlação com thread nova; MCP herdado ativo/sem flag, feature ausente/ativa e configuração permissiva bloqueados; sandbox/diretório/instruções divergentes bloqueados; perda de conexão fica `unknown` sem segundo turno; auditoria indisponível impede envio; processo próprio encerrado após erro/timeout; `shell_tool` protege mesmo com `unified_exec` ativo.
+- Doze testes do laboratório: modo padrão não inicia CLI; inventário restrito a configuração; um envio sintético bem sucedido; correlação com thread nova; MCP herdado ativo/sem flag, feature ausente/ativa e configuração permissiva bloqueados; sandbox/diretório/instruções divergentes bloqueados; perda de conexão fica `unknown` sem segundo turno; auditoria indisponível impede envio; processo próprio encerrado após erro/timeout; `shell_tool` protege mesmo com `unified_exec` ativo; fechamento no bootstrap distinguido de tentativa de mensagem.
 - Consulta local somente de `features list`, usando os overrides, retornou código 0 e todos os recursos exigidos desativados. Resultado redigido em `Logs/m4-codex-configuration-check/result.json`. Não executou `mcp list`, app-server, autenticação de laboratório ou inferência.
 - `m4-validate-codex-schema.mjs`: sete formatos sintéticos válidos nos schemas emitidos pelo CLI 0.166.0, incluindo `initialize`, `config/read` e `thread/start`; caso sem `expectedTurnId` recusado. Resultado local em `Logs/m4-codex-schema-result.json`.
-- Serviço **125/125**, contratos **12/12**, typecheck aprovado. Unity não foi alterado nesta continuação; provas anteriores do Player continuam com o escopo descrito em [protocolos](protocolos.md).
+- Serviço **126/126** e typecheck aprovados após a correção; contratos **12/12** na validação anterior, sem alteração. Unity não foi alterado nesta continuação; provas anteriores do Player continuam com o escopo descrito em [protocolos](protocolos.md).
 
 Estes testes validam o roteiro com transporte falso e formatos locais. Não comprovam isolamento operacional, autenticação, criação de thread ou recebimento pelo Codex real. As capacidades padrão do produto continuam vazias; uma futura prova descartável não poderá habilitar outras sessões.
 

@@ -2,6 +2,12 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Pré-teste Codex autorizado sem envio M4
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), roteiro executado uma vez em `3152cccf2f58419665d7c0afd1e1735fcdd6e1dd`, sem merge.
+- Autorização específica do PI para dois processos próprios, uma thread nova e uma mensagem sintética. A configuração legada `features.rmcp_client` foi recusada por `--strict-config`; o primeiro processo foi encerrado, sem segundo processo, thread ou mensagem. Resultado `not_sent`, código 1; [relatório e hash](validation/m4/codex-windows.md).
+- Correção do roteiro preserva as verificações de isolamento, não altera configuração global e distingue falha de bootstrap de envio incerto. Serviço 126/126 e typecheck aprovados; consulta nativa somente de metadados com configuração corrigida retornou código 0. Sem nova execução `--run` ou inferência; prova real Codex e aceite do PI continuam pendentes.
+
 ## 07/11/2026 — Recibo Claude autorizado em laboratório M4
 
 - Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), código executado `e7694095f3f247f8b59e8fc2806d5ab8a2657ffc`, sem merge.

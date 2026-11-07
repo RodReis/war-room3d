@@ -25,7 +25,7 @@ Provas de capacidade ainda precisam vir de um ensaio Windows autorizado e ser re
 - `cd contracts; npm test`: **12/12**; contratos sem alteração nesta continuação.
 - `codex app-server generate-json-schema --out Logs/m4-protocol-codex-0.166.0`, seguido de `node service/scripts/m4-validate-codex-schema.mjs`: quatro formatos sintéticos compatíveis com schemas do executável instalado; falta de `expectedTurnId` recusada. Resultado e hashes dos schemas em `Logs/m4-codex-schema-result.json`. Não abre app-server nem executa inferência.
 - Player existente, com código C# inalterado e serviço desta continuação: `Logs/m4-player-protocol-continuation/{backend-result,player-result}.json`, ambos `pass`; uma emissão no fake, permissão revisada, replay/troca de projeto bloqueados. Build reutilizado de 172.334.593 bytes; não é ensaio dos CLIs reais.
-- Envio a Claude/Codex reais: **`not_run`**. A consulta de ajuda/versão e a geração de schema não contam como recebimento de mensagem.
+- Claude Code 2.1.319: **`pass` pontual** após autorização específica, uma mensagem e recibo correlacionado; [prova Windows](claude-windows.md). Codex real: **`not_run`**. A consulta de ajuda/versão e a geração de schema não contam como recebimento de mensagem.
 
 ### Achado corrigido
 
@@ -43,7 +43,7 @@ Outra regressão de protocolo confirmou que uma resposta Codex sem `items` obrig
 - `--safe-mode`, `--restricted`, `--tools ""`, MCP vazio e estrito, permissões `dontAsk`/`none`; limite de US$ 0,10 pelo CLI e timeout local de 30 s. Sem alteração de configurações persistentes.
 - Grava intenção/estados redigidos antes/depois do envio. Nunca grava stdout/stderr bruto, token ou conteúdo de conversas. A confirmação significa recebimento correlacionado; não atesta conclusão de inferência. O processo descartável de laboratório é encerrado ao final; esse ciclo não é uma função do produto.
 
-O roteiro foi executado apenas em modo de apresentação. Sua execução real aguarda a autorização solicitada; nenhum decurso de tempo equivale a aprovação. Preparação Codex está limitada ao schema e adaptador até definir isolamento e laboratório próprios, sem reutilizar autorização de Claude.
+Após o PI autorizar o escopo acima, o roteiro foi executado uma vez com `--run` no código `e769409`: recibo `confirmed`, sem retry e processo descartável encerrado. [Auditoria, hashes e limites](claude-windows.md). Não há autorização para outro envio. Preparação Codex está limitada ao schema e adaptador até definir isolamento e laboratório próprios, sem reutilizar autorização de Claude.
 
 ## Fontes de protocolo
 

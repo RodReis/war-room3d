@@ -2,6 +2,13 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Recibo Claude autorizado em laboratório M4
+
+- Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), código executado `e7694095f3f247f8b59e8fc2806d5ab8a2657ffc`, sem merge.
+- PI autorizou uma sessão nova descartável Claude Code 2.1.319, autenticação atual do CLI, uma mensagem sintética e limite de US$ 0,10, com ferramentas/hooks/MCP desativados e sem retomar conversas existentes. O roteiro foi executado uma vez.
+- Recibo CLI `confirmed`, correlacionado por UUID, sessão e conteúdo; auditoria `requested → sending → confirmed` em 2,027 s, sem retry e saída 0. Processo descartável encerrado; custo efetivo e conclusão de inferência não atestados. [Prova Windows](validation/m4/claude-windows.md).
+- Não habilita outra sessão no produto. Perguntas/permissões reais, Codex, vínculo operacional M1 e aceite do PI continuam pendentes. Serviço/contratos sem alteração neste registro; a documentação passa novamente pelo CI no HEAD da PR.
+
 ## 07/11/2026 — M4 em revisão técnica, provedores reais indisponíveis
 
 - Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24) em rascunho; código publicado em `e1eccbce8190fba1f66f6f7055641988b8e84338`, sem merge.

@@ -2,7 +2,7 @@
 
 Data: 07/11/2026. [PR #24](https://github.com/RodReis/war-room3d/pull/24), código em `e1eccbce8190fba1f66f6f7055641988b8e84338`. Base inicial `c059be7`; rebase sobre `64f8985` alterou apenas a projeção documental ProPlan da base. Windows x64, Node.js 24.15.0, Unity 6000.3.27f1 / URP 17.3.0. Escopo autorizado: analisar e implementar a issue #5. Provedores reais permanecem sem habilitação; [matriz de capacidades](provider-matrix.md).
 
-Este relatório preserva as provas da entrega inicial. A [continuação por protocolos](protocolos.md) registra fábricas de mensagens, correção adicional de validade da prévia, serviço 114/114 e o roteiro de ensaio real ainda não autorizado.
+Este relatório preserva as provas da entrega inicial. A [continuação por protocolos](protocolos.md) registra fábricas de mensagens, correção adicional de validade da prévia e serviço 114/114. O [ensaio Claude autorizado](claude-windows.md) comprovou um recibo CLI pontual, sem conclusão de modelo atestada e sem habilitar outras sessões.
 
 ## Implementação
 

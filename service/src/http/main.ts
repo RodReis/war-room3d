@@ -22,7 +22,7 @@ try {
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
-  let nextPollAllowedAt = 0;
+  let nextPollAllowedAt = store.history.githubRetryUntilMs();
   if (githubConfigPath) {
     const client = new GitHubClient(githubToken ?? '');
     try { client.restorePageCache(store.history.githubPageCache()); }
@@ -32,7 +32,7 @@ try {
       pollRunning = true;
       try {
         const result = await pollLinkedRepositories(store, client, githubToken ? 60000 : 600000);
-        nextPollAllowedAt = Math.max(nextPollAllowedAt, ...result.errors.map(error => Date.now() + (error.retryAfterMs ?? 0)));
+        nextPollAllowedAt = Math.max(nextPollAllowedAt, store.history.githubRetryUntilMs());
         process.stdout.write(`GitHub M3: ${result.repositories} repositórios, ${result.milestones} marcos novos, ${result.errors.length} falhas\n`);
       } catch { process.stdout.write('GitHub M3: coleta indisponível\n'); }
       finally { pollRunning = false; }

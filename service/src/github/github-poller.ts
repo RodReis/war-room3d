@@ -38,7 +38,8 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       store.history.markPollSuccess(repositoryId,startedAt,client.pageCacheSnapshot(),expectedIntervalMs);
     } catch (error) {
       client.clearPageCache();
-      store.history.markPollFailure(repositoryId,startedAt,error instanceof GitHubRateLimitError?'rate_limited':'api_error',expectedIntervalMs);
+      store.history.markPollFailure(repositoryId,startedAt,error instanceof GitHubRateLimitError?'rate_limited':'api_error',expectedIntervalMs,
+        new Date().toISOString(),error instanceof GitHubRateLimitError?error.retryAfterMs:0);
       errors.push({ repositoryId, message: error instanceof Error ? error.message : 'Falha de coleta GitHub',
         ...(error instanceof GitHubRateLimitError ? {retryAfterMs:error.retryAfterMs} : {}) });
       if (error instanceof GitHubRateLimitError) break;

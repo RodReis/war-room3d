@@ -79,6 +79,10 @@ export class HistoryStore {
     return row?.started_at??null;
   }
 
+  githubRetryUntilMs(): number {
+    return (this.db.prepare("SELECT value FROM meta WHERE key='github_retry_until_ms'").get() as {value:number}).value;
+  }
+
   markPollSuccess(repositoryId: string, startedAt: string, cacheEntries: readonly GitHubPageCacheEntry[], expectedIntervalMs: number, completedAt = new Date().toISOString()): void {
     if (!Number.isSafeInteger(expectedIntervalMs) || expectedIntervalMs < 1000 || expectedIntervalMs > 86400000) throw new Error('Cadência GitHub inválida');
     this.db.transaction(() => {
@@ -90,9 +94,14 @@ export class HistoryStore {
     })();
   }
 
-  markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', expectedIntervalMs: number, completedAt = new Date().toISOString()): void {
+  markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', expectedIntervalMs: number, completedAt = new Date().toISOString(), retryAfterMs = 0): void {
     if (!Number.isSafeInteger(expectedIntervalMs) || expectedIntervalMs < 1000 || expectedIntervalMs > 86400000) throw new Error('Cadência GitHub inválida');
-    this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status,expected_interval_ms) VALUES (?,?,?,?,?)').run(repositoryId,startedAt,completedAt,status,expectedIntervalMs);
+    if (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0 || !Number.isFinite(Date.parse(completedAt))) throw new Error('Prazo GitHub inválido');
+    this.db.transaction(() => {
+      this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status,expected_interval_ms) VALUES (?,?,?,?,?)').run(repositoryId,startedAt,completedAt,status,expectedIntervalMs);
+      if (status === 'rate_limited' && retryAfterMs > 0)
+        this.db.prepare("UPDATE meta SET value=MAX(value,?) WHERE key='github_retry_until_ms'").run(Date.parse(completedAt)+retryAfterMs);
+    })();
   }
 
   githubPageCache(): GitHubPageCacheEntry[] {

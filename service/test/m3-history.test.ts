@@ -528,6 +528,25 @@ test('limite da API interrompe a rodada antes dos outros repositórios',async t=
   assert.match(requested[0]??'',/owner-a\/first$/);
 });
 
+test('prazo de pausa GitHub sobrevive ao reinício do serviço',async t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-retry-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  const store=new EventStore(dbPath);
+  let reopened:EventStore|undefined;
+  t.after(()=>{try{store.close();}catch{};reopened?.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\retry'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  const before=Date.now();
+  const client=new GitHubClient('',async()=>new Response('{}',{status:429,headers:{'retry-after':'120'}}));
+  const result=await pollLinkedRepositories(store,client);
+  assert.equal(result.errors[0]?.retryAfterMs,120000);
+  const until=store.history.githubRetryUntilMs();
+  assert.ok(until>=before+120000 && until<=Date.now()+120000);
+  store.close();
+  reopened=new EventStore(dbPath);
+  assert.equal(reopened.history.githubRetryUntilMs(),until);
+});
+
 test('ETag por página evita reprocessar respostas 304 e preserva próxima página',async()=>{
   const requests: {url:string;etag:string|undefined}[]=[];
   const client=new GitHubClient('',async (input,init)=>{

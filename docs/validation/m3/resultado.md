@@ -9,6 +9,7 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 | TypeScript estrito do serviço | `pass` | `cd service; npm run typecheck` |
 | Testes do serviço | `pass` | `cd service; npm test`; 82/82, Node 24.15.0 |
 | Contratos compartilhados | `pass` | `cd contracts; npm test`; 8/8 |
+| CI da PR #23 | `pass` pontual | [Run 42328279199](https://github.com/RodReis/war-room3d/actions/runs/42328279199), SHA `137e415784fa15d4c97a477ead329446b7080e20`: Contratos 5 s e Serviço 11 s, ambos `success`. Alterações posteriores exigem nova execução no HEAD |
 | Repositório explicitamente vinculado | `pass` | Teste sintético usa ID opaco do GitHub; nome igual não cria associação |
 | Deduplicação de marco importado | `pass` | Chave por repositório/entidade/transição; desvincular preserva marco histórico |
 | Repositório compartilhado | `pass` | Dois projetos vinculados ao mesmo ID recebem marcos e efeitos próprios no teste sintético |
@@ -20,8 +21,8 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 | Metadados GitHub públicos do ContaIA | `pass` pontual | [Repositório](https://api.github.com/repos/RodReis/rrb-contaia) confirmou ID `1371493574`; [lista de PRs](https://api.github.com/repos/RodReis/rrb-contaia/pulls?state=closed&sort=updated&direction=desc&per_page=1) trouxe `merged_at`, e [runs](https://api.github.com/repos/RodReis/rrb-contaia/actions/runs?status=completed&per_page=1) trouxeram envelope `workflow_runs`. Leitura por conector, sem ingestão pelo produto |
 | Polling do produto na API GitHub real | `pass` pontual | Cliente do produto, sem token, consultou o repositório público configurado; SQLite temporário retornou 542 marcos de primeiro carregamento, 6 no dia local, 0 incidentes abertos/resolvidos no dia e 0 erros. Primeiro replay rotulado `backfill`. Sem processo contínuo nem acesso a dados privados |
 | Unity EditMode | `pass` | `unity test ./unity --mode EditMode --output Logs/m3-issue4-editmode-layout-history.xml --timeout 240`; 13/13 no XML local |
-| Unity PlayMode | `pass` | `unity test ./unity --mode PlayMode --output Logs/m3-issue4-playmode-layout-history.xml --timeout 240`; 10/10 no XML local. Inclui sala registrada no primeiro instante e omissão do marcador quando falta posição histórica, aviso de layout e inventário indisponíveis, troca de projeto durante resposta pendente, CI ativo atravessando dias, espera observada, lacunas no Meu dia, selo `LACUNA`, busca UTC, velocidades, retorno ao vivo, banner de merge, prioridade CI e marcador 3D de efeito |
-| Build Windows x64 | `pass` | `M2LiveProjectSetup.BuildWindowsM3History`; 172.306.684 bytes em `Logs/m3-issue4-build-layout-history.log`; executável local em `unity/Builds/WarRoom3D-M3-History/` |
+| Unity PlayMode | `pass` | `unity test ./unity --mode PlayMode --output Logs/m3-issue4-playmode-review.xml --timeout 240`; 10/10 no XML local. Inclui sala registrada no primeiro instante e omissão do marcador quando falta posição histórica, aviso de layout e inventário indisponíveis, troca de projeto durante resposta pendente, CI ativo atravessando dias, espera observada, lacunas no Meu dia, selo `LACUNA`, busca UTC, velocidades, retorno ao vivo, banner de merge, prioridade CI, marcador 3D de efeito e leitura de recurso histórico mesmo após perda da conexão live |
+| Build Windows x64 | `pass` | `M2LiveProjectSetup.BuildWindowsM3History`; 172.306.685 bytes em `Logs/m3-issue4-build-review.log`; executável local em `unity/Builds/WarRoom3D-M3-History/` |
 | Execução e captura visual do Player | `not_run` | Revisão automática bloqueou comando de iniciar serviço local em background (`blocked by policy`); sem inspeção visual do executável |
 
 ## Limites conhecidos
@@ -44,3 +45,5 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 Primeira tentativa EditMode encontrou `ref` reservado em C#; corrigida, a repetição passou. Primeiro PlayMode encontrou máscara visível no início por estilo inline UXML; corrigido por USS/estado explícito, a repetição passou. Um teste PlayMode posterior encontrou `Object` ambíguo após import de `System`; corrigido e repetido com 10/10. O teste inicial do seletor usava fixture live sem projetos; fixture corrigida e PlayMode repetido com 10/10. Recriação das cenas durante build gerou IDs e reserialização sem mudança de escopo; arquivos gerados foram restaurados antes do stage seletivo.
 
 Fixtures de eventos e testes são sintéticos; metadados públicos pontuais têm fonte identificada. Nenhum segredo foi salvo no repositório.
+
+Revisão do diff completo: achado P2 em `LiveHudPresenter.cs` — o estado histórico de recurso passava a exibir “conexão perdida” quando caía apenas a conexão live. A correção usa a referência do replay durante a projeção; o PlayMode reproduz a desconexão e mantém “Saudável” para a leitura histórica válida. Permanecem os limites funcionais acima; CI verde cobre somente contratos e serviço.

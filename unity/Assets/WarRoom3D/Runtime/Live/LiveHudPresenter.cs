@@ -254,7 +254,7 @@ namespace WarRoom3D
             foreach (var incident in snapshot.incidents)
                 if (Array.IndexOf(incident.projectIds, project.projectId) >= 0) incidents++;
             root.Q<Label>("infrastructure-alert").text = incidents > 0 ? $"Impacto potencial · {incidents} incidente(s) observado(s)" : "Sem incidente vinculado no último snapshot";
-            root.Q<Label>("infrastructure-alert").EnableInClassList("status-attention", incidents > 0 && client.Connected);
+            root.Q<Label>("infrastructure-alert").EnableInClassList("status-attention", incidents > 0 && (replayMode || client.Connected));
             root.Q<Button>("enter-button").SetEnabled(PlacementFor(project.projectId) != null);
         }
 
@@ -359,8 +359,8 @@ namespace WarRoom3D
             root.Q<Label>("resource-name").text = resource.name;
             var status = root.Q<Label>("resource-status");
             status.text = HealthText(state);
-            status.EnableInClassList("status-attention", client.Connected && (state?.health == "degradado" || state?.health == "indisponivel"));
-            status.EnableInClassList("status-inactive", !client.Connected || state == null || state.health == "sem_dados");
+            status.EnableInClassList("status-attention", (replayMode || client.Connected) && (state?.health == "degradado" || state?.health == "indisponivel"));
+            status.EnableInClassList("status-inactive", (!replayMode && !client.Connected) || state == null || state.health == "sem_dados");
             var names = new List<string>();
             if (state?.dependentProjectIds != null)
                 foreach (var id in state.dependentProjectIds)
@@ -379,7 +379,7 @@ namespace WarRoom3D
 
         private string HealthText(LiveResourceState state)
         {
-            if (!client.Connected) return "Sem dados · conexão perdida";
+            if (!replayMode && !client.Connected) return "Sem dados · conexão perdida";
             if (state == null || state.freshness != "atual" || state.coverage != "atual") return "Sem dados";
             switch (state.health)
             {

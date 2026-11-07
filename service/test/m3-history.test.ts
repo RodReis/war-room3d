@@ -215,24 +215,50 @@ test('replay omite projeto futuro e inclui projeto evidenciado por evento ou Git
   const before=new Date(Date.now()-86400000).toISOString();
   const eventAt=new Date(Date.now()-72000000).toISOString();
   const at=new Date(Date.now()-36000000).toISOString();
-  const empty=store.historicalSnapshot(before) as {projects:{projectId:string}[];roomPlacements:unknown[]};
+  const empty=store.historicalSnapshot(before) as {projects:{projectId:string}[];roomPlacements:unknown[];layoutReference:string};
   assert.deepEqual(empty.projects,[]);
   assert.deepEqual(empty.roomPlacements,[]);
+  assert.equal(empty.layoutReference,'unavailable');
   store.apply({schemaVersion:'1.0',eventId:'backfill-p1',sourceEventId:'backfill-p1',sourceId:'source1',sourceVersion:'test',
     type:'session.observed',observedAt:eventAt,receivedAt:new Date().toISOString(),projectId:'p1',provider:'codex',
     sessionKey:'s1',provenance:'observed',ingestionMode:'backfill',payload:{},evidenceRefs:[]},
     {sourceId:'source1',fileKey:'synthetic',generation:1,offset:1});
   const replay=store.historicalSnapshot(at) as {projects:{projectId:string}[];roomPlacements:{projectId:string}[];layoutReference:string};
   assert.deepEqual(replay.projects.map(project=>project.projectId),['p1']);
-  assert.deepEqual(replay.roomPlacements.map(placement=>placement.projectId),['p1']);
-  assert.equal(replay.layoutReference,'current');
+  assert.deepEqual(replay.roomPlacements,[]);
+  assert.equal(replay.layoutReference,'unavailable');
   store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p2'});
   store.history.recordGithubMilestone({repositoryId:'42',projectId:'p2',entityType:'pull_request',entityId:'1',transition:'merged',
     occurredAt:eventAt,payload:{number:1}});
   const withGithub=store.historicalSnapshot(at) as {projects:{projectId:string}[]};
   assert.deepEqual(withGithub.projects.map(project=>project.projectId),['p1','p2']);
-  const after=store.historicalSnapshot(new Date(Date.now()+3600000).toISOString()) as {projects:{projectId:string}[]};
+  const after=store.historicalSnapshot(new Date(Date.now()+3600000).toISOString()) as {projects:{projectId:string}[];roomPlacements:{projectId:string}[];layoutReference:string};
   assert.deepEqual(after.projects.map(project=>project.projectId),['p1','p2']);
+  assert.deepEqual(after.roomPlacements.map(placement=>placement.projectId),['p1','p2']);
+  assert.equal(after.layoutReference,'recorded');
+});
+
+test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-layout-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  let store=new EventStore(dbPath);
+  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy-layout'});
+  store.close();
+  const db=new Database(dbPath);
+  db.exec("DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");
+  db.close();
+  store=new EventStore(dbPath);
+  const check=new Database(dbPath);
+  const row=check.prepare('SELECT known_at FROM room_placement_versions').get() as {known_at:string};
+  check.close();
+  const before=store.historicalSnapshot(new Date(Date.parse(row.known_at)-1).toISOString()) as {projects:{projectId:string}[];roomPlacements:unknown[];layoutReference:string};
+  assert.deepEqual(before.projects.map(project=>project.projectId),['legacy']);
+  assert.deepEqual(before.roomPlacements,[]);
+  assert.equal(before.layoutReference,'unavailable');
+  const after=store.historicalSnapshot(row.known_at) as {roomPlacements:{projectId:string}[];layoutReference:string};
+  assert.deepEqual(after.roomPlacements.map(placement=>placement.projectId),['legacy']);
+  assert.equal(after.layoutReference,'recorded');
 });
 
 test('migração v9 registra presença de projeto antigo só a partir da migração',t=>{

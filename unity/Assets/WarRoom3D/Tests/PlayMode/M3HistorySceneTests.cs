@@ -126,9 +126,10 @@ namespace WarRoom3D.Tests
                 history.SendMessage("Seek");
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-coverage").text.Contains("15:10:00Z")) yield return null;
-                Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Not.Null);
+                yield return null;
+                Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Null);
                 Assert.That(root.Q<Label>("history-coverage").text, Does.StartWith("LACUNA"));
-                Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Layout atual como referência"));
+                Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Layout histórico indisponível"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Infraestrutura sem inventário histórico"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("CI: 1 incidente(s) ativo(s)"));
                 history.SendMessage("CycleSpeed");
@@ -177,7 +178,7 @@ namespace WarRoom3D.Tests
                         if (line == "Authorization: Bearer " + token) authorized = true;
                     var status = authorized ? "200 OK" : "401 Unauthorized";
                     var body = first != null && first.Contains("/v1/history/replay/state?at=") ?
-                        "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"layoutReference\":\"current\",\"infrastructureReference\":\"unavailable\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[],\"coverage\":{\"status\":\"unknown\",\"gaps\":[]}}" :
+                        "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"layoutReference\":\"recorded\",\"infrastructureReference\":\"unavailable\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[],\"coverage\":{\"status\":\"unknown\",\"gaps\":[]}}" :
                         first != null && first.Contains("/v1/history/replay?cursor=2") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?cursor=1") ?
@@ -189,6 +190,8 @@ namespace WarRoom3D.Tests
                         body = body.Replace("\"incidents\":[],\"coverage\"", "\"incidents\":[],\"ciIncidents\":[],\"coverage\"");
                     if (first != null && first.Contains("15%3A10%3A00Z"))
                     {
+                        body = body.Replace("\"layoutReference\":\"recorded\"", "\"layoutReference\":\"unavailable\"");
+                        body = body.Replace("\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}]", "\"roomPlacements\":[]");
                         body = body.Replace("\"status\":\"unknown\",\"gaps\":[]", "\"status\":\"gap\",\"gaps\":[{\"sourceId\":\"source1\",\"reason\":\"source_unavailable\"}]");
                         body = body.Replace("\"ciIncidents\":[]", "\"ciIncidents\":[{\"incidentId\":\"ci-1\",\"projectId\":\"p1\",\"repositoryId\":\"42\",\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\"}]");
                     }

@@ -349,6 +349,12 @@ namespace WarRoom3D
                             : "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
                         if (state.layoutReference == "current")
                             coverage.text += " Layout atual como referência.";
+                        else if (state.layoutReference == "recorded")
+                            coverage.text += " Layout registrado neste instante.";
+                        else if (state.layoutReference == "partial")
+                            coverage.text += " Parte do layout sem posição histórica.";
+                        else if (state.layoutReference == "unavailable")
+                            coverage.text += " Layout histórico indisponível.";
                         if (state.infrastructureReference == "unavailable")
                             coverage.text += " Infraestrutura sem inventário histórico.";
                         else if (state.infrastructureReference == "recorded")

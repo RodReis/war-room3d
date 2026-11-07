@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 11) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 12) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -98,6 +98,9 @@ export class EventStore {
     })();
     if (schemaVersion < 11) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0011_infrastructure_history.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 12) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0012_room_placement_history.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -132,17 +135,20 @@ export class EventStore {
     const paths = [record.canonicalPath, ...(record.aliases ?? [])].map(normalizeProjectPath);
     if (!record.projectId || !record.name) throw new Error('Projeto incompleto');
     const operation = this.db.transaction(() => {
+      const knownAt = new Date().toISOString();
       this.db.prepare('INSERT INTO projects(project_id, name) VALUES (?, ?)').run(record.projectId, record.name);
       this.db.prepare("INSERT INTO project_presence_evidence(project_id,known_at,evidence_kind) VALUES (?,?,'registration')")
-        .run(record.projectId,new Date().toISOString());
+        .run(record.projectId,knownAt);
       const addPath = this.db.prepare('INSERT INTO project_paths(path, project_id) VALUES (?, ?)');
       for (const candidate of paths) addPath.run(candidate, record.projectId);
       const index = (this.db.prepare('SELECT COUNT(*) AS count FROM room_placements').get() as { count: number }).count;
       const sectorId = `setor-${String(Math.floor(index / 6) + 1).padStart(2, '0')}`;
       const slotId = `slot-${String((index % 6) + 1).padStart(2, '0')}`;
       this.db.prepare('INSERT INTO room_placements VALUES (?, ?, ?, ?)').run(record.projectId, sectorId, slotId, '1');
+      this.db.prepare('INSERT INTO room_placement_versions(project_id,sector_id,slot_id,layout_version,known_at) VALUES (?,?,?,?,?)')
+        .run(record.projectId,sectorId,slotId,'1',knownAt);
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
-      appendStateChange(this.db, 'project.changed', record.projectId, new Date().toISOString());
+      appendStateChange(this.db, 'project.changed', record.projectId, knownAt);
     });
     operation();
   }
@@ -279,7 +285,8 @@ export class EventStore {
       throw new Error('Instante de replay inválido');
     const input = this.db.transaction(() => ({
       projects: this.db.prepare('SELECT project_id,name FROM projects ORDER BY project_id').all() as {project_id:string;name:string}[],
-      placements: this.db.prepare('SELECT project_id,sector_id,slot_id,layout_version FROM room_placements ORDER BY project_id').all() as {project_id:string;sector_id:string;slot_id:string;layout_version:string}[],
+      placements: this.db.prepare('SELECT id,project_id,sector_id,slot_id,layout_version,known_at FROM room_placement_versions WHERE substr(known_at,1,19)<=?')
+        .all(at.slice(0,19)) as {id:number;project_id:string;sector_id:string;slot_id:string;layout_version:string;known_at:string}[],
       projectEvidence: this.db.prepare('SELECT project_id,known_at FROM project_presence_evidence').all() as {project_id:string;known_at:string}[],
       githubProjects: this.db.prepare('SELECT project_id,occurred_at FROM history_milestones WHERE substr(occurred_at,1,19)<=?').all(at.slice(0,19)) as {project_id:string;occurred_at:string}[],
       events: this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE substr(json_extract(event_json,'$.observedAt'),1,19)<=?").all(at.slice(0,19)) as {stream_sequence:number;event_json:string}[],
@@ -294,13 +301,19 @@ export class EventStore {
     const visibleProjects=new Set(input.projectEvidence.filter(row=>compareTimestamp(row.known_at,at)<=0).map(row=>row.project_id));
     for(const row of historicalEvents)if(row.event.projectId)visibleProjects.add(row.event.projectId);
     for(const row of input.githubProjects)if(compareTimestamp(row.occurred_at,at)<=0)visibleProjects.add(row.project_id);
+    const placements=new Map<string,(typeof input.placements)[number]>();
+    for(const row of input.placements)if(visibleProjects.has(row.project_id) && compareTimestamp(row.known_at,at)<=0){
+      const prior=placements.get(row.project_id);
+      if(!prior || compareTimestamp(row.known_at,prior.known_at)>0 || (compareTimestamp(row.known_at,prior.known_at)===0 && row.id>prior.id))
+        placements.set(row.project_id,row);
+    }
     const projection = new EventStore(':memory:');
     try {
       projection.db.transaction(() => {
         const project = projection.db.prepare('INSERT INTO projects(project_id,name) VALUES (?,?)');
         const placement = projection.db.prepare('INSERT INTO room_placements(project_id,sector_id,slot_id,layout_version) VALUES (?,?,?,?)');
         for (const row of input.projects) if(visibleProjects.has(row.project_id))project.run(row.project_id,row.name);
-        for (const row of input.placements) if(visibleProjects.has(row.project_id))placement.run(row.project_id,row.sector_id,row.slot_id,row.layout_version);
+        for (const row of placements.values())placement.run(row.project_id,row.sector_id,row.slot_id,row.layout_version);
       })();
       let replayOffset = 0;
       for (const row of historicalEvents) {
@@ -311,7 +324,7 @@ export class EventStore {
         .all() as {source_id:string;last_unavailable_at:string}[];
       const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
       const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
-      return { ...state, ...input.infrastructure, mode:'replay', at, layoutReference:'current', revision:input.revision, streamSequence:input.streamSequence,
+      return { ...state, ...input.infrastructure, mode:'replay', at, layoutReference:visibleProjects.size===0?'unavailable':placements.size===visibleProjects.size?'recorded':placements.size?'partial':'unavailable', revision:input.revision, streamSequence:input.streamSequence,
         feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents',...(input.infrastructure.infrastructureReference==='recorded'?['infrastructure']:[])], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
           reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
     } finally { projection.close(); }

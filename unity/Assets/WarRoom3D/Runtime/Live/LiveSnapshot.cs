@@ -9,6 +9,7 @@ namespace WarRoom3D
     {
         public string schemaVersion;
         public string mode;
+        public string layoutReference;
         public int revision;
         public long streamSequence;
         public LiveProject[] projects;

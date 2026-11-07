@@ -347,6 +347,8 @@ namespace WarRoom3D
                         coverage.text = state.coverage.status == "gap"
                             ? "LACUNA · fonte indisponível em " + at + ". Estado exibido com incerteza."
                             : "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
+                        if (state.layoutReference == "current")
+                            coverage.text += " Layout atual como referência.";
                         if (state.ciIncidents.Length > 0)
                             coverage.text += " CI: " + state.ciIncidents.Length + " incidente(s) ativo(s) neste instante.";
                     }

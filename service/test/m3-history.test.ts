@@ -209,6 +209,49 @@ test('replay reconstrói estado da sala no instante, inclui evento tardio e não
   assert.equal((store.snapshot() as {mode:string;sessions:{presence:string}[]}).sessions[0]?.presence,'encerrada');
 });
 
+test('replay omite projeto futuro e inclui projeto evidenciado por evento ou GitHub anterior',t=>{
+  const store=storeFor(t);
+  store.registerProject({projectId:'p2',name:'Segundo',canonicalPath:'C:\\synthetic-two'});
+  const before=new Date(Date.now()-86400000).toISOString();
+  const eventAt=new Date(Date.now()-72000000).toISOString();
+  const at=new Date(Date.now()-36000000).toISOString();
+  const empty=store.historicalSnapshot(before) as {projects:{projectId:string}[];roomPlacements:unknown[]};
+  assert.deepEqual(empty.projects,[]);
+  assert.deepEqual(empty.roomPlacements,[]);
+  store.apply({schemaVersion:'1.0',eventId:'backfill-p1',sourceEventId:'backfill-p1',sourceId:'source1',sourceVersion:'test',
+    type:'session.observed',observedAt:eventAt,receivedAt:new Date().toISOString(),projectId:'p1',provider:'codex',
+    sessionKey:'s1',provenance:'observed',ingestionMode:'backfill',payload:{},evidenceRefs:[]},
+    {sourceId:'source1',fileKey:'synthetic',generation:1,offset:1});
+  const replay=store.historicalSnapshot(at) as {projects:{projectId:string}[];roomPlacements:{projectId:string}[];layoutReference:string};
+  assert.deepEqual(replay.projects.map(project=>project.projectId),['p1']);
+  assert.deepEqual(replay.roomPlacements.map(placement=>placement.projectId),['p1']);
+  assert.equal(replay.layoutReference,'current');
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p2'});
+  store.history.recordGithubMilestone({repositoryId:'42',projectId:'p2',entityType:'pull_request',entityId:'1',transition:'merged',
+    occurredAt:eventAt,payload:{number:1}});
+  const withGithub=store.historicalSnapshot(at) as {projects:{projectId:string}[]};
+  assert.deepEqual(withGithub.projects.map(project=>project.projectId),['p1','p2']);
+  const after=store.historicalSnapshot(new Date(Date.now()+3600000).toISOString()) as {projects:{projectId:string}[]};
+  assert.deepEqual(after.projects.map(project=>project.projectId),['p1','p2']);
+});
+
+test('migração v9 registra presença de projeto antigo só a partir da migração',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-presence-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  let store=new EventStore(dbPath);
+  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy'});
+  store.close();
+  const db=new Database(dbPath);
+  db.exec("DROP TABLE project_presence_evidence; UPDATE meta SET value=9 WHERE key='schema_version'");
+  db.close();
+  store=new EventStore(dbPath);
+  const past=store.historicalSnapshot(new Date(Date.now()-86400000).toISOString()) as {projects:unknown[]};
+  assert.deepEqual(past.projects,[]);
+  const future=store.historicalSnapshot(new Date(Date.now()+3600000).toISOString()) as {projects:{projectId:string}[]};
+  assert.deepEqual(future.projects.map(project=>project.projectId),['legacy']);
+});
+
 test('configuração GitHub cadastra projeto sem sonda M2 e preserva vínculo no reinício',t=>{
   const store=storeFor(t);
   const config={schemaVersion:'1.0',projects:[{projectId:'contaia',name:'ContaIA',canonicalPath:'C:\\Desenv\\Projetos\\rrb-contaia'}],repositories:[{repositoryId:'1371493574',owner:'RodReis',name:'rrb-contaia',projectId:'contaia'}]};

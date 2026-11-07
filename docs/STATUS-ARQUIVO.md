@@ -84,3 +84,9 @@ Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md
 ## 06/11/2026 — correção de estado remoto M1 durante M3
 
 - A [issue #2](https://github.com/RodReis/war-room3d/issues/2) consta `CLOSED` desde 19:09:48 UTC, com comentário do PI de que o planejamento terminou. O fechamento não demonstra adaptadores reais de transcript, que permanecem pendentes no checkout; `STATUS.md` e `DEVELOPMENT.md` foram corrigidos sem alterar a decisão remota do PI.
+
+## 07/11/2026 — base M3 integrada tecnicamente
+
+- [PR #23](https://github.com/RodReis/war-room3d/pull/23) integrada por squash em `db810ee0f755a71b0cc0573bfd8411a36f672cbe` (`mergedAt` 14:58:20 UTC), a partir do HEAD `1e4799c860270cb3f4c20fe12f254757290aed4d`. Branch de origem preservada.
+- No HEAD da PR: contratos 9/9, serviço 88/88 e typecheck locais; [CI](https://github.com/RodReis/war-room3d/actions/runs/42383433461) com Contratos e Serviço verdes em 7 s e 15 s. Unity EditMode 13/13, PlayMode 10/10 e build Windows de 172.310.849 bytes foram medidos no último commit com C# (`eec3770`); não foram repetidos no SHA de merge. Três threads P2 resolvidas. [Provas e limites](validation/m3/resultado.md).
+- Coleta GitHub, Meu dia, replay, efeitos Unity e limpeza parcial 7/90 entregues; faltam compactação estrutural/agregados de 90 dias, adaptadores reais de transcript, cobertura contínua, posicionamento individual da infraestrutura e prova visual do Player. A revisão automática bloqueou o início do serviço local em background para essa última prova; não houve contorno. A [issue #4](https://github.com/RodReis/war-room3d/issues/4) continua aberta, sem aceite funcional do PI.

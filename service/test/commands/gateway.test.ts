@@ -163,3 +163,17 @@ test('prazo ou revogação após gravação de sending ainda impedem chamada ext
     assert.equal(lab.calls,0);assert.equal(lab.store.commands.get(input.commandId)?.state,reason==='deadline'?'expired':'rejected');
   }
 });
+
+test('prévia expirada durante espera SQLite não vale mesmo com intenção e prova vigentes',async t=>{
+  const lab=setup(t);
+  lab.registry.prove({...proof,validUntil:new Date(at+300000).toISOString()});
+  const value=lab.confirm(intent({deadlineAt:new Date(at+120000).toISOString()}));
+  const transition=lab.store.commands.transition.bind(lab.store.commands);
+  lab.store.commands.transition=(id,state,reason,now)=>{
+    const record=transition(id,state,reason,now);
+    if(state==='sending')lab.setNow(at+61000);
+    return record;
+  };
+  await assert.rejects(lab.gateway.submit(value,actor),/confirmation_invalid/);
+  assert.equal(lab.calls,0);assert.equal(lab.store.commands.get(value.commandId)?.state,'rejected');
+});

@@ -85,7 +85,8 @@ export class CommandGateway {
       this.options.audit.transition(input.commandId,'sending','sending',this.now());
       // Uma gravação SQLite pode esperar pelo lock; conferir prazo/alvo/prova após essa espera.
       checked=this.check(input,actor,true);
-      if(confirmation.generation!==checked.proof.generation || confirmation.request!==JSON.stringify(checked.request))throw new CommandError('confirmation_invalid');
+      if(confirmation.expires<=this.now() || confirmation.generation!==checked.proof.generation ||
+        confirmation.request!==JSON.stringify(checked.request))throw new CommandError('confirmation_invalid');
       this.confirmations.delete(input.confirmationId!);
     } catch(error) {
       const reason=error instanceof CommandError?error.code:'audit_unavailable';

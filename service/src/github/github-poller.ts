@@ -14,8 +14,8 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
     const { owner, name } = projectLinks[0]!;
     const startedAt = new Date().toISOString();
     try {
-      const lastSuccessAt = store.history.lastSuccessfulPollAt(repositoryId);
-      if (!lastSuccessAt || projectLinks.some(link=>link.linkedAt>lastSuccessAt)) client.clearPageCache();
+      const lastScanStartedAt = store.history.lastSuccessfulPollStartedAt(repositoryId);
+      if (!lastScanStartedAt || projectLinks.some(link=>link.linkedAt>lastScanStartedAt)) client.clearPageCache();
       const identity = await client.get(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`);
       if (!identity.body || typeof identity.body !== 'object' || Array.isArray(identity.body) ||
           String((identity.body as {id?:unknown}).id) !== repositoryId) throw new Error('ID GitHub diverge do vínculo configurado');
@@ -26,8 +26,8 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       pullRequests.sort((a,b)=>(a.merged_at??a.updated_at).localeCompare(b.merged_at??b.updated_at)||a.id-b.id);
       workflowRuns.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id-b.id||a.run_attempt-b.run_attempt);
       for (const link of projectLinks) {
-        const isInitialForProject = !lastSuccessAt || link.linkedAt>lastSuccessAt;
-        const modeFor = (occurredAt:string): 'backfill'|'live' => isInitialForProject || occurredAt<=lastSuccessAt ? 'backfill' : 'live';
+        const isInitialForProject = !lastScanStartedAt || link.linkedAt>lastScanStartedAt;
+        const modeFor = (occurredAt:string): 'backfill'|'live' => isInitialForProject || occurredAt<=lastScanStartedAt ? 'backfill' : 'live';
         for (const pr of pullRequests) {
           const normalized = normalizePullRequest(repositoryId, link.projectId, pr);
           if (store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;

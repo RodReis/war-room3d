@@ -7,12 +7,12 @@ Data: 06/11/2026. Issue #4. Implementação na branch `feat/m3-historico-github`
 | Prova | Estado | Evidência |
 |---|---|---|
 | TypeScript estrito do serviço | `pass` | `cd service; npm run typecheck` |
-| Testes do serviço | `pass` | `cd service; npm test`; 72/72, Node 24.15.0 |
+| Testes do serviço | `pass` | `cd service; npm test`; 73/73, Node 24.15.0 |
 | Contratos compartilhados | `pass` | `cd contracts; npm test`; 8/8 |
 | Repositório explicitamente vinculado | `pass` | Teste sintético usa ID opaco do GitHub; nome igual não cria associação |
 | Deduplicação de marco importado | `pass` | Chave por repositório/entidade/transição; desvincular preserva marco histórico |
 | Repositório compartilhado | `pass` | Dois projetos vinculados ao mesmo ID recebem marcos e efeitos próprios no teste sintético |
-| Evento tardio GitHub | `pass` | Marco descoberto após poll anterior, mas com horário anterior a ele, entra como `backfill` e não anima no live |
+| Evento tardio GitHub | `pass` | Marco descoberto após poll anterior, mas ocorrido antes do início dele, entra como `backfill` e não anima no live. Merge ocorrido durante a coleta anterior e visto só na próxima entra como `live`; o corte usa o início da última coleta bem-sucedida, preservado após reinício |
 | Paginação e proteção de credencial | `pass` | HTTP fake cobre páginas, `ETag`/`304` por página, token recusado, bloqueio de link para outra origem, nova associação de projeto e invalidação de cache após falha parcial. Cache ETag persiste só com poll concluído e sobrevive reinício em teste SQLite |
 | Cadastro GitHub sem sonda M2 | `pass` | Configuração local ignorada pelo Git; SQLite em memória retornou um projeto `contaia` e repositório `1371493574` |
 | Meu dia | `partial` | Filtro explícito por projeto na API e no HUD isola sessões, esperas, marcos, incidentes, fontes relacionadas e coletas GitHub durante cada vigência registrada do vínculo. O HUD descarta resposta pendente após mudança de projeto, data ou fuso. Migração v7→v8 preserva a vigência existente; religar cria nova, sem lacuna artificial durante pausa. Fuso IANA e união de intervalos preservados; intervalo de espera aberto ou dia sem sessão observada retorna duração indisponível. Incidente CI aberto em dia anterior permanece visível até resolução no período. Perda explícita de fonte e janelas GitHub entre coletas observadas aparecem como lacunas, inclusive após virada local do dia; não se infere cobertura contínua |

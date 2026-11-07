@@ -360,6 +360,28 @@ test('primeira coleta é backfill; novas transições são live sem repetir efei
   assert.equal((await pollLinkedRepositories(store,client)).milestones,0);
 });
 
+test('merge ocorrido durante coleta anterior e visto depois permanece live',async t=>{
+  const store=storeFor(t);
+  const startedAt=new Date(Date.now()-20000).toISOString();
+  const mergedAt=new Date(Date.now()-15000).toISOString();
+  const completedAt=new Date(Date.now()-10000).toISOString();
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'},new Date(Date.now()-86400000).toISOString());
+  store.history.markPollSuccess('42',startedAt,[],60000,completedAt);
+  assert.equal(store.history.lastSuccessfulPollAt('42'),completedAt);
+  assert.equal(store.history.lastSuccessfulPollStartedAt('42'),startedAt);
+  const client=new GitHubClient('',async input=>{
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/same'))return new Response(JSON.stringify({id:42}),{status:200});
+    if(url.includes('/pulls?'))return new Response(JSON.stringify([{id:2,number:2,state:'closed',merged_at:mergedAt,
+      updated_at:mergedAt,html_url:'https://github.com/owner-a/same/pull/2'}]),{status:200});
+    return new Response(JSON.stringify({workflow_runs:[]}),{status:200});
+  });
+  assert.equal((await pollLinkedRepositories(store,client)).milestones,1);
+  const item=store.history.replay(0,10).events[0] as {ingestionMode:string;effects:{ingestionMode:string}[]};
+  assert.equal(item.ingestionMode,'live');
+  assert.equal(item.effects[0]?.ingestionMode,'live');
+});
+
 test('cliente GitHub pagina, aceita 304, recusa token e não encaminha paginação para outra origem',async()=>{
   const requests: RequestInit[]=[];
   const fake=async (input:string|URL,init?:RequestInit)=>{
@@ -430,8 +452,11 @@ test('ETag só é restaurado do SQLite após coleta concluída e sobrevive rein�
   };
   assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,1);
   assert.equal(store.history.githubPageCache().length,2);
+  const firstScanStartedAt=store.history.lastSuccessfulPollStartedAt('42');
+  assert.ok(firstScanStartedAt);
   store.close();store=null;
   store=new EventStore(dbPath);
+  assert.equal(store.history.lastSuccessfulPollStartedAt('42'),firstScanStartedAt);
   const client=new GitHubClient('',fetcher);
   client.restorePageCache(store.history.githubPageCache());
   const result=await pollLinkedRepositories(store,client);

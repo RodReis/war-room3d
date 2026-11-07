@@ -73,6 +73,12 @@ export class HistoryStore {
     return row?.last_success_at??null;
   }
 
+  lastSuccessfulPollStartedAt(repositoryId: string): string | null {
+    const row=this.db.prepare("SELECT started_at FROM github_poll_attempts WHERE repository_id=? AND status='success' ORDER BY id DESC LIMIT 1")
+      .get(repositoryId) as {started_at:string}|undefined;
+    return row?.started_at??null;
+  }
+
   markPollSuccess(repositoryId: string, startedAt: string, cacheEntries: readonly GitHubPageCacheEntry[], expectedIntervalMs: number, completedAt = new Date().toISOString()): void {
     if (!Number.isSafeInteger(expectedIntervalMs) || expectedIntervalMs < 1000 || expectedIntervalMs > 86400000) throw new Error('Cadência GitHub inválida');
     this.db.transaction(() => {

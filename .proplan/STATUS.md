@@ -1,6 +1,6 @@
 ---
 proplan: v1
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 <!-- gerado pelo ProPlan a partir das Issues — não edite à mão -->
 # Status
@@ -18,9 +18,7 @@ _(vazio)_
 
 ## Em Andamento
 
-### Sem épico
-
-- M3 — Meu dia, replay e GitHub (#4)
+_(vazio)_
 
 ## Feito
 
@@ -30,6 +28,7 @@ _(vazio)_
 
 ### Sem épico
 
+- M3 — Meu dia, replay e GitHub (#4, finalizado em: 2026-11-07)
 - M2 — Data center e infraestrutura essencial (#3, finalizado em: 2026-11-06)
 - M1 — Quartel vivo e observação de agentes (#2, finalizado em: 2026-11-06)
 - M0 — Fundação visual e contrato (#1, finalizado em: 2026-11-06)

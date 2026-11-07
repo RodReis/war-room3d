@@ -60,6 +60,7 @@
             <ui:Label text="Meu dia" class="history-title" />
             <ui:TextField name="history-date" label="Data (AAAA-MM-DD)" />
             <ui:TextField name="history-zone" label="Fuso IANA" />
+            <ui:DropdownField name="history-project" label="Projeto" />
             <ui:Button name="history-load" text="Consultar dia" class="primary-button" />
             <ui:Label name="history-metrics" text="Selecione data e fuso." class="activity" />
             <ui:Label name="history-coverage" text="Cobertura ainda não consultada." class="hint" />

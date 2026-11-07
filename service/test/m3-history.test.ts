@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
+import Database from 'better-sqlite3';
 import { EventStore } from '../src/store/event-store.ts';
 import { GitHubClient, GitHubRateLimitError, normalizeWorkflowRun } from '../src/github/github-client.ts';
 import { configureGithub } from '../src/github/github-config.ts';
@@ -105,6 +106,76 @@ test('Meu dia declara janela GitHub sem coleta no fuso local e recuperação sem
   assert.equal(recovered.status,'partial');
   assert.deepEqual([recovered.successfulAttempts,recovered.failedAttempts],[1,1]);
   assert.deepEqual(recovered.gaps,[{repositoryId:'42',start:'2026-11-06T03:00:00.000Z',end:'2026-11-06T03:05:00.000Z',reason:'rate_limited'}]);
+});
+
+test('Meu dia filtra sessões, lacunas, GitHub e marcos por projeto explícito',async t=>{
+  const store=storeFor(t);
+  store.registerProject({projectId:'p2',name:'Outro projeto',canonicalPath:'C:\\synthetic2'});
+  const base={schemaVersion:'1.0',sourceVersion:'test',receivedAt:'2026-11-06T19:00:00Z',provider:'codex',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(id:string,sourceId:string,projectId:string|undefined,sessionKey:string|undefined,type:string,at:string,offset:number)=>
+    store.apply({...base,eventId:id,sourceEventId:id,sourceId,projectId,sessionKey,type,observedAt:at},
+      {sourceId,fileKey:'synthetic',generation:1,offset});
+  apply('p1-open','source1','p1','s1','session.observed','2026-11-06T15:00:00Z',1);
+  apply('p2-open','source2','p2','s2','session.observed','2026-11-06T15:00:00Z',1);
+  apply('p1-loss','source1',undefined,undefined,'source.unavailable','2026-11-06T16:00:00Z',2);
+  apply('p1-end','source1','p1','s1','session.ended','2026-11-06T17:00:00Z',3);
+  apply('p2-end','source2','p2','s2','session.ended','2026-11-06T18:00:00Z',2);
+  for(const [repositoryId,projectId] of [['1','p1'],['2','p2']]){
+    store.history.linkRepository({repositoryId,owner:'owner-a',name:`repo-${repositoryId}`,projectId},'2026-11-05T00:00:00Z');
+    store.history.markPollSuccess(repositoryId,'2026-11-06T15:00:00Z',[],60000,'2026-11-06T15:00:01Z');
+    store.history.recordGithubMilestone({repositoryId,projectId,entityType:'pull_request',entityId:`pr-${repositoryId}`,
+      transition:'merged',occurredAt:'2026-11-06T16:00:00Z',payload:{number:Number(repositoryId)}});
+  }
+  const p1=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-07T02:00:00Z','p1') as
+    {projectId:string;elapsedDurationMs:number;coverage:{gaps:{sourceId:string}[]};githubCoverage:{attempts:number};milestones:{projectId:string}[]};
+  const p2=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-07T02:00:00Z','p2') as typeof p1;
+  assert.deepEqual([p1.projectId,p1.elapsedDurationMs,p1.coverage.gaps.map(x=>x.sourceId),p1.githubCoverage.attempts,p1.milestones.map(x=>x.projectId)],
+    ['p1',3600000,['source1'],1,['p1']]);
+  assert.deepEqual([p2.projectId,p2.elapsedDurationMs,p2.coverage.gaps,p2.githubCoverage.attempts,p2.milestones.map(x=>x.projectId)],
+    ['p2',10800000,[],1,['p2']]);
+  const token=randomBytes(32).toString('hex');
+  const {server,url}=await startReadOnlyServer(store,token);t.after(()=>server.close());
+  const headers={Authorization:`Bearer ${token}`};
+  const query='date=2026-11-06&timeZone=America%2FSao_Paulo&projectId=';
+  const response=await fetch(`${url}/v1/history/day?${query}p1`,{headers});
+  assert.equal(response.status,200);
+  assert.equal((await response.json() as {projectId:string}).projectId,'p1');
+  assert.equal((await fetch(`${url}/v1/history/day?${query}unknown`,{headers})).status,400);
+});
+
+test('desvincular e religar preserva períodos GitHub sem lacuna durante pausa',t=>{
+  const store=storeFor(t);
+  const link={repositoryId:'42',owner:'owner-a',name:'repo',projectId:'p1'};
+  store.history.linkRepository(link,'2026-11-05T00:00:00Z');
+  store.history.markPollSuccess('42','2026-11-05T12:00:00Z',[],60000,'2026-11-05T12:00:01Z');
+  assert.throws(()=>store.history.unlinkRepository('42','p1','2026-11-04T23:00:00Z'),/Desvínculo não pode anteceder vínculo/);
+  assert.equal(store.history.unlinkRepository('42','p1','2026-11-05T13:00:00Z'),true);
+  assert.throws(()=>store.history.linkRepository(link,'2026-11-05T12:00:00Z'),/Vínculo não pode anteceder desvínculo/);
+  store.history.linkRepository(link,'2026-11-06T00:00:00Z');
+  store.history.markPollSuccess('42','2026-11-06T12:00:00Z',[],60000,'2026-11-06T12:00:01Z');
+  const first=store.history.daySummary('2026-11-05','UTC','2026-11-07T00:00:00Z','p1').githubCoverage as {attempts:number;gaps:unknown[]};
+  const second=store.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z','p1').githubCoverage as {attempts:number;gaps:unknown[]};
+  assert.deepEqual([first.attempts,second.attempts],[1,1]);
+  assert.deepEqual(first.gaps,[]);
+  assert.deepEqual(second.gaps,[]);
+});
+
+test('migração v7 preserva vínculo existente na cobertura filtrada',t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-link-v7-'));
+  const databasePath=path.join(dir,'db.sqlite');
+  let migrated:EventStore|null=null;
+  t.after(()=>{migrated?.close();rmSync(dir,{recursive:true,force:true});});
+  const original=new EventStore(databasePath);
+  original.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\synthetic'});
+  original.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'repo',projectId:'p1'},'2026-11-05T00:00:00Z');
+  original.history.markPollSuccess('42','2026-11-06T12:00:00Z',[],60000,'2026-11-06T12:00:01Z');
+  original.close();
+  const legacy=new Database(databasePath);
+  legacy.exec("DROP TABLE project_repository_link_periods; UPDATE meta SET value=7 WHERE key='schema_version'");
+  legacy.close();
+  migrated=new EventStore(databasePath);
+  const coverage=migrated.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z','p1').githubCoverage as {attempts:number};
+  assert.equal(coverage.attempts,1);
 });
 
 test('replay reconstrói estado da sala no instante, inclui evento tardio e não altera live',t=>{

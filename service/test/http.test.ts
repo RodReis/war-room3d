@@ -104,7 +104,7 @@ test('migração de M3 preserva snapshot e cursor SSE existentes', async t => {
   const oldSequence = original.snapshot().streamSequence as number;
   original.close();
   const db = new Database(databasePath);
-  db.exec("DROP TABLE github_page_cache; DROP TABLE github_poll_attempts; DROP TABLE github_poll_state; DROP TABLE history_effects; DROP TABLE history_incidents; DROP TABLE history_milestones; DROP TABLE project_repositories; UPDATE meta SET value = 3 WHERE key = 'schema_version'");
+  db.exec("DROP TABLE project_repository_link_periods; DROP TABLE github_page_cache; DROP TABLE github_poll_attempts; DROP TABLE github_poll_state; DROP TABLE history_effects; DROP TABLE history_incidents; DROP TABLE history_milestones; DROP TABLE project_repositories; UPDATE meta SET value = 3 WHERE key = 'schema_version'");
   db.close();
   migrated = new EventStore(databasePath);
   assert.equal(migrated.transportBaseline(), -1);

@@ -28,18 +28,35 @@ export class HistoryStore {
 
   linkRepository(input: { repositoryId: string; owner: string; name: string; projectId: string }, at = new Date().toISOString()): RepositoryLink {
     if (!/^[A-Za-z0-9][A-Za-z0-9-]{0,99}$/.test(input.owner) || !/^[A-Za-z0-9._-]{1,100}$/.test(input.name) || input.name === '.' || input.name === '..' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(input.repositoryId)) throw new Error('Identidade de repositório inválida');
+    if (!Number.isFinite(Date.parse(at))) throw new Error('Data de vínculo inválida');
     if (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(input.projectId)) throw new Error('Projeto desconhecido');
     const identity = this.db.prepare('SELECT owner,name FROM project_repositories WHERE repository_id=? LIMIT 1').get(input.repositoryId) as {owner:string;name:string}|undefined;
     if (identity && (identity.owner !== input.owner || identity.name !== input.name)) throw new Error('ID de repositório vinculado a outro owner/repo');
-    this.db.prepare(`INSERT INTO project_repositories(repository_id, owner, name, project_id, linked_at, active)
-      VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(repository_id, project_id) DO UPDATE SET linked_at=CASE WHEN project_repositories.active=1 THEN project_repositories.linked_at ELSE excluded.linked_at END, unlinked_at=NULL, active=1`)
-      .run(input.repositoryId, input.owner, input.name, input.projectId, at);
-    const row = this.db.prepare('SELECT linked_at FROM project_repositories WHERE repository_id=? AND project_id=?').get(input.repositoryId, input.projectId) as {linked_at:string};
-    return { ...input, linkedAt: row.linked_at };
+    return this.db.transaction(() => {
+      const prior=this.db.prepare('SELECT active,unlinked_at FROM project_repositories WHERE repository_id=? AND project_id=?').get(input.repositoryId,input.projectId) as {active:number;unlinked_at:string|null}|undefined;
+      if(prior?.active===0 && prior.unlinked_at && compareTimestamp(at,prior.unlinked_at)<0)throw new Error('Vínculo não pode anteceder desvínculo');
+      this.db.prepare(`INSERT INTO project_repositories(repository_id, owner, name, project_id, linked_at, active)
+        VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(repository_id, project_id) DO UPDATE SET linked_at=CASE WHEN project_repositories.active=1 THEN project_repositories.linked_at ELSE excluded.linked_at END, unlinked_at=NULL, active=1`)
+        .run(input.repositoryId, input.owner, input.name, input.projectId, at);
+      if(!prior || prior.active===0)
+        this.db.prepare('INSERT INTO project_repository_link_periods(repository_id,project_id,linked_at) VALUES (?,?,?)')
+          .run(input.repositoryId,input.projectId,at);
+      const row = this.db.prepare('SELECT linked_at FROM project_repositories WHERE repository_id=? AND project_id=?').get(input.repositoryId, input.projectId) as {linked_at:string};
+      return { ...input, linkedAt: row.linked_at };
+    })();
   }
 
   unlinkRepository(repositoryId: string, projectId: string, at = new Date().toISOString()): boolean {
-    return this.db.prepare('UPDATE project_repositories SET active=0, unlinked_at=? WHERE repository_id=? AND project_id=? AND active=1').run(at, repositoryId, projectId).changes > 0;
+    if (!Number.isFinite(Date.parse(at))) throw new Error('Data de desvínculo inválida');
+    return this.db.transaction(() => {
+      const prior=this.db.prepare('SELECT linked_at FROM project_repositories WHERE repository_id=? AND project_id=? AND active=1').get(repositoryId,projectId) as {linked_at:string}|undefined;
+      if(prior && compareTimestamp(at,prior.linked_at)<0)throw new Error('Desvínculo não pode anteceder vínculo');
+      const removed=this.db.prepare('UPDATE project_repositories SET active=0, unlinked_at=? WHERE repository_id=? AND project_id=? AND active=1')
+        .run(at,repositoryId,projectId).changes>0;
+      if(removed)this.db.prepare('UPDATE project_repository_link_periods SET unlinked_at=? WHERE repository_id=? AND project_id=? AND unlinked_at IS NULL')
+        .run(at,repositoryId,projectId);
+      return removed;
+    })();
   }
 
   repositories(): RepositoryLink[] {
@@ -182,16 +199,24 @@ export class HistoryStore {
     return intervals;
   }
 
-  daySummary(date: string, timeZone: string, now = new Date().toISOString()): Record<string, unknown> {
+  daySummary(date: string, timeZone: string, now = new Date().toISOString(), projectId?: string): Record<string, unknown> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data inválida');
     new Intl.DateTimeFormat('pt-BR', { timeZone }).format(new Date(`${date}T12:00:00Z`));
+    if (projectId && !this.db.prepare('SELECT 1 FROM projects WHERE project_id=?').get(projectId)) throw new Error('Projeto desconhecido');
     const rows = this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE json_extract(event_json,'$.observedAt') IS NOT NULL ORDER BY stream_sequence").all() as { stream_sequence: number; event_json: string }[];
-    const events: (Record<string, unknown> & { streamSequence: number })[] = rows.map(r => ({ ...(JSON.parse(r.event_json) as Record<string, unknown>), streamSequence: r.stream_sequence }));
+    const nowMs=Date.parse(now);
+    const allEvents: (Record<string, unknown> & { streamSequence: number })[] = rows.map(r => ({ ...(JSON.parse(r.event_json) as Record<string, unknown>), streamSequence: r.stream_sequence } as Record<string, unknown> & {streamSequence:number}))
+      .filter(e=>Date.parse(String(e.observedAt))<=nowMs);
     const dayStart = zonedMidnight(date, timeZone);
     const calendar = new Date(`${date}T12:00:00Z`);
     calendar.setUTCDate(calendar.getUTCDate() + 1);
     const nextDate = calendar.toISOString().slice(0, 10);
     const dayEnd = zonedMidnight(nextDate, timeZone);
+    const asOfEnd = Math.min(dayEnd,nowMs);
+    const projectSources = new Set(allEvents.filter(e=>e.projectId===projectId && typeof e.sourceId==='string' &&
+      Date.parse(String(e.observedAt))<asOfEnd).map(e=>String(e.sourceId)));
+    const events = projectId ? allEvents.filter(e=>e.projectId===projectId ||
+      (String(e.type).startsWith('source.') && projectSources.has(String(e.sourceId)))) : allEvents;
     const sessions = intervals(events, 'sessionKey', dayStart, dayEnd);
     const agents = intervals(events, 'agentKey', dayStart, dayEnd);
     const waiting = waitingIntervals(events,dayStart,dayEnd);
@@ -201,29 +226,37 @@ export class HistoryStore {
       ? null : unionDuration(waiting);
     const dayEvents = events.filter(e => { const t = Date.parse(String(e.observedAt)); return t >= dayStart && t < dayEnd; });
     const sourceGaps = sourceCollectionGaps(events,dayStart,dayEnd,Date.parse(now));
-    const githubHistory = this.db.prepare('SELECT repository_id,started_at,completed_at,status,expected_interval_ms FROM github_poll_attempts WHERE started_at<=? ORDER BY repository_id,started_at,id')
-      .all(now) as GithubPollAttempt[];
+    const linkedRepositories = projectId ? this.db.prepare('SELECT repository_id,linked_at,unlinked_at FROM project_repository_link_periods WHERE project_id=?').all(projectId) as
+      {repository_id:string;linked_at:string;unlinked_at:string|null}[] : [];
+    const githubHistory = (this.db.prepare('SELECT repository_id,started_at,completed_at,status,expected_interval_ms FROM github_poll_attempts WHERE started_at<=? ORDER BY repository_id,started_at,id')
+      .all(now) as GithubPollAttempt[]).filter(attempt=>Date.parse(attempt.completed_at)<=nowMs && (!projectId || linkedRepositories.some(link=>link.repository_id===attempt.repository_id &&
+        Date.parse(link.linked_at)<=Date.parse(attempt.started_at) && (!link.unlinked_at || Date.parse(attempt.started_at)<Date.parse(link.unlinked_at)))));
     const githubAttempts = githubHistory.filter(x=>Date.parse(x.started_at)>=dayStart && Date.parse(x.started_at)<dayEnd);
     const successfulAttempts = githubAttempts.filter(x=>x.status==='success');
     const failedAttempts = githubAttempts.filter(x=>x.status!=='success');
-    const gaps = githubPollGaps(githubHistory,dayStart,dayEnd,Date.parse(now));
-    const asOfEnd = Math.min(dayEnd,Date.parse(now));
-    const incidentMarkers = this.ciIncidentIntervals().filter(row=>asOfEnd>dayStart && Date.parse(row.openedAt)<asOfEnd &&
+    const gaps = projectId ? linkedRepositories.flatMap(link=>githubPollGaps(githubHistory.filter(attempt=>
+      attempt.repository_id===link.repository_id && Date.parse(attempt.started_at)>=Date.parse(link.linked_at) &&
+      (!link.unlinked_at || Date.parse(attempt.started_at)<Date.parse(link.unlinked_at))),dayStart,dayEnd,nowMs))
+      .sort((a,b)=>a.start.localeCompare(b.start)||a.repositoryId.localeCompare(b.repositoryId))
+      : githubPollGaps(githubHistory,dayStart,dayEnd,nowMs);
+    const incidentMarkers = this.ciIncidentIntervals().filter(row=>(!projectId || row.projectId===projectId) && asOfEnd>dayStart && Date.parse(row.openedAt)<asOfEnd &&
       (!row.resolvedAt || Date.parse(row.resolvedAt)>dayStart))
       .map(row=>({...row,openedBeforeDay:Date.parse(row.openedAt)<dayStart,
         resolvedAt:row.resolvedAt && Date.parse(row.resolvedAt)<asOfEnd ? row.resolvedAt : null,
         activeAtEnd:!row.resolvedAt || Date.parse(row.resolvedAt)>asOfEnd}));
-    return { date, timeZone, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
+    return { date, timeZone, projectId:projectId??null, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
       agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
       waitingDurationMs:waitingMs,waitingDurationKnown:waitingMs!==null,
       coverage: { status: dayEvents.length ? 'unknown' : 'none', observedEventCount: dayEvents.length, reason: 'expected_collection_windows_not_recorded',
-        gaps: dayEvents.length || sourceGaps.length ? sourceGaps : Math.min(dayEnd,Date.parse(now))>dayStart
-          ? [{ start: new Date(dayStart).toISOString(), end: new Date(Math.min(dayEnd,Date.parse(now))).toISOString(), reason: 'no_observations' }] : [] },
+        gaps: dayEvents.length || sourceGaps.length ? sourceGaps : asOfEnd>dayStart
+          ? [{ start: new Date(dayStart).toISOString(), end: new Date(asOfEnd).toISOString(), reason: 'no_observations' }] : [] },
       githubCoverage: { status: githubAttempts.length===0?(gaps.length?'gap':'none'):successfulAttempts.length===0?'failed':failedAttempts.length||gaps.length?'partial':'sampled',
         attempts:githubAttempts.length,successfulAttempts:successfulAttempts.length,failedAttempts:failedAttempts.length,
         lastSuccessfulPollAt:successfulAttempts.at(-1)?.completed_at??null,
         gaps },
-      milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[]).map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
+      milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[])
+        .filter(r=>(!projectId || r.project_id===projectId) && Date.parse(r.occurred_at)<=nowMs)
+        .map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
       incidentMarkers, costs: null };
   }
 }

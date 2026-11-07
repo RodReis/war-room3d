@@ -17,7 +17,7 @@ namespace WarRoom3D.Tests
     {
         private static string Snapshot(int sequence) =>
             "{\"schemaVersion\":\"1.0\",\"mode\":\"live\",\"revision\":1,\"streamSequence\":" + sequence +
-            ",\"projects\":[],\"roomPlacements\":[],\"sessions\":[],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[]}";
+            ",\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[]}";
 
         [UnityTest]
         public IEnumerator DemoSceneDoesNotExposeOperationalHistory()
@@ -93,10 +93,14 @@ namespace WarRoom3D.Tests
                 var root = UnityEngine.Object.FindAnyObjectByType<UIDocument>().rootVisualElement;
                 client.Configure($"http://127.0.0.1:{port}", token);
                 client.AcceptSnapshot(Snapshot(1));
+                var projectSelect = root.Q<DropdownField>("history-project");
+                Assert.That(projectSelect.choices, Does.Contain("Projeto (p1)"));
+                projectSelect.value = "Projeto (p1)";
                 history.SendMessage("Open");
                 var deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-metrics").text.Contains("Tempo decorrido")) yield return null;
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Tempo decorrido"));
+                Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Projeto: p1"));
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Match("Espera observada: 0[.,]5 h"));
                 Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.childCount, Is.EqualTo(3));
                 Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.Q<Label>().text, Does.StartWith("CI ativo desde"));
@@ -177,6 +181,8 @@ namespace WarRoom3D.Tests
                     }
                     if (first != null && first.Contains("/v1/history/day?"))
                         body = body.Replace("\"incidentMarkers\":[]", "\"incidentMarkers\":[{\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\",\"openedBeforeDay\":true,\"resolvedAt\":null,\"activeAtEnd\":true}]");
+                    if (first != null && first.Contains("/v1/history/day?") && first.Contains("projectId=p1"))
+                        body = body.Replace("\"timeZone\":\"America/Sao_Paulo\"", "\"timeZone\":\"America/Sao_Paulo\",\"projectId\":\"p1\"");
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                     await stream.WriteAsync(header, 0, header.Length);

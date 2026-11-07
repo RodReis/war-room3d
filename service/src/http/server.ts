@@ -54,12 +54,16 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
       if (parsedUrl.pathname === '/v1/history/day') {
         const date = parsedUrl.searchParams.get('date');
         const timeZone = parsedUrl.searchParams.get('timeZone');
-        if (!date || !timeZone || [...parsedUrl.searchParams.keys()].some(k => !['date','timeZone'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
+        const projectId = parsedUrl.searchParams.get('projectId');
+        if (!date || !timeZone || (projectId !== null && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(projectId)) ||
+            [...parsedUrl.searchParams.keys()].some(k => !['date','timeZone','projectId'].includes(k))) { sendJson(response, 400, { code: 'invalid_query' }); return; }
         const parsedDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`) : new Date(NaN);
         if (!Number.isFinite(parsedDate.getTime()) || parsedDate.toISOString().slice(0,10) !== date) { sendJson(response, 400, { code: 'invalid_query' }); return; }
         try { new Intl.DateTimeFormat('pt-BR', {timeZone}).format(parsedDate); }
         catch (error) { if (error instanceof RangeError) { sendJson(response, 400, {code:'invalid_query'}); return; } throw error; }
-        sendJson(response, 200, store.history.daySummary(date, timeZone)); return;
+        try { sendJson(response, 200, store.history.daySummary(date, timeZone, new Date().toISOString(), projectId??undefined)); }
+        catch (error) { if (error instanceof Error && error.message==='Projeto desconhecido') sendJson(response, 400, {code:'invalid_query'}); else throw error; }
+        return;
       }
       if (parsedUrl.pathname === '/v1/history/replay') {
         const cursor = parseCursor(parsedUrl.searchParams.get('cursor') ?? '0');

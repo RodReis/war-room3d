@@ -16,6 +16,8 @@ namespace WarRoom3D
         private LiveStateClient client;
         private TextField dateField;
         private TextField zoneField;
+        private DropdownField projectField;
+        private readonly Dictionary<string, string> projectIds = new Dictionary<string, string>();
         private ScrollView timeline;
         private Label metrics;
         private Label coverage;
@@ -50,6 +52,7 @@ namespace WarRoom3D
             mask = root.Q<VisualElement>("history-mask");
             dateField = root.Q<TextField>("history-date");
             zoneField = root.Q<TextField>("history-zone");
+            projectField = root.Q<DropdownField>("history-project");
             timeline = root.Q<ScrollView>("history-timeline");
             metrics = root.Q<Label>("history-metrics");
             coverage = root.Q<Label>("history-coverage");
@@ -57,7 +60,7 @@ namespace WarRoom3D
             seekField = root.Q<TextField>("history-seek");
             playButton = root.Q<Button>("history-play");
             speedButton = root.Q<Button>("history-speed");
-            if (panel == null || mask == null || dateField == null || zoneField == null || timeline == null ||
+            if (panel == null || mask == null || dateField == null || zoneField == null || projectField == null || timeline == null ||
                 metrics == null || coverage == null || seal == null || seekField == null || playButton == null || speedButton == null) throw new ArgumentException("HUD histórico incompleto");
             panel.style.display = DisplayStyle.None;
             mask.style.display = DisplayStyle.None;
@@ -65,6 +68,9 @@ namespace WarRoom3D
             root.Q<VisualElement>("history-time-controls").style.display = DisplayStyle.None;
             dateField.value = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             zoneField.value = "America/Sao_Paulo";
+            client.SnapshotChanged += OnSnapshotChanged;
+            RefreshProjectChoices(client.Snapshot);
+            projectField.RegisterValueChangedCallback(_ => InvalidateDay());
             var open = root.Q<Button>("history-button");
             open.style.display = DisplayStyle.Flex;
             open.clicked += Open;
@@ -81,8 +87,38 @@ namespace WarRoom3D
 
         private void Open()
         {
+            RefreshProjectChoices(client.Snapshot);
             panel.style.display = DisplayStyle.Flex;
             if (day == null) StartCoroutine(LoadDay());
+        }
+
+        private void OnSnapshotChanged(LiveSnapshot snapshot) { RefreshProjectChoices(snapshot); }
+
+        private void RefreshProjectChoices(LiveSnapshot snapshot)
+        {
+            var selected = projectField.value;
+            var choices = new List<string> { "Todos os projetos" };
+            projectIds.Clear();
+            if (snapshot?.projects != null)
+                foreach (var project in snapshot.projects)
+                {
+                    var label = project.name + " (" + project.projectId + ")";
+                    choices.Add(label);
+                    projectIds.Add(label, project.projectId);
+                }
+            projectField.choices = choices;
+            var next = choices.Contains(selected) ? selected : choices[0];
+            projectField.SetValueWithoutNotify(next);
+            if (selected != null && selected != next) InvalidateDay();
+        }
+
+        private void InvalidateDay()
+        {
+            day = null;
+            if (replaying) return;
+            metrics.text = "Filtro alterado. Consulte o dia.";
+            coverage.text = "Cobertura ainda não consultada.";
+            timeline.Clear();
         }
 
         private void Close()
@@ -101,6 +137,7 @@ namespace WarRoom3D
                 yield break;
             }
             var path = "/v1/history/day?date=" + Uri.EscapeDataString(dateField.value) + "&timeZone=" + Uri.EscapeDataString(zoneField.value);
+            if (projectIds.TryGetValue(projectField.value, out var projectId)) path += "&projectId=" + Uri.EscapeDataString(projectId);
             UnityWebRequest request;
             try { request = client.CreateHistoryRequest(path); }
             catch (ArgumentException) { metrics.text = "Serviço histórico não configurado."; yield break; }
@@ -122,7 +159,8 @@ namespace WarRoom3D
         private void RenderDay()
         {
             if (day == null) return;
-            metrics.text = (day.elapsedDurationKnown ? $"Tempo decorrido: {day.elapsedDurationMs / 3600000:0.##} h" : "Tempo decorrido: indisponível") +
+            metrics.text = (string.IsNullOrEmpty(day.projectId) ? "Todos os projetos" : "Projeto: " + day.projectId) + "\n" +
+                (day.elapsedDurationKnown ? $"Tempo decorrido: {day.elapsedDurationMs / 3600000:0.##} h" : "Tempo decorrido: indisponível") +
                 "\n" + (day.agentHoursKnown ? $"Horas-agente: {day.agentHours:0.##} h" : "Horas-agente: indisponível") +
                 "\n" + (day.waitingDurationKnown ? $"Espera observada: {day.waitingDurationMs / 3600000:0.##} h" : "Espera observada: indisponível");
             coverage.text = day.coverage.status == "none" ? "Sem observações de sessão neste dia. Cobertura incompleta." :
@@ -353,12 +391,18 @@ namespace WarRoom3D
             root.Q<Button>("history-replay").style.display = DisplayStyle.Flex;
             client.RefreshNow();
             RenderDay();
+            if (day == null) InvalidateDay();
         }
 
         private void OnDisable()
         {
             StopAllCoroutines();
             if (replaying && root != null) ExitReplay();
+        }
+
+        private void OnDestroy()
+        {
+            if (client != null) client.SnapshotChanged -= OnSnapshotChanged;
         }
     }
 
@@ -367,6 +411,7 @@ namespace WarRoom3D
     {
         public string date;
         public string timeZone;
+        public string projectId;
         public double elapsedDurationMs;
         public bool elapsedDurationKnown;
         public double agentHours;

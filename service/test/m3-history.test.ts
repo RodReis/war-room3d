@@ -686,3 +686,44 @@ test('replay recusa cursor expirado ou futuro e aceita limite da janela',async t
   }
   assert.equal((await fetch(`${started.url}/v1/history/replay?cursor=1`,{headers})).status,200);
 });
+
+test('retenção 7/90 oculta detalhe antigo, preserva contagem e sinaliza evidência expirada',async t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'});
+  const base={repositoryId:'42',projectId:'p1',entityType:'pull_request' as const,transition:'merged'};
+  assert.equal(store.history.recordGithubMilestone({...base,entityId:'old',occurredAt:'2026-10-20T15:00:00Z',payload:{url:'https://example.test/private-old'}}),true);
+  assert.equal(store.history.recordGithubMilestone({...base,entityId:'new',occurredAt:'2026-11-06T15:00:00Z',payload:{url:'https://example.test/recent'}}),true);
+  assert.equal(store.history.recordGithubMilestone({...base,entityId:'late-old',occurredAt:'2026-10-21T15:00:00Z',payload:{url:'https://example.test/private-late'}}),true);
+  const now='2026-11-07T15:00:00Z';
+  const old=store.history.daySummary('2026-10-20','UTC',now) as {milestones:unknown[];milestoneCounts:{count:number}[];retention:{evidenceStatus:string}};
+  assert.deepEqual(old.milestones,[]);
+  assert.deepEqual(old.milestoneCounts.map(row=>row.count),[1]);
+  assert.equal(old.retention.evidenceStatus,'expired');
+  assert.doesNotMatch(JSON.stringify(old),/private-old/);
+  const replay=store.history.replay(0,10,now) as {events:{entityId:string}[]};
+  assert.deepEqual(replay.events.map(row=>row.entityId),['new']);
+  assert.throws(()=>store.historicalSnapshot('2026-10-20T15:00:00Z',now),/expirado/);
+  assert.throws(()=>store.history.daySummary('2026-07-01','UTC',now),/expirado/);
+  const token=randomBytes(32).toString('hex');
+  const {server,url}=await startReadOnlyServer(store,token);
+  t.after(()=>{server.closeAllConnections();server.close();});
+  const headers={Authorization:`Bearer ${token}`};
+  const retention=await fetch(`${url}/v1/history/retention`,{headers});
+  assert.equal(retention.status,200);
+  assert.deepEqual([(await retention.json() as {detailWindowDays:number;aggregateWindowDays:number}).detailWindowDays,
+    (await (await fetch(`${url}/v1/history/retention`,{headers})).json() as {aggregateWindowDays:number}).aggregateWindowDays],[7,90]);
+  const expiredDay=await fetch(`${url}/v1/history/day?date=2026-01-01&timeZone=UTC`,{headers});
+  assert.equal(expiredDay.status,410);
+  assert.deepEqual(await expiredDay.json(),{code:'aggregate_expired',evidenceStatus:'expired'});
+  const expiredState=await fetch(`${url}/v1/history/replay/state?at=2026-01-01T12%3A00%3A00Z`,{headers});
+  assert.equal(expiredState.status,410);
+  assert.deepEqual(await expiredState.json(),{code:'evidence_expired',evidenceStatus:'expired'});
+  const workflow={repositoryId:'42',projectId:'p1',entityType:'workflow' as const,
+    payload:{workflowId:7,runId:1,attempt:1,ref:'main',headSha:'sha',url:'https://example.test/ci'}};
+  store.history.recordGithubMilestone({...workflow,entityId:'closed-failure',transition:'attempt-1-failure',occurredAt:'2026-01-01T12:00:00Z'});
+  store.history.recordGithubMilestone({...workflow,entityId:'closed-success',transition:'attempt-1-success',occurredAt:'2026-01-01T12:05:00Z'});
+  store.history.recordGithubMilestone({...workflow,entityId:'open-failure',transition:'attempt-1-failure',occurredAt:'2026-01-01T12:10:00Z',payload:{...workflow.payload,workflowId:8}});
+  store.history.markPollSuccess('42','2026-01-01T12:00:00Z',[],60000,'2026-01-01T12:00:01Z');
+  assert.deepEqual(store.history.pruneExpired(now),{effects:4,resolvedIncidents:1,pollAttempts:1});
+  assert.deepEqual(store.history.pruneExpired(now),{effects:0,resolvedIncidents:0,pollAttempts:0});
+});

@@ -13,6 +13,12 @@ if (!databasePath || !token || !Number.isSafeInteger(port) || port < 1024 || por
   throw new Error('Banco, token ou porta do serviço não configurados');
 const store = new EventStore(databasePath);
 try {
+  store.history.pruneExpired();
+  const retentionTimer = setInterval(() => {
+    try { store.history.pruneExpired(); }
+    catch { process.stdout.write('M3: manutenção da retenção indisponível\n'); }
+  }, 86400000);
+  retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
   const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
@@ -42,6 +48,7 @@ try {
   }
   process.stdout.write(`Serviço de leitura ativo em ${url}\n`);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {
+    clearInterval(retentionTimer);
     if (githubTimer) clearInterval(githubTimer);
     await monitoring?.runner.stop();
     server.closeAllConnections();

@@ -136,6 +136,13 @@ namespace WarRoom3D.Tests
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Layout histórico indisponível"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Infraestrutura sem inventário histórico"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("CI: 1 incidente(s) ativo(s)"));
+                root.Q<TextField>("history-seek").value = "2026-01-01T12:00:00Z";
+                history.SendMessage("Seek");
+                deadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-coverage").text.Contains("Evidência expirada")) yield return null;
+                Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("Evidência expirada após 7 dias"));
+                root.Q<TextField>("history-seek").value = "2026-11-06T15:10:00Z";
+                history.SendMessage("Seek");
                 history.SendMessage("CycleSpeed");
                 Assert.That(root.Q<Button>("history-speed").text, Is.EqualTo("60×"));
                 history.SendMessage("TogglePlayback");
@@ -205,6 +212,11 @@ namespace WarRoom3D.Tests
                         body = body.Replace("\"incidentMarkers\":[]", "\"incidentMarkers\":[{\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\",\"openedBeforeDay\":true,\"resolvedAt\":null,\"activeAtEnd\":true}]");
                     if (first != null && first.Contains("/v1/history/day?") && first.Contains("projectId=p1"))
                         body = body.Replace("\"timeZone\":\"America/Sao_Paulo\"", "\"timeZone\":\"America/Sao_Paulo\",\"projectId\":\"p1\"");
+                    if (first != null && first.Contains("2026-01-01"))
+                    {
+                        status = "410 Gone";
+                        body = "{\"code\":\"evidence_expired\",\"evidenceStatus\":\"expired\"}";
+                    }
                     if (first != null && first.Contains("/v1/history/day?")) await Task.Delay(150);
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");

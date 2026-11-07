@@ -3,6 +3,16 @@ import type { GitHubPageCacheEntry } from '../github/github-client.ts';
 import { compareTimestamp } from '../domain/session-reducer.ts';
 
 type EventRow = { event_id: string; stream_sequence: number; event_json: string };
+const DAY_MS = 86400000;
+export const REPLAY_RETENTION_DAYS = 7;
+export const AGGREGATE_RETENTION_DAYS = 90;
+
+export function retentionCutoffs(now: string): { detailCutoffAt: string; aggregateCutoffAt: string } {
+  const timestamp = Date.parse(now);
+  if (!Number.isFinite(timestamp)) throw new Error('Instante de retenção inválido');
+  return { detailCutoffAt: new Date(timestamp - REPLAY_RETENTION_DAYS * DAY_MS).toISOString(),
+    aggregateCutoffAt: new Date(timestamp - AGGREGATE_RETENTION_DAYS * DAY_MS).toISOString() };
+}
 
 export interface RepositoryLink {
   repositoryId: string;
@@ -109,6 +119,15 @@ export class HistoryStore {
       .map(row=>({url:row.url,etag:row.etag,next:row.next_url}));
   }
 
+  pruneExpired(now = new Date().toISOString()): { effects: number; resolvedIncidents: number; pollAttempts: number } {
+    const {detailCutoffAt,aggregateCutoffAt}=retentionCutoffs(now);
+    return this.db.transaction(() => ({
+      effects:this.db.prepare('DELETE FROM history_effects WHERE julianday(occurred_at)<julianday(?)').run(detailCutoffAt).changes,
+      resolvedIncidents:this.db.prepare('DELETE FROM history_incidents WHERE resolved_at IS NOT NULL AND julianday(resolved_at)<julianday(?)').run(aggregateCutoffAt).changes,
+      pollAttempts:this.db.prepare('DELETE FROM github_poll_attempts WHERE julianday(completed_at)<julianday(?)').run(aggregateCutoffAt).changes
+    }))();
+  }
+
   recordGithubMilestone(input: { repositoryId: string; projectId: string; entityType: 'pull_request' | 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown>; ingestionMode?: 'live' | 'backfill' }): boolean {
     const operation = this.db.transaction(() => {
       const linked = this.db.prepare('SELECT 1 FROM project_repositories WHERE repository_id=? AND project_id=? AND active=1').get(input.repositoryId, input.projectId);
@@ -167,15 +186,16 @@ export class HistoryStore {
     }
   }
 
-  replay(cursor: number, limit = 500): { viewMode: 'replay'; fromSequence: number; throughSequence: number; events: unknown[]; nextCursor: number | null; hasMore: boolean } {
+  replay(cursor: number, limit = 500, now = new Date().toISOString()): { viewMode: 'replay'; fromSequence: number; throughSequence: number; events: unknown[]; nextCursor: number | null; hasMore: boolean } {
     if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw new Error('Cursor de replay inválido');
+    const {detailCutoffAt} = retentionCutoffs(now);
     return this.db.transaction(() => {
       const baseline=(this.db.prepare("SELECT value FROM meta WHERE key='replay_baseline'").get() as {value:number}).value;
       const current=(this.db.prepare("SELECT value FROM meta WHERE key='stream_sequence'").get() as {value:number}).value;
       if(cursor<baseline || cursor>current)throw new Error('Cursor de replay indisponível');
-      const events = this.db.prepare('SELECT event_id, stream_sequence, event_json FROM events WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as EventRow[];
-      const milestones = this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode,stream_sequence FROM history_milestones WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string;stream_sequence:number}[];
-      const effects = this.db.prepare('SELECT causation_id,effect_type,project_id,occurred_at,duration_ms,parameters_json,ingestion_mode,stream_sequence FROM history_effects WHERE stream_sequence>? ORDER BY stream_sequence LIMIT ?').all(cursor,limit+1) as {causation_id:string;effect_type:string;project_id:string;occurred_at:string;duration_ms:number;parameters_json:string;ingestion_mode:string;stream_sequence:number}[];
+      const events = this.db.prepare("SELECT event_id, stream_sequence, event_json FROM events WHERE stream_sequence>? AND julianday(json_extract(event_json,'$.observedAt'))>=julianday(?) ORDER BY stream_sequence LIMIT ?").all(cursor,detailCutoffAt,limit+1) as EventRow[];
+      const milestones = this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode,stream_sequence FROM history_milestones WHERE stream_sequence>? AND julianday(occurred_at)>=julianday(?) ORDER BY stream_sequence LIMIT ?').all(cursor,detailCutoffAt,limit+1) as {repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string;stream_sequence:number}[];
+      const effects = this.db.prepare('SELECT causation_id,effect_type,project_id,occurred_at,duration_ms,parameters_json,ingestion_mode,stream_sequence FROM history_effects WHERE stream_sequence>? AND julianday(occurred_at)>=julianday(?) ORDER BY stream_sequence LIMIT ?').all(cursor,detailCutoffAt,limit+1) as {causation_id:string;effect_type:string;project_id:string;occurred_at:string;duration_ms:number;parameters_json:string;ingestion_mode:string;stream_sequence:number}[];
       const effectsBySequence = new Map<number,unknown[]>();
       for (const r of effects) effectsBySequence.set(r.stream_sequence,[...(effectsBySequence.get(r.stream_sequence)??[]),
         {causationId:r.causation_id,effectType:r.effect_type,projectId:r.project_id,occurredAt:r.occurred_at,durationMs:r.duration_ms,ingestionMode:r.ingestion_mode,parameters:JSON.parse(r.parameters_json)}]);
@@ -223,16 +243,18 @@ export class HistoryStore {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data inválida');
     new Intl.DateTimeFormat('pt-BR', { timeZone }).format(new Date(`${date}T12:00:00Z`));
     if (projectId && !this.db.prepare('SELECT 1 FROM projects WHERE project_id=?').get(projectId)) throw new Error('Projeto desconhecido');
-    const rows = this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE json_extract(event_json,'$.observedAt') IS NOT NULL ORDER BY stream_sequence").all() as { stream_sequence: number; event_json: string }[];
     const nowMs=Date.parse(now);
-    const allEvents: (Record<string, unknown> & { streamSequence: number })[] = rows.map(r => ({ ...(JSON.parse(r.event_json) as Record<string, unknown>), streamSequence: r.stream_sequence } as Record<string, unknown> & {streamSequence:number}))
-      .filter(e=>Date.parse(String(e.observedAt))<=nowMs);
     const dayStart = zonedMidnight(date, timeZone);
     const calendar = new Date(`${date}T12:00:00Z`);
     calendar.setUTCDate(calendar.getUTCDate() + 1);
     const nextDate = calendar.toISOString().slice(0, 10);
     const dayEnd = zonedMidnight(nextDate, timeZone);
+    const {detailCutoffAt,aggregateCutoffAt}=retentionCutoffs(now);
+    if(dayEnd<=Date.parse(aggregateCutoffAt))throw new Error('Agregado expirado');
     const asOfEnd = Math.min(dayEnd,nowMs);
+    const rows = this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE json_extract(event_json,'$.observedAt') IS NOT NULL ORDER BY stream_sequence").all() as { stream_sequence: number; event_json: string }[];
+    const allEvents: (Record<string, unknown> & { streamSequence: number })[] = rows.map(r => ({ ...(JSON.parse(r.event_json) as Record<string, unknown>), streamSequence: r.stream_sequence } as Record<string, unknown> & {streamSequence:number}))
+      .filter(e=>Date.parse(String(e.observedAt))<=nowMs);
     const projectSources = new Set(allEvents.filter(e=>e.projectId===projectId && typeof e.sourceId==='string' &&
       Date.parse(String(e.observedAt))<asOfEnd).map(e=>String(e.sourceId)));
     const events = projectId ? allEvents.filter(e=>e.projectId===projectId ||
@@ -264,6 +286,15 @@ export class HistoryStore {
       .map(row=>({...row,openedBeforeDay:Date.parse(row.openedAt)<dayStart,
         resolvedAt:row.resolvedAt && Date.parse(row.resolvedAt)<asOfEnd ? row.resolvedAt : null,
         activeAtEnd:!row.resolvedAt || Date.parse(row.resolvedAt)>asOfEnd}));
+    const dayMilestones = (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[])
+      .filter(r=>(!projectId || r.project_id===projectId) && Date.parse(r.occurred_at)<=nowMs);
+    const milestoneCounts = new Map<string,{entityType:string;transition:string;count:number}>();
+    for(const row of dayMilestones.filter(r=>Date.parse(r.occurred_at)<Date.parse(detailCutoffAt))){
+      const key=JSON.stringify([row.entity_type,row.transition]);
+      const entry=milestoneCounts.get(key)??{entityType:row.entity_type,transition:row.transition,count:0};
+      entry.count++;
+      milestoneCounts.set(key,entry);
+    }
     return { date, timeZone, projectId:projectId??null, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
       agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
       waitingDurationMs:waitingMs,waitingDurationKnown:waitingMs!==null,
@@ -274,10 +305,11 @@ export class HistoryStore {
         attempts:githubAttempts.length,successfulAttempts:successfulAttempts.length,failedAttempts:failedAttempts.length,
         lastSuccessfulPollAt:successfulAttempts.at(-1)?.completed_at??null,
         gaps },
-      milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[])
-        .filter(r=>(!projectId || r.project_id===projectId) && Date.parse(r.occurred_at)<=nowMs)
+      milestones: dayMilestones.filter(r=>Date.parse(r.occurred_at)>=Date.parse(detailCutoffAt))
         .map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
-      incidentMarkers, costs: null };
+      milestoneCounts:[...milestoneCounts.values()], incidentMarkers, costs: null,
+      retention:{detailCutoffAt,aggregateCutoffAt,detailWindowDays:REPLAY_RETENTION_DAYS,aggregateWindowDays:AGGREGATE_RETENTION_DAYS,
+        evidenceStatus:dayEnd<=Date.parse(detailCutoffAt)?'expired':'available'} };
   }
 }
 

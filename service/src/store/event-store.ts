@@ -6,7 +6,7 @@ import { compareTimestamp, reduceSession, parentStatus, type SessionSignal, type
 import { InfrastructureStore } from '../infra/infrastructure-store.ts';
 import type { Inventory } from '../infra/inventory.ts';
 import { appendStateChange } from './change-log.ts';
-import { HistoryStore } from '../history/history.ts';
+import { HistoryStore, retentionCutoffs } from '../history/history.ts';
 import type { RepositoryLink } from '../history/history.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
@@ -282,10 +282,11 @@ export class EventStore {
     return this.db.transaction(() => this.snapshotInsideTransaction(now))();
   }
 
-  historicalSnapshot(at: string): Row {
+  historicalSnapshot(at: string, now = new Date().toISOString()): Row {
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
         new Date(at).toISOString().slice(0,19) !== at.slice(0,19))
       throw new Error('Instante de replay inválido');
+    if (compareTimestamp(at,retentionCutoffs(now).detailCutoffAt)<0) throw new Error('Instante de replay expirado');
     const input = this.db.transaction(() => ({
       projects: this.db.prepare('SELECT project_id,name FROM projects ORDER BY project_id').all() as {project_id:string;name:string}[],
       placements: this.db.prepare('SELECT id,project_id,sector_id,slot_id,layout_version,known_at FROM room_placement_versions WHERE substr(known_at,1,19)<=?')

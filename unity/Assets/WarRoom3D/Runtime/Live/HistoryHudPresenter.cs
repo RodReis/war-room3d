@@ -153,7 +153,8 @@ namespace WarRoom3D
                 if (requestVersion != dayRequestVersion) yield break;
                 if (request.result != UnityWebRequest.Result.Success || request.responseCode != 200)
                 {
-                    metrics.text = "Histórico indisponível. Confira data, fuso e serviço local.";
+                    metrics.text = request.responseCode == 410 ? "Agregados expirados após 90 dias. Evidência indisponível." :
+                        "Histórico indisponível. Confira data, fuso e serviço local.";
                     yield break;
                 }
                 try { day = HistoryDayData.Parse(request.downloadHandler.text); }
@@ -171,6 +172,8 @@ namespace WarRoom3D
                 "\n" + (day.waitingDurationKnown ? $"Espera observada: {day.waitingDurationMs / 3600000:0.##} h" : "Espera observada: indisponível");
             coverage.text = day.coverage.status == "none" ? "Sem observações de sessão neste dia. Cobertura incompleta." :
                 "Cobertura de sessão não comprovada; janelas esperadas não registradas.";
+            if (day.retention != null && day.retention.evidenceStatus == "expired")
+                coverage.text += " Evidência detalhada expirada após 7 dias; apenas agregados disponíveis.";
             var sourceGapCount = 0;
             foreach (var gap in day.coverage.gaps)
                 if (gap.reason == "source_unavailable") sourceGapCount++;
@@ -188,6 +191,10 @@ namespace WarRoom3D
                 timeline.Add(new Label(milestone.occurredAt + " · " + text + milestone.transition +
                     " · projeto " + milestone.projectId + (milestone.ingestionMode == "backfill" ? " · histórico importado" : "")));
             }
+            if (day.milestoneCounts != null)
+                foreach (var count in day.milestoneCounts)
+                    timeline.Add(new Label(count.count + " marco(s) " + count.entityType + " / " + count.transition +
+                        " · detalhe expirado após 7 dias"));
             foreach (var incident in day.incidentMarkers)
                 timeline.Add(new Label((incident.openedBeforeDay ? "CI ativo desde " : "CI com falha em ") + incident.openedAt +
                     " · workflow " + incident.workflowId + " · " + incident.@ref +
@@ -336,7 +343,8 @@ namespace WarRoom3D
                 if (replaying && version == projectionRequestVersion &&
                     (request.result != UnityWebRequest.Result.Success || request.responseCode != 200))
                 {
-                    coverage.text = "Projeção histórica indisponível para este instante.";
+                    coverage.text = request.responseCode == 410 ? "Evidência expirada após 7 dias; projeção indisponível." :
+                        "Projeção histórica indisponível para este instante.";
                 }
                 else if (replaying && version == projectionRequestVersion)
                 {
@@ -439,6 +447,8 @@ namespace WarRoom3D
         public HistoryCoverage coverage;
         public HistoryGithubCoverage githubCoverage;
         public HistoryMilestone[] milestones;
+        public HistoryMilestoneCount[] milestoneCounts;
+        public HistoryRetention retention;
         public HistoryIncident[] incidentMarkers;
 
         public static HistoryDayData Parse(string json)
@@ -457,6 +467,8 @@ namespace WarRoom3D
     [Serializable] public sealed class HistoryGithubCoverage { public string status; public int attempts; public int successfulAttempts; public int failedAttempts; public HistoryGap[] gaps; }
     [Serializable] public sealed class HistoryGap { public string sourceId; public string repositoryId; public string start; public string end; public string reason; }
     [Serializable] public sealed class HistoryMilestone { public string projectId; public string entityType; public string transition; public string occurredAt; public string ingestionMode; }
+    [Serializable] public sealed class HistoryMilestoneCount { public string entityType; public string transition; public int count; }
+    [Serializable] public sealed class HistoryRetention { public string evidenceStatus; public string detailCutoffAt; public string aggregateCutoffAt; }
     [Serializable] public sealed class HistoryIncident { public long workflowId; public string @ref; public string openedAt; public bool openedBeforeDay; public string resolvedAt; public bool activeAtEnd; }
     [Serializable]
     public sealed class HistoryReplayPage

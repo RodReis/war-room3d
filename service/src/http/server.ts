@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { timingSafeEqual } from 'node:crypto';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { EventStore, StreamChange } from '../store/event-store.ts';
+import { AGGREGATE_RETENTION_DAYS, REPLAY_RETENTION_DAYS, retentionCutoffs } from '../history/history.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/snapshot.v1.schema.json', import.meta.url), 'utf8'));
 const validateSnapshot = new Ajv2020({ strict: true }).compile(schema);
@@ -62,7 +63,11 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
         try { new Intl.DateTimeFormat('pt-BR', {timeZone}).format(parsedDate); }
         catch (error) { if (error instanceof RangeError) { sendJson(response, 400, {code:'invalid_query'}); return; } throw error; }
         try { sendJson(response, 200, store.history.daySummary(date, timeZone, new Date().toISOString(), projectId??undefined)); }
-        catch (error) { if (error instanceof Error && error.message==='Projeto desconhecido') sendJson(response, 400, {code:'invalid_query'}); else throw error; }
+        catch (error) {
+          if (error instanceof Error && error.message==='Projeto desconhecido') sendJson(response, 400, {code:'invalid_query'});
+          else if (error instanceof Error && error.message==='Agregado expirado') sendJson(response, 410, {code:'aggregate_expired',evidenceStatus:'expired'});
+          else throw error;
+        }
         return;
       }
       if (parsedUrl.pathname === '/v1/history/replay') {
@@ -80,7 +85,14 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
             new Date(at).toISOString().slice(0,19) !== at.slice(0,19)) {
           sendJson(response, 400, { code: 'invalid_query' }); return;
         }
-        sendJson(response, 200, store.historicalSnapshot(at)); return;
+        try { sendJson(response, 200, store.historicalSnapshot(at)); }
+        catch (error) { if (error instanceof Error && error.message==='Instante de replay expirado') sendJson(response, 410, {code:'evidence_expired',evidenceStatus:'expired'}); else throw error; }
+        return;
+      }
+      if (parsedUrl.pathname === '/v1/history/retention' && !parsedUrl.search) {
+        sendJson(response, 200, {detailWindowDays:REPLAY_RETENTION_DAYS,aggregateWindowDays:AGGREGATE_RETENTION_DAYS,
+          ...retentionCutoffs(new Date().toISOString()),physicalCleanup:'partial'});
+        return;
       }
       if (parsedUrl.pathname === '/v1/github/repositories') { sendJson(response, 200, store.history.repositories()); return; }
       if (parsedUrl.search) { response.writeHead(404).end(); return; }

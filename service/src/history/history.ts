@@ -22,6 +22,8 @@ export interface RepositoryLink {
   linkedAt: string;
 }
 
+type GithubMilestoneInput = { repositoryId: string; projectId: string; entityType: 'pull_request' | 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown>; ingestionMode?: 'live' | 'backfill' };
+
 interface CiIncidentInterval {
   incidentId: string;
   repositoryId: string;
@@ -128,7 +130,25 @@ export class HistoryStore {
     }))();
   }
 
-  recordGithubMilestone(input: { repositoryId: string; projectId: string; entityType: 'pull_request' | 'workflow'; entityId: string; transition: string; occurredAt: string; payload: Record<string, unknown>; ingestionMode?: 'live' | 'backfill' }): boolean {
+  recordPolledGithubEntity(input: GithubMilestoneInput, remoteUpdatedAt: string): boolean {
+    compareTimestamp(remoteUpdatedAt,remoteUpdatedAt);
+    return this.db.transaction(() => {
+      if (!this.db.prepare('SELECT 1 FROM project_repositories WHERE repository_id=? AND project_id=? AND active=1').get(input.repositoryId,input.projectId)) return false;
+      const prior=this.db.prepare(`SELECT remote_updated_at,transition FROM github_entity_cursors
+        WHERE repository_id=? AND project_id=? AND entity_type=? AND entity_id=?`)
+        .get(input.repositoryId,input.projectId,input.entityType,input.entityId) as {remote_updated_at:string;transition:string}|undefined;
+      if (prior && compareTimestamp(remoteUpdatedAt,prior.remote_updated_at)===0 && prior.transition===input.transition) return false;
+      const recorded=this.recordGithubMilestone(input);
+      if (!prior || compareTimestamp(remoteUpdatedAt,prior.remote_updated_at)>=0)
+        this.db.prepare(`INSERT INTO github_entity_cursors(repository_id,project_id,entity_type,entity_id,remote_updated_at,transition)
+          VALUES (?,?,?,?,?,?) ON CONFLICT(repository_id,project_id,entity_type,entity_id)
+          DO UPDATE SET remote_updated_at=excluded.remote_updated_at,transition=excluded.transition`)
+          .run(input.repositoryId,input.projectId,input.entityType,input.entityId,remoteUpdatedAt,input.transition);
+      return recorded;
+    })();
+  }
+
+  recordGithubMilestone(input: GithubMilestoneInput): boolean {
     const operation = this.db.transaction(() => {
       const linked = this.db.prepare('SELECT 1 FROM project_repositories WHERE repository_id=? AND project_id=? AND active=1').get(input.repositoryId, input.projectId);
       if (!linked) return false;

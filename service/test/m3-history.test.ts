@@ -171,7 +171,7 @@ test('migração v7 preserva vínculo existente na cobertura filtrada',t=>{
   original.history.markPollSuccess('42','2026-11-06T12:00:00Z',[],60000,'2026-11-06T12:00:01Z');
   original.close();
   const legacy=new Database(databasePath);
-  legacy.exec("DROP TABLE history_github_observations; DROP TABLE project_repository_link_periods; UPDATE meta SET value=7 WHERE key='schema_version'");
+  legacy.exec("DROP TABLE github_entity_cursors; DROP TABLE history_github_observations; DROP TABLE project_repository_link_periods; UPDATE meta SET value=7 WHERE key='schema_version'");
   legacy.close();
   migrated=new EventStore(databasePath);
   const coverage=migrated.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z','p1').githubCoverage as {attempts:number};
@@ -246,7 +246,7 @@ test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
   store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy-layout'});
   store.close();
   const db=new Database(dbPath);
-  db.exec("DROP TABLE history_github_observations; DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");
+  db.exec("DROP TABLE github_entity_cursors; DROP TABLE history_github_observations; DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");
   db.close();
   store=new EventStore(dbPath);
   const check=new Database(dbPath);
@@ -269,7 +269,7 @@ test('migração v9 registra presença de projeto antigo só a partir da migraç
   store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy'});
   store.close();
   const db=new Database(dbPath);
-  db.exec("DROP TABLE history_github_observations; DROP TABLE project_presence_evidence; UPDATE meta SET value=9 WHERE key='schema_version'");
+  db.exec("DROP TABLE github_entity_cursors; DROP TABLE history_github_observations; DROP TABLE project_presence_evidence; UPDATE meta SET value=9 WHERE key='schema_version'");
   db.close();
   store=new EventStore(dbPath);
   const past=store.historicalSnapshot(new Date(Date.now()-86400000).toISOString()) as {projects:unknown[]};
@@ -622,6 +622,49 @@ test('ETag só é restaurado do SQLite após coleta concluída e sobrevive rein�
   assert.equal(result.errors.length,0);
   assert.equal(conditional,2);
   assert.equal((store.history.replay(0,10).events as unknown[]).length,1);
+});
+
+test('cursor por entidade persiste reinício, ignora versão igual e registra merge e rerun',async t=>{
+  const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-entity-cursor-'));
+  const dbPath=path.join(dir,'db.sqlite');
+  let store:EventStore|null=new EventStore(dbPath);
+  t.after(()=>{store?.close();rmSync(dir,{recursive:true,force:true});});
+  store.registerProject({projectId:'p1',name:'Projeto',canonicalPath:'C:\\synthetic'});
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'repo',projectId:'p1'},'2026-11-01T00:00:00Z');
+  let phase=0;
+  const times=['2026-11-06T15:00:00Z','2026-11-06T15:05:00Z','2026-11-06T15:10:00Z'];
+  const fetcher=async(input:string|URL)=>{
+    const url=String(input);
+    if(url.endsWith('/repos/owner-a/repo')) return new Response(JSON.stringify({id:42}),{status:200});
+    if(url.includes('/pulls?')) return new Response(JSON.stringify([{id:11,number:5,state:phase===2?'closed':'open',
+      merged_at:phase===2?times[phase]:null,updated_at:times[phase],html_url:'https://github.com/owner-a/repo/pull/5'}]),{status:200});
+    return new Response(JSON.stringify({workflow_runs:[{id:100,workflow_id:7,run_attempt:phase===2?2:1,head_sha:'sha-a',
+      head_branch:'main',status:'completed',conclusion:phase===2?'success':'failure',updated_at:times[phase],
+      html_url:'https://github.com/owner-a/repo/actions/runs/100'}]}),{status:200});
+  };
+  const cursors=()=>{
+    const db=new Database(dbPath);
+    try{return db.prepare('SELECT entity_type,remote_updated_at,transition FROM github_entity_cursors ORDER BY entity_type').all() as
+      {entity_type:string;remote_updated_at:string;transition:string}[];}
+    finally{db.close();}
+  };
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,2);
+  assert.deepEqual(cursors().map(row=>row.entity_type),['pull_request','workflow']);
+  store.close();store=null;
+  store=new EventStore(dbPath);
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,0);
+  phase=1;
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,0);
+  assert.ok(cursors().every(row=>row.remote_updated_at===times[1]));
+  phase=2;
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,2);
+  assert.deepEqual(cursors().map(row=>row.transition),['merged','attempt-2-success']);
+  assert.equal((await pollLinkedRepositories(store,new GitHubClient('',fetcher))).milestones,0);
+  const milestones=store.history.replay(0,20,'2026-11-07T15:00:00Z').events.filter(e=>(e as {kind?:string}).kind==='github.milestone') as
+    {entityType:string;transition:string;effects:{effectType:string}[]}[];
+  assert.equal(milestones.length,4);
+  assert.equal(milestones.filter(m=>m.transition==='merged' && m.effects[0]?.effectType==='merge.celebration').length,1);
+  assert.equal((store.history.daySummary('2026-11-06','UTC','2026-11-07T15:00:00Z') as {incidentMarkers:{activeAtEnd:boolean}[]}).incidentMarkers[0]?.activeAtEnd,false);
 });
 
 test('novo projeto vinculado recebe backfill mesmo após ETag 304 de outro projeto',async t=>{

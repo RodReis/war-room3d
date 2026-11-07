@@ -28,11 +28,11 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
         const modeFor = (occurredAt:string): 'backfill'|'live' => isInitialForProject || occurredAt<=lastScanStartedAt ? 'backfill' : 'live';
         for (const pr of pullRequests) {
           const normalized = normalizePullRequest(repositoryId, link.projectId, pr);
-          if (store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
+          if (store.history.recordPolledGithubEntity({...normalized,ingestionMode:modeFor(normalized.occurredAt)},pr.updated_at)) milestones++;
         }
         for (const run of workflowRuns) {
           const normalized = normalizeWorkflowRun(repositoryId, link.projectId, run);
-          if (normalized && store.history.recordGithubMilestone({...normalized,ingestionMode:modeFor(normalized.occurredAt)})) milestones++;
+          if (normalized && store.history.recordPolledGithubEntity({...normalized,ingestionMode:modeFor(normalized.occurredAt)},run.updated_at)) milestones++;
         }
       }
       store.history.markPollSuccess(repositoryId,startedAt,client.pageCacheSnapshot(),expectedIntervalMs);

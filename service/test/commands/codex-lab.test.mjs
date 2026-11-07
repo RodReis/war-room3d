@@ -29,8 +29,8 @@ function lab(change = {}) {
   }};
   const notifications = [], audit = [], progress = [];
   return {sent, notifications, audit, progress, inspect: () => inspectCodexConfig({channel, cwd,
-    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage)}), run: (auditOverride) => runCodexLabSession({channel, cwd,
-    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage), audit: auditOverride ?? (state => audit.push(state))})};
+    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage)}), run: (auditOverride, trustedInstructionSources = []) => runCodexLabSession({channel, cwd,
+    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage), trustedInstructionSources, audit: auditOverride ?? (state => audit.push(state))})};
 }
 
 test('plano Codex explicita ferramentas internas residuais, sem inventar limite financeiro', () => {
@@ -176,5 +176,17 @@ test('pedido inesperado de autenticação é diagnosticado sem resposta e sem gr
     assert.deepEqual(fixture.progress, ['initialize:requested', 'server_request_unhandled:' +
       (method === 'account/chatgptAuthTokens/refresh' ? 'auth_refresh' : 'other')]);
     assert.equal(JSON.stringify(fixture.progress).includes('private'), false);
+  }
+});
+
+test('política global nativa só é aceita por caminho exato explicitamente autorizado pelo host', async () => {
+  const source = path.join(cwd, 'synthetic-native-home', 'AGENTS.md');
+  const trusted = [source];
+  await assert.rejects(lab({thread: {instructionSources: [source]}}).run(), /isolation_unverified/);
+  assert.equal((await lab({thread: {instructionSources: [source]}}).run(undefined, trusted)).state, 'confirmed');
+  for (const other of [path.join(cwd, 'other', 'AGENTS.md'), source + '.private']) {
+    const fixture = lab({thread: {instructionSources: [source, other]}});
+    await assert.rejects(fixture.run(undefined, trusted), /isolation_unverified/);
+    assert.equal(fixture.sent.some(frame => frame.method === 'turn/start'), false);
   }
 });

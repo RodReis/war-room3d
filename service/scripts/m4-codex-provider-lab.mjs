@@ -2,7 +2,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomUUID, createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, writeFileSync, appendFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { tmpdir, homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { JsonlChannel } from '../src/commands/providers/jsonl-channel.ts';
@@ -18,7 +18,8 @@ export const codexLabPlan = Object.freeze({provider: 'codex', providerVersion: '
   sendsRealMessage: false, disabledFeatures, mcpServers: 'each_inherited_server_explicitly_disabled_and_rechecked',
   sandbox: 'read-only', approvalPolicy: 'never', internalTools: 'may_remain_available_under_read_only_sandbox',
   maxBudgetUsd: null, cost: 'unmeasured_uses_current_cli_account_quota', metadataTimeoutMs: 10000,
-  inspectionTimeoutMs: 10000, sessionTimeoutMs: 30000, appServerProcesses: 2, automaticRetry: false, inferenceCompletion: 'not_asserted'});
+  inspectionTimeoutMs: 10000, sessionTimeoutMs: 30000, appServerProcesses: 2,
+  instructionPolicy: 'native_global_governance_only', automaticRetry: false, inferenceCompletion: 'not_asserted'});
 
 export function buildCodexOverrides(inventory, cwd) {
   if (typeof cwd !== 'string' || !path.isAbsolute(cwd)) throw new Error('inventory_unverified');
@@ -87,14 +88,16 @@ export async function inspectCodexConfig(options) {
 }
 
 // Recebe canal já aberto: os testes exercitam este fluxo sem processos ou contas reais.
-export async function runCodexLabSession({channel, cwd, signal, notify, audit, onProgress}) {
+export async function runCodexLabSession({channel, cwd, signal, notify, audit, onProgress, trustedInstructionSources = []}) {
   const {config, rpc} = await readConfig({channel, cwd, signal, notify, onProgress});
   assertIsolation(config, cwd);
   const thread = await rpc('thread/start', {cwd, ephemeral: true, approvalPolicy: 'never', sandbox: 'read-only',
     developerInstructions: 'Laboratório sintético. Não use ferramentas nem leia arquivos. Responda somente ao texto sintético recebido.'});
   if (typeof thread.cwd !== 'string' || path.resolve(thread.cwd) !== path.resolve(cwd) || thread.approvalPolicy !== 'never' ||
       thread.sandbox?.type !== 'readOnly' || (thread.sandbox.networkAccess !== undefined && thread.sandbox.networkAccess !== false) ||
-      !Array.isArray(thread.instructionSources) || thread.instructionSources.length ||
+      !Array.isArray(thread.instructionSources) || thread.instructionSources.some(source => typeof source !== 'string' ||
+        !path.isAbsolute(source) || !trustedInstructionSources.some(trusted => typeof trusted === 'string' && path.isAbsolute(trusted) &&
+          (process.platform === 'win32' ? path.resolve(source).toLowerCase() === path.resolve(trusted).toLowerCase() : path.resolve(source) === path.resolve(trusted)))) ||
       typeof thread.thread?.id !== 'string' || !thread.thread.id.trim()) throw new Error('isolation_unverified');
   const owner = {provider: 'codex', providerVersion: codexLabPlan.providerVersion, projectId: 'm4-authorized-lab',
     accountRef: 'authorized-local-cli', providerSessionId: thread.thread.id, connectionId: channel.connectionId};
@@ -157,6 +160,8 @@ async function run() {
     'codex', 'node_modules', '@openai', 'codex-win32-x64', 'vendor', 'x86_64-pc-windows-msvc', 'bin', 'codex.exe');
   const directory = path.join(root, 'Logs', 'm4-codex-real-' + randomUUID());
   const cwd = mkdtempSync(path.join(tmpdir(), 'wr3d-m4-codex-'));
+  const nativeHome = process.env.CODEX_HOME ?? path.join(homedir(), '.codex');
+  const trustedInstructionSources = ['AGENTS.md', 'AGENTS.override.md'].map(name => path.resolve(nativeHome, name));
   mkdirSync(directory, {recursive: true});
   let report = {...codexLabPlan, sendsRealMessage: false, state: 'not_sent', bootstrapError: true,
     inspectionProcessTerminated: null, processTerminated: null, stages: []};
@@ -174,7 +179,7 @@ async function run() {
         onProgress: stage => report.stages.push('inspection/' + stage)}));
     const result = await usingCodexAppServer({binary, overrides: buildCodexOverrides(inventory, cwd), cwd, timeoutMs: codexLabPlan.sessionTimeoutMs,
       onStopped: stopped => { report.processTerminated = stopped; }, onDiagnostics: value => { report.sessionTransport = value; }},
-      options => runCodexLabSession({...options, onProgress: stage => report.stages.push('session/' + stage), audit: (state, identity) => {
+      options => runCodexLabSession({...options, trustedInstructionSources, onProgress: stage => report.stages.push('session/' + stage), audit: (state, identity) => {
         if (state === 'sending') { report.sendsRealMessage = true; report.state = 'unknown'; }
         appendFileSync(path.join(directory, 'audit.jsonl'), JSON.stringify({at: new Date().toISOString(), state, ...identity,
           provider: 'codex', providerVersion: codexLabPlan.providerVersion,

@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 10) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 11) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -95,6 +95,9 @@ export class EventStore {
     })();
     if (schemaVersion < 10) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0010_project_presence_evidence.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 11) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0011_infrastructure_history.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -281,6 +284,7 @@ export class EventStore {
       githubProjects: this.db.prepare('SELECT project_id,occurred_at FROM history_milestones WHERE substr(occurred_at,1,19)<=?').all(at.slice(0,19)) as {project_id:string;occurred_at:string}[],
       events: this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE substr(json_extract(event_json,'$.observedAt'),1,19)<=?").all(at.slice(0,19)) as {stream_sequence:number;event_json:string}[],
       ciIncidents: this.history.ciIncidentsAt(at),
+      infrastructure: this.infrastructure.historicalSnapshot(at),
       revision: this.number('revision'),
       streamSequence: this.number('stream_sequence')
     }))();
@@ -307,8 +311,8 @@ export class EventStore {
         .all() as {source_id:string;last_unavailable_at:string}[];
       const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
       const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
-      return { ...state, mode:'replay', at, layoutReference:'current', revision:input.revision, streamSequence:input.streamSequence,
-        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents'], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
+      return { ...state, ...input.infrastructure, mode:'replay', at, layoutReference:'current', revision:input.revision, streamSequence:input.streamSequence,
+        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents',...(input.infrastructure.infrastructureReference==='recorded'?['infrastructure']:[])], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
           reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
     } finally { projection.close(); }
   }

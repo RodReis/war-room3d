@@ -10,6 +10,7 @@ namespace WarRoom3D
         public string schemaVersion;
         public string mode;
         public string layoutReference;
+        public string infrastructureReference;
         public int revision;
         public long streamSequence;
         public LiveProject[] projects;
@@ -32,7 +33,8 @@ namespace WarRoom3D
                 snapshot.projects == null || snapshot.roomPlacements == null || snapshot.sessions == null || snapshot.agents == null || snapshot.feed == null ||
                 snapshot.resources == null || snapshot.resourceStates == null || snapshot.incidents == null)
                 throw new ArgumentException("Contrato live incompatível");
-            if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null || snapshot.ciIncidents == null))
+            if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null || snapshot.ciIncidents == null ||
+                (snapshot.infrastructureReference != "recorded" && snapshot.infrastructureReference != "unavailable")))
                 throw new ArgumentException("Cobertura do replay incompatível");
             var projects = new HashSet<string>();
             foreach (var project in snapshot.projects)

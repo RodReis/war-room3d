@@ -2,7 +2,7 @@
 
 ## Estado atual
 
-Não há workflow de CI versionado. Portanto, ainda não existe job obrigatório nem medição de duração de PR. A criação do pipeline deve medir primeiro a execução atual de contratos, serviço e Unity antes de definir gates.
+A PR #23 introduz `.github/workflows/ci.yml` com jobs de contratos e serviço em Node.js 24 para `pull_request` e `push` em `main`. Conferir resultado e duração no SHA remoto antes de declarar CI verde. Unity EditMode, PlayMode e build Windows continuam provas locais até existir runner/licença apropriados; não são checks de CI. Ainda não há job obrigatório configurado na proteção da branch.
 
 ## Desenho proposto
 

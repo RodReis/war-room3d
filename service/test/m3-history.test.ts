@@ -341,7 +341,10 @@ test('polling simulado valida ID real, reconhece merge fora da sessão e não re
     requests++;
     const url=String(input);
     if(url.endsWith('/repos/RodReis/rrb-contaia')) return new Response(JSON.stringify({id:1371493574}),{status:200});
-    if(url.includes('/pulls?')) return new Response(JSON.stringify([{id:11,number:5,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/RodReis/rrb-contaia/pull/5'}]),{status:200});
+    if(url.includes('/pulls?')) {
+      assert.match(url,/sort=created/);
+      return new Response(JSON.stringify([{id:11,number:5,state:'closed',merged_at:'2026-11-06T15:00:00Z',updated_at:'2026-11-06T15:00:00Z',html_url:'https://github.com/RodReis/rrb-contaia/pull/5'}]),{status:200});
+    }
     return new Response(JSON.stringify({total_count:2,workflow_runs:[
       {id:100,workflow_id:7,run_attempt:1,head_sha:'sha-a',head_branch:'main',status:'completed',conclusion:'failure',updated_at:'2026-11-06T15:05:00Z',html_url:'https://github.com/RodReis/rrb-contaia/actions/runs/100'},
       {id:101,workflow_id:8,run_attempt:1,head_sha:'sha-b',head_branch:'main',status:'completed',conclusion:'success',updated_at:'2026-11-06T15:06:00Z',html_url:'https://github.com/RodReis/rrb-contaia/actions/runs/101'}

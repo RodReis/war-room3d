@@ -19,7 +19,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       const identity = await client.get(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`);
       if (!identity.body || typeof identity.body !== 'object' || Array.isArray(identity.body) ||
           String((identity.body as {id?:unknown}).id) !== repositoryId) throw new Error('ID GitHub diverge do vínculo configurado');
-      const pullRequests = await client.getAllPages<PullRequest>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=all&sort=updated&direction=desc&per_page=100`);
+      const pullRequests = await client.getAllPages<PullRequest>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/pulls?state=all&sort=created&direction=desc&per_page=100`);
       const workflowRuns = await client.getAllPages<WorkflowRun>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/actions/runs?per_page=100`, 'workflow_runs');
       pullRequests.sort((a,b)=>(a.merged_at??a.updated_at).localeCompare(b.merged_at??b.updated_at)||a.id-b.id);
       workflowRuns.sort((a,b)=>a.updated_at.localeCompare(b.updated_at)||a.id-b.id||a.run_attempt-b.run_attempt);

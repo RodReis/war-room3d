@@ -18,6 +18,7 @@ namespace WarRoom3D
         private TextField zoneField;
         private DropdownField projectField;
         private readonly Dictionary<string, string> projectIds = new Dictionary<string, string>();
+        private int dayRequestVersion;
         private ScrollView timeline;
         private Label metrics;
         private Label coverage;
@@ -71,6 +72,8 @@ namespace WarRoom3D
             client.SnapshotChanged += OnSnapshotChanged;
             RefreshProjectChoices(client.Snapshot);
             projectField.RegisterValueChangedCallback(_ => InvalidateDay());
+            dateField.RegisterValueChangedCallback(_ => InvalidateDay());
+            zoneField.RegisterValueChangedCallback(_ => InvalidateDay());
             var open = root.Q<Button>("history-button");
             open.style.display = DisplayStyle.Flex;
             open.clicked += Open;
@@ -114,6 +117,7 @@ namespace WarRoom3D
 
         private void InvalidateDay()
         {
+            dayRequestVersion++;
             day = null;
             if (replaying) return;
             metrics.text = "Filtro alterado. Consulte o dia.";
@@ -138,6 +142,7 @@ namespace WarRoom3D
             }
             var path = "/v1/history/day?date=" + Uri.EscapeDataString(dateField.value) + "&timeZone=" + Uri.EscapeDataString(zoneField.value);
             if (projectIds.TryGetValue(projectField.value, out var projectId)) path += "&projectId=" + Uri.EscapeDataString(projectId);
+            var requestVersion = dayRequestVersion;
             UnityWebRequest request;
             try { request = client.CreateHistoryRequest(path); }
             catch (ArgumentException) { metrics.text = "Serviço histórico não configurado."; yield break; }
@@ -145,6 +150,7 @@ namespace WarRoom3D
             {
                 metrics.text = "Consultando histórico...";
                 yield return request.SendWebRequest();
+                if (requestVersion != dayRequestVersion) yield break;
                 if (request.result != UnityWebRequest.Result.Success || request.responseCode != 200)
                 {
                     metrics.text = "Histórico indisponível. Confira data, fuso e serviço local.";

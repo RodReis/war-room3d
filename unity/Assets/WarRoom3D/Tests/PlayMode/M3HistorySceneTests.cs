@@ -105,6 +105,15 @@ namespace WarRoom3D.Tests
                 Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.childCount, Is.EqualTo(3));
                 Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.Q<Label>().text, Does.StartWith("CI ativo desde"));
                 Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("lacuna"));
+                projectSelect.value = "Todos os projetos";
+                history.SendMessage("Open");
+                projectSelect.value = "Projeto (p1)";
+                yield return new WaitForSecondsRealtime(0.3f);
+                Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Filtro alterado"));
+                history.SendMessage("Open");
+                deadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-metrics").text.Contains("Projeto: p1")) yield return null;
+                Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Projeto: p1"));
                 history.SendMessage("BeginReplay");
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && root.Q<VisualElement>("history-mask").style.display.value != DisplayStyle.Flex) yield return null;
@@ -183,6 +192,7 @@ namespace WarRoom3D.Tests
                         body = body.Replace("\"incidentMarkers\":[]", "\"incidentMarkers\":[{\"workflowId\":7,\"ref\":\"main\",\"openedAt\":\"2026-11-05T15:00:00Z\",\"openedBeforeDay\":true,\"resolvedAt\":null,\"activeAtEnd\":true}]");
                     if (first != null && first.Contains("/v1/history/day?") && first.Contains("projectId=p1"))
                         body = body.Replace("\"timeZone\":\"America/Sao_Paulo\"", "\"timeZone\":\"America/Sao_Paulo\",\"projectId\":\"p1\"");
+                    if (first != null && first.Contains("/v1/history/day?")) await Task.Delay(150);
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                     await stream.WriteAsync(header, 0, header.Length);

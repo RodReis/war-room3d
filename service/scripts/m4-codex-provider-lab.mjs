@@ -48,14 +48,24 @@ function assertIsolation(config, cwd) {
       Object.values(config.mcp_servers).some(server => !server || server.enabled !== false)) throw new Error('isolation_unverified');
 }
 
-async function readConfig({channel, cwd, signal, notify}) {
+async function readConfig({channel, cwd, signal, notify, onProgress = () => {}}) {
+  let observedRequests = 0;
   const rpc = async (method, params) => {
     const id = 'lab-' + randomUUID();
+    onProgress(method + ':requested');
     let reply;
-    try { reply = await channel.exchange({id, method, params}, frame => frame.id === id && !Object.hasOwn(frame, 'method'), signal); }
+    try { reply = await channel.exchange({id, method, params}, frame => {
+      if (typeof frame.method === 'string' && Object.hasOwn(frame, 'id') && observedRequests++ < 8) {
+        const kind = frame.method === 'account/chatgptAuthTokens/refresh' ? 'auth_refresh' :
+          frame.method === 'attestation/generate' ? 'attestation' : 'other';
+        onProgress('server_request_unhandled:' + kind);
+      }
+      return frame.id === id && !Object.hasOwn(frame, 'method');
+    }, signal); }
     catch { throw new Error('bootstrap_unconfirmed'); }
     if (Object.hasOwn(reply, 'error') || !reply.result || typeof reply.result !== 'object' || Array.isArray(reply.result))
       throw new Error('bootstrap_unconfirmed');
+    onProgress(method + ':received');
     return reply.result;
   };
   await rpc('initialize', {clientInfo: {name: 'war-room3d-m4-lab', version: '1.0.0'}});
@@ -76,8 +86,8 @@ export async function inspectCodexConfig(options) {
 }
 
 // Recebe canal já aberto: os testes exercitam este fluxo sem processos ou contas reais.
-export async function runCodexLabSession({channel, cwd, signal, notify, audit}) {
-  const {config, rpc} = await readConfig({channel, cwd, signal, notify});
+export async function runCodexLabSession({channel, cwd, signal, notify, audit, onProgress}) {
+  const {config, rpc} = await readConfig({channel, cwd, signal, notify, onProgress});
   assertIsolation(config, cwd);
   const thread = await rpc('thread/start', {cwd, ephemeral: true, approvalPolicy: 'never', sandbox: 'read-only',
     developerInstructions: 'Laboratório sintético. Não use ferramentas nem leia arquivos. Responda somente ao texto sintético recebido.'});
@@ -112,16 +122,18 @@ function metadata(binary, args, cwd) {
   return result.stdout;
 }
 
-export async function usingCodexAppServer({binary, overrides, cwd, timeoutMs, onStopped}, body, spawnProcess = spawn) {
+export async function usingCodexAppServer({binary, overrides, cwd, timeoutMs, onStopped, onDiagnostics = () => {}}, body, spawnProcess = spawn) {
   // Chaves legadas ignoradas pelo CLI não invalidam o perfil do usuário. As condições de isolamento são verificadas via config/read.
   const child = spawnProcess(binary, [...overrides, 'app-server', '--listen', 'stdio://'],
     {cwd, windowsHide: true, env: {...process.env, CODEX_SQLITE_HOME: path.join(cwd, 'state')}, stdio: ['pipe', 'pipe', 'pipe']});
   const exited = new Promise(resolve => { child.once('exit', () => resolve(true)); child.once('error', () => resolve(true)); });
-  child.stderr.on('data', () => { /* Sem saída bruta, caminhos de perfil ou credenciais. */ });
+  let stdoutBytes = 0, stderrBytes = 0, timedOut = false;
+  child.stdout.on('data', chunk => { stdoutBytes += chunk.length; });
+  child.stderr.on('data', chunk => { stderrBytes += chunk.length; });
   const channel = new JsonlChannel({input: child.stdin, output: child.stdout, connectionId: 'connection-' + randomUUID(),
     timeoutMs, maxFrameBytes: 1048576});
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
   try {
     return await body({channel, cwd, signal: controller.signal, notify: frame => child.stdin.write(JSON.stringify(frame) + '\n')});
   } finally {
@@ -133,6 +145,7 @@ export async function usingCodexAppServer({binary, overrides, cwd, timeoutMs, on
     const stopped = await Promise.race([exited, new Promise(resolve => { stopTimer = setTimeout(() => resolve(false), 5000); })]);
     clearTimeout(stopTimer);
     onStopped(stopped);
+    onDiagnostics({stdoutBytes, stderrBytes, timedOut});
     if (!stopped) throw new Error('lab_cleanup_unverified');
   }
 }
@@ -145,7 +158,7 @@ async function run() {
   const cwd = mkdtempSync(path.join(tmpdir(), 'wr3d-m4-codex-'));
   mkdirSync(directory, {recursive: true});
   let report = {...codexLabPlan, sendsRealMessage: false, state: 'not_sent', bootstrapError: true,
-    inspectionProcessTerminated: null, processTerminated: null};
+    inspectionProcessTerminated: null, processTerminated: null, stages: []};
   try {
     if (metadata(binary, ['--version'], cwd).trim() !== 'codex-cli ' + codexLabPlan.providerVersion)
       throw new Error('provider_version_unverified');
@@ -155,9 +168,12 @@ async function run() {
       if (!line || line.trim().split(/\s+/).at(-1) !== 'false') throw new Error('features_unverified');
     }
     const inventory = await usingCodexAppServer({binary, overrides: buildCodexOverrides([], cwd), cwd, timeoutMs: codexLabPlan.inspectionTimeoutMs,
-      onStopped: stopped => { report.inspectionProcessTerminated = stopped; }}, inspectCodexConfig);
+      onStopped: stopped => { report.inspectionProcessTerminated = stopped; },
+      onDiagnostics: value => { report.inspectionTransport = value; }}, options => inspectCodexConfig({...options,
+        onProgress: stage => report.stages.push('inspection/' + stage)}));
     const result = await usingCodexAppServer({binary, overrides: buildCodexOverrides(inventory, cwd), cwd, timeoutMs: codexLabPlan.sessionTimeoutMs,
-      onStopped: stopped => { report.processTerminated = stopped; }}, options => runCodexLabSession({...options, audit: (state, identity) => {
+      onStopped: stopped => { report.processTerminated = stopped; }, onDiagnostics: value => { report.sessionTransport = value; }},
+      options => runCodexLabSession({...options, onProgress: stage => report.stages.push('session/' + stage), audit: (state, identity) => {
         if (state === 'sending') { report.sendsRealMessage = true; report.state = 'unknown'; }
         appendFileSync(path.join(directory, 'audit.jsonl'), JSON.stringify({at: new Date().toISOString(), state, ...identity,
           provider: 'codex', providerVersion: codexLabPlan.providerVersion,

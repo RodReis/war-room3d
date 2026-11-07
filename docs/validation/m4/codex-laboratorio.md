@@ -1,6 +1,6 @@
 # M4 — laboratório Codex preparado
 
-Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). Data: 07/11/2026. **Recebimento real Codex não comprovado.** A [tentativa especificamente autorizada](codex-windows.md), no código `3152ccc`, parou no bootstrap com `not_sent`; nenhum segundo processo/thread/mensagem. O roteiro corrigido abaixo não foi reexecutado com `--run`.
+Issue [#5](https://github.com/RodReis/war-room3d/issues/5), PR [#24](https://github.com/RodReis/war-room3d/pull/24). Data: 07/11/2026. **Recebimento real Codex não comprovado.** As [duas tentativas especificamente autorizadas](codex-windows.md), nos códigos `3152ccc` e `a837263`, pararam no bootstrap com `not_sent`; nenhum segundo processo/thread/mensagem. A instrumentação posterior abaixo não foi executada com o perfil atual.
 
 ## Roteiro revisável
 
@@ -27,10 +27,10 @@ O mapa MCP é mesclado por configuração; uma tabela vazia não comprova remoç
 
 ## Validação realizada sem ensaio autenticado ou envio Codex
 
-- Doze testes do laboratório: modo padrão não inicia CLI; inventário restrito a configuração; um envio sintético bem sucedido; correlação com thread nova; MCP herdado ativo/sem flag, feature ausente/ativa e configuração permissiva bloqueados; sandbox/diretório/instruções divergentes bloqueados; perda de conexão fica `unknown` sem segundo turno; auditoria indisponível impede envio; processo próprio encerrado após erro/timeout; `shell_tool` protege mesmo com `unified_exec` ativo; fechamento no bootstrap distinguido de tentativa de mensagem.
+- Quatorze testes do laboratório: modo padrão não inicia CLI; inventário restrito a configuração; um envio sintético bem sucedido; correlação com thread nova; MCP herdado ativo/sem flag, feature ausente/ativa e configuração permissiva bloqueados; sandbox/diretório/instruções divergentes bloqueados; perda de conexão fica `unknown` sem segundo turno; auditoria indisponível impede envio; processo próprio encerrado após erro/timeout; `shell_tool` protege mesmo com `unified_exec` ativo; fechamento no bootstrap e etapa solicitada registrados; contadores/prazo sem conteúdo dos pipes; pedido inesperado classificado sem responder ou gravar parâmetros.
 - Consulta local somente de `features list`, usando os overrides, retornou código 0 e todos os recursos exigidos desativados. Resultado redigido em `Logs/m4-codex-configuration-check/result.json`. Não executou `mcp list`, app-server, autenticação de laboratório ou inferência.
 - `m4-validate-codex-schema.mjs`: sete formatos sintéticos válidos nos schemas emitidos pelo CLI 0.166.0, incluindo `initialize`, `config/read` e `thread/start`; caso sem `expectedTurnId` recusado. Resultado local em `Logs/m4-codex-schema-result.json`.
-- Serviço **126/126** e typecheck aprovados após a correção; contratos **12/12** na validação anterior, sem alteração. Unity não foi alterado nesta continuação; provas anteriores do Player continuam com o escopo descrito em [protocolos](protocolos.md).
+- Serviço **128/128** e typecheck aprovados após a instrumentação; contratos **12/12** na validação anterior, sem alteração. [Perfil nativo vazio sem credenciais](codex-windows.md) confirmou apenas bootstrap/configuração, sem thread ou mensagem. Unity não foi alterado nesta continuação; provas anteriores do Player continuam com o escopo descrito em [protocolos](protocolos.md).
 
 Estes testes validam o roteiro com transporte falso e formatos locais. Não comprovam isolamento operacional, autenticação, criação de thread ou recebimento pelo Codex real. As capacidades padrão do produto continuam vazias; uma futura prova descartável não poderá habilitar outras sessões.
 

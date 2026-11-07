@@ -2,6 +2,12 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Segunda tentativa Codex e contraprova sem credenciais
+
+- Nova autorização específica do PI e uma execução de `a8372638fe88c3f7d560401773915fd04c596853`: `not_sent`, `bootstrap_unconfirmed`, código 1. Processo de inspeção encerrado, sem segundo processo/thread/mensagem/auditoria ou retry. Etapa interna e causa não registradas; [relatório e hashes](validation/m4/codex-windows.md).
+- Perfil Codex novo e vazio, credenciais somente em arquivo e sem cópia de autenticação: `initialize` e `config/read` confirmados, zero servidores MCP, processo encerrado, sem thread ou inferência. Isola diferenças de perfil/ambiente, sem identificar a causa no contexto atual.
+- Instrumentação posterior registra etapas, contadores/prazo e classes fixas de pedidos inesperados, sem dados dos pipes ou respostas a pedidos do CLI. Serviço 128/128 e typecheck aprovados; sem nova execução autenticada. Capacidades reais indisponíveis, PR #24 em rascunho e issue #5 aberta, sem merge ou aceite.
+
 ## 07/11/2026 — Pré-teste Codex autorizado sem envio M4
 
 - Issue [#5](https://github.com/RodReis/war-room3d/issues/5), [PR #24](https://github.com/RodReis/war-room3d/pull/24), roteiro executado uma vez em `3152cccf2f58419665d7c0afd1e1735fcdd6e1dd`, sem merge.

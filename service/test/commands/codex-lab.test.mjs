@@ -16,8 +16,9 @@ function lab(change = {}) {
     history: {persistence: 'none'}, analytics: {enabled: false}, sqlite_home: path.join(cwd, 'state'), log_dir: path.join(cwd, 'log'),
     experimental_thread_store: {type: 'in_memory', id: 'wr3d-m4-codex-lab'},
     otel: {exporter: 'none', trace_exporter: 'none', log_user_prompt: false}, ...change.config};
-  const channel = {connectionId: 'synthetic-connection', isOpen: true, async exchange(frame) {
+  const channel = {connectionId: 'synthetic-connection', isOpen: true, async exchange(frame, matches) {
     sent.push(frame);
+    if (change.serverRequest && frame.method === 'initialize') assert.equal(matches(change.serverRequest), false);
     if (change.bootstrapDisconnect && frame.method === 'initialize') throw new Error('delivery_unconfirmed');
     const result = frame.method === 'initialize' ? {userAgent: 'codex/0.166.0'} :
       frame.method === 'config/read' ? {config} : frame.method === 'thread/start' ? {
@@ -26,10 +27,10 @@ function lab(change = {}) {
     if (frame.method === 'turn/start' && change.sendError) throw new Error('connection_lost');
     return {id: frame.id, result};
   }};
-  const notifications = [], audit = [];
-  return {sent, notifications, audit, inspect: () => inspectCodexConfig({channel, cwd,
-    signal: new AbortController().signal, notify: frame => notifications.push(frame)}), run: (auditOverride) => runCodexLabSession({channel, cwd,
-    signal: new AbortController().signal, notify: frame => notifications.push(frame), audit: auditOverride ?? (state => audit.push(state))})};
+  const notifications = [], audit = [], progress = [];
+  return {sent, notifications, audit, progress, inspect: () => inspectCodexConfig({channel, cwd,
+    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage)}), run: (auditOverride) => runCodexLabSession({channel, cwd,
+    signal: new AbortController().signal, notify: frame => notifications.push(frame), onProgress: stage => progress.push(stage), audit: auditOverride ?? (state => audit.push(state))})};
 }
 
 test('plano Codex explicita ferramentas internas residuais, sem inventar limite financeiro', () => {
@@ -149,4 +150,31 @@ test('fechamento no bootstrap é distinguido de uma tentativa de mensagem', asyn
   await assert.rejects(fixture.run(), /bootstrap_unconfirmed/);
   assert.deepEqual(fixture.sent.map(frame => frame.method), ['initialize']);
   assert.equal(fixture.audit.length, 0);
+  assert.deepEqual(fixture.progress, ['initialize:requested']);
+});
+
+test('diagnóstico de timeout registra só contadores e prazo, sem conteúdo dos pipes', async () => {
+  const child = Object.assign(new EventEmitter(), {stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough()});
+  child.kill = () => { queueMicrotask(() => child.emit('exit', 1)); return true; };
+  let diagnostics;
+  await usingCodexAppServer({binary: 'fake-cli', overrides: [], cwd, timeoutMs: 5, onStopped: () => {},
+    onDiagnostics: value => { diagnostics = value; }}, async ({signal}) => {
+      child.stderr.write('synthetic-private-log');
+      child.stdout.write('{"syntheticPrivateField":"private-value"}\n');
+      await new Promise(resolve => signal.addEventListener('abort', resolve, {once: true}));
+    }, () => child);
+  assert.deepEqual(diagnostics, {stdoutBytes: 42, stderrBytes: 21, timedOut: true});
+  assert.equal(JSON.stringify(diagnostics).includes('private'), false);
+  child.stdin.destroy(); child.stdout.destroy(); child.stderr.destroy();
+});
+
+test('pedido inesperado de autenticação é diagnosticado sem resposta e sem gravar parâmetros', async () => {
+  for (const method of ['account/chatgptAuthTokens/refresh', 'private-method-containing-data']) {
+    const fixture = lab({bootstrapDisconnect: true, serverRequest: {id: 'private-id', method, params: {token: 'private-token'}}});
+    await assert.rejects(fixture.run(), /bootstrap_unconfirmed/);
+    assert.deepEqual(fixture.sent.map(frame => frame.method), ['initialize']);
+    assert.deepEqual(fixture.progress, ['initialize:requested', 'server_request_unhandled:' +
+      (method === 'account/chatgptAuthTokens/refresh' ? 'auth_refresh' : 'other')]);
+    assert.equal(JSON.stringify(fixture.progress).includes('private'), false);
+  }
 });

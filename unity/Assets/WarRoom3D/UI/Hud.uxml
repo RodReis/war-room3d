@@ -51,6 +51,7 @@
             <ui:Button name="angle-button" text="Outro ângulo" />
             <ui:Button name="reset-button" text="Restaurar câmera" />
             <ui:Button name="history-button" text="Meu dia / histórico" class="history-button" />
+            <ui:Button name="command-button" text="Interação assistida" class="command-button" />
             <ui:Button name="effects-toggle" text="Reduzir efeitos: não" class="effects-toggle" />
             <ui:Label text="Mouse direito: girar  ·  Roda: zoom" class="hint" />
         </ui:VisualElement>

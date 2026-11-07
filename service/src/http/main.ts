@@ -13,6 +13,7 @@ if (!databasePath || !token || !Number.isSafeInteger(port) || port < 1024 || por
   throw new Error('Banco, token ou porta do serviço não configurados');
 const store = new EventStore(databasePath);
 try {
+  store.commands.recover();
   store.history.pruneExpired();
   const retentionTimer = setInterval(() => {
     try { store.history.pruneExpired(); }
@@ -23,7 +24,9 @@ try {
   const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
-  const { server, url } = await startReadOnlyServer(store, token, port);
+  const commandToken=process.env.WR3D_COMMAND_TOKEN;
+  const commandProjects=process.env.WR3D_COMMAND_PROJECT_IDS?.split(',').map(value=>value.trim()).filter(Boolean)??[];
+  const { server, url } = await startReadOnlyServer(store, token, port, {token:commandToken,actor:{actorId:'operador-local',projectIds:commandProjects}});
   monitoring?.runner.start(monitoring.intervalMs);
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;

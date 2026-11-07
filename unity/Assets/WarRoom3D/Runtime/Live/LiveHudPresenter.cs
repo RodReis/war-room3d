@@ -48,6 +48,7 @@ namespace WarRoom3D
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
             var history = gameObject.AddComponent<HistoryHudPresenter>();
             history.Configure(root, client);
+            gameObject.AddComponent<CommandPresenter>().Configure(root, client, history);
             history.ReplayChanged += OnReplayChanged;
             history.ReplayStateChanged += RenderReplayState;
             gameObject.AddComponent<EffectDirector>().Configure(root, client, history, sector);
@@ -213,6 +214,7 @@ namespace WarRoom3D
 
         private void RefreshProject()
         {
+            GetComponent<CommandPresenter>()?.SelectProject(selectedProjectId);
             if (snapshot == null) { ShowEmpty(); return; }
             var project = Array.Find(snapshot.projects, item => item.projectId == selectedProjectId);
             if (project == null) { ShowEmpty(); return; }
@@ -413,7 +415,7 @@ namespace WarRoom3D
             if (root == null || root.panel == null) return false;
             Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
             return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
-                Contains("history-panel", point) || Contains("history-mask", point);
+                Contains("history-panel", point) || Contains("history-mask", point) || Contains("command-panel", point) || Contains("command-mask", point);
         }
 
         private bool Contains(string name, Vector2 point)

@@ -80,5 +80,20 @@ namespace WarRoom3D.Editor
             }
             finally { PlayerSettings.productName = priorProductName; }
         }
+
+        public static void BuildWindowsM4Commands()
+        {
+            CreateScene();
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = "Builds/WarRoom3D-M4/WarRoom3D.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new System.Exception("Build Windows M4 falhou: " + report.summary.result);
+            Debug.Log("Build Windows M4 concluído: " + report.summary.totalSize + " bytes");
+        }
     }
 }

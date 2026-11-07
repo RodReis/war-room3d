@@ -129,6 +129,19 @@ namespace WarRoom3D
 
         public void RefreshNow() { refreshRequested = true; }
 
+        public UnityWebRequest CreateCommandRequest(string path)
+        {
+            if (!configured) return null;
+            if (string.IsNullOrEmpty(path) || (path != "/v1/capabilities" && path != "/v1/commands" && !path.StartsWith("/v1/commands/", StringComparison.Ordinal)) ||
+                path.Contains("..") || path.Contains("//") || path.Contains("?") || path.Contains("#"))
+                throw new ArgumentException("Rota de interação inválida");
+            var request = UnityWebRequest.Get(baseUrl + path);
+            request.redirectLimit = 0;
+            request.timeout = 15;
+            request.SetRequestHeader("Authorization", "Bearer " + token);
+            return request;
+        }
+
         private void OnDisable()
         {
             activeRequest?.Abort();

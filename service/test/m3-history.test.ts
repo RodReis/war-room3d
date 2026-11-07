@@ -768,7 +768,7 @@ test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados n
   assert.deepEqual(historicalState.coverage,
     {status:'gap',reason:'expected_collection_windows_not_recorded',gaps:[{sourceId:'source1',start:'2026-11-06T14:00:00Z',end:'2026-11-06T15:00:00Z',reason:'source_unavailable'}]});
   assert.equal((await fetch(`${url}/v1/history/replay/state?at=invalid`,{headers})).status,400);
-  assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'})).status,405);
+  assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'})).status,403);
 });
 
 test('replay recusa cursor expirado ou futuro e aceita limite da janela',async t=>{

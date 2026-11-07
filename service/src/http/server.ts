@@ -4,6 +4,12 @@ import { timingSafeEqual } from 'node:crypto';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { EventStore, StreamChange } from '../store/event-store.ts';
 import { AGGREGATE_RETENTION_DAYS, REPLAY_RETENTION_DAYS, retentionCutoffs } from '../history/history.ts';
+import { handleCommands, isCommandRoute } from './commands.ts';
+import { CommandGateway } from '../commands/gateway.ts';
+import { CapabilityRegistry } from '../commands/capability-registry.ts';
+import { claudeCommands } from '../commands/providers/claude.ts';
+import { codexCommands } from '../commands/providers/codex.ts';
+import type { CommandActor, CommandTarget } from '../commands/types.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/snapshot.v1.schema.json', import.meta.url), 'utf8'));
 const validateSnapshot = new Ajv2020({ strict: true }).compile(schema);
@@ -20,17 +26,30 @@ function parseCursor(value: string | string[] | undefined): number | null {
   return Number.isSafeInteger(number) ? number : null;
 }
 
-export async function startReadOnlyServer(store: EventStore, token: string, port = 0): Promise<{ server: Server; url: string }> {
+export interface ServerCommandOptions {gateway?:CommandGateway;token?:string;actor?:CommandActor;targets?:()=>CommandTarget[];}
+export async function startReadOnlyServer(store: EventStore, token: string, port = 0, commands:ServerCommandOptions={}): Promise<{ server: Server; url: string }> {
   if (Buffer.byteLength(token) < 32 || !Number.isSafeInteger(port) || port < 0 || port > 65535)
     throw new Error('Token ou porta do serviço inválidos');
   const expected = Buffer.from(token);
+  if(commands.token && (Buffer.byteLength(commands.token)<32 || commands.token===token || !commands.actor?.actorId || !commands.actor.projectIds.length))
+    throw new Error('Credencial de comando deve ser distinta e ter ator/escopo explícitos');
+  const commandExpected=commands.token?Buffer.from(commands.token):null;
+  const targets=commands.targets??(()=>((store.snapshot().sessions??[]) as {projectId:string;sessionKey:string;provider:'claude'|'codex';presence:string;freshness:string}[])
+    .map(x=>({projectId:x.projectId,sessionKey:x.sessionKey,provider:x.provider,providerVersion:'unknown',active:x.presence!=='encerrada' && x.freshness==='atual'})));
+  const gateway=commands.gateway??new CommandGateway({audit:store.commands,registry:new CapabilityRegistry(),adapters:[claudeCommands,codexCommands],
+    resolveTarget:key=>targets().find(x=>x.sessionKey===key)??null,mode:'live'});
+  const actor=commands.actor??{actorId:'observer',projectIds:[]};
   const clients = new Set<ServerResponse>();
   const server = http.createServer((request, response) => {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     const supplied = request.headers.authorization?.startsWith('Bearer ') ? Buffer.from(request.headers.authorization.slice(7)) : Buffer.alloc(0);
-    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { response.writeHead(401).end(); return; }
+    const canRead=supplied.length===expected.length && timingSafeEqual(supplied,expected);
+    const canCommand=!!commandExpected && supplied.length===commandExpected.length && timingSafeEqual(supplied,commandExpected);
+    if (!canRead && !canCommand) { response.writeHead(401).end(); return; }
     if (!request.url) { response.writeHead(404).end(); return; }
+    if(isCommandRoute(request.url)) {void handleCommands(request,response,{gateway,actor,targets},canCommand,()=>store.snapshot().capabilities);return;}
+    if(!canRead) {response.writeHead(403).end();return;}
     if ((request.method === 'POST' && request.url === '/v1/github/repositories') || (request.method === 'DELETE' && request.url === '/v1/github/repositories')) {
       const length = Number(request.headers['content-length'] ?? 0);
       if (!Number.isSafeInteger(length) || length < 1 || length > 4096 || request.headers['transfer-encoding']) { response.writeHead(413).end(); return; }
@@ -97,9 +116,6 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
       if (parsedUrl.pathname === '/v1/github/repositories') { sendJson(response, 200, store.history.repositories()); return; }
       if (parsedUrl.search) { response.writeHead(404).end(); return; }
       if (request.url === '/v1/health') { sendJson(response, 200, { status: 'ok' }); return; }
-      if (request.url === '/v1/capabilities') {
-        sendJson(response, 200, { schemaVersion: '1.0', capabilities: store.snapshot().capabilities }); return;
-      }
       if (request.url === '/v1/snapshot') {
         const snapshot = store.snapshot();
         if (!validateSnapshot(snapshot)) throw new Error('Snapshot fora do contrato');

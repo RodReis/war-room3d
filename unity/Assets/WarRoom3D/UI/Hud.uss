@@ -40,3 +40,16 @@
 .effects-toggle { display: none; }
 .effect-banner { display: none; position: absolute; top: 111px; left: 360px; right: 275px; min-height: 44px; padding: 10px 14px; background-color: rgba(8, 49, 58, 0.95); border-left-width: 3px; border-left-color: rgb(54, 198, 213); color: rgb(225, 241, 245); -unity-font-style: bold; white-space: normal; }
 .effect-alarm { background-color: rgba(73, 33, 21, 0.97); border-left-color: rgb(255, 185, 92); }
+.command-button { display: none; }
+.command-mask { display: none; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.65); }
+.command-panel { display: none; position: absolute; left: 25%; right: 10%; top: 8%; bottom: 8%; background-color: rgb(19, 29, 39); padding: 20px; border-left-width: 2px; border-left-color: rgb(94, 201, 210); }
+.command-panel Label { white-space: normal; color: rgb(226, 234, 240); }
+.command-panel Button { min-height: 34px; margin-top: 8px; }
+.command-panel TextField { margin-top: 8px; }
+.command-panel #command-context { margin-top: 12px; margin-bottom: 12px; }
+.command-panel .unity-base-field__input { background-color: rgb(30, 45, 58); color: rgb(226, 234, 240); border-top-color: rgb(54, 85, 99); border-bottom-color: rgb(54, 85, 99); border-left-color: rgb(54, 85, 99); border-right-color: rgb(54, 85, 99); }
+.command-panel .unity-base-popup-field__text { color: rgb(226, 234, 240); }
+.command-panel #command-message .unity-base-field__input { min-height: 54px; }
+.command-panel Button { background-color: rgb(22, 67, 79); color: rgb(226, 234, 240); }
+.command-panel Button:disabled { opacity: 0.45; }
+.command-panel #command-result { color: rgb(157, 185, 194); margin-bottom: 12px; }

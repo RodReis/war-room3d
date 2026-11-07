@@ -52,7 +52,7 @@ As provas não equivalem a suporte operacional Claude/Codex nem aceite funcional
 
 ## Revisão técnica dos critérios da issue #5
 
-Esta seção consolida a revisão após os ensaios de mensagens reais. Os números iniciais acima são históricos, não substituem a validação posterior: serviço **129/129**, contratos **12/12** e typecheck aprovados; C# permaneceu inalterado após as provas Windows já descritas.
+Esta seção consolida a revisão após os ensaios de mensagens reais e a correção de escopo da descoberta HTTP: serviço **130/130**, contratos **12/12** na validação anterior e typecheck aprovados; C# permaneceu inalterado após as provas Windows já descritas.
 
 | Critério | Evidência técnica | Limite |
 |---|---|---|
@@ -65,3 +65,11 @@ Esta seção consolida a revisão após os ensaios de mensagens reais. Os númer
 A revisão corrigiu os achados reproduzidos durante a execução: validade da própria prévia após espera SQLite; resposta Codex sem `items`; overrides MCP com IDs citados em caminhos; política global nativa confundida com fonte arbitrária de instruções. As duas últimas correções foram verificadas por testes vermelhos/positivos, contraprova nativa sem inferência e recibo do alvo descartável.
 
 Sem supervisor/canal/prova da sessão atual, o serviço normal mantém Claude/Codex indisponíveis. Não foram adicionados hooks, retomada de conversas ou administração de processos ao produto. Vínculo operacional com sessões M1, perguntas/permissões reais e aceite funcional do PI continuam separados desta entrega técnica. Não houve merge ou fechamento da issue.
+
+### Revisão externa: descoberta respeita a credencial
+
+**P2 — `service/src/http/commands.ts:26`, fonte `71bf062`:** a revisão Codex reproduziu uma credencial de comando restrita ao projeto A recebendo pedidos privados sintéticos de B em `GET /v1/capabilities`. A escrita já validava projeto, mas a descoberta montava a resposta com todos os alvos. [Achado externo](https://github.com/RodReis/war-room3d/pull/24#discussion_r4504172030).
+
+A correção transmite as autoridades de leitura e comando separadamente do servidor para o handler. Para credencial somente de comando, filtra os alvos por `actor.projectIds` **antes** de consultar o gateway e não retorna capacidades globais de leitura. A credencial de leitura conserva seu próprio escopo autorizado; ela não recebe permissão de escrita.
+
+A regressão HTTP com dois projetos falhou ao receber `[project-a, project-b]` para a credencial A e passou após a correção. Verifica pedido/contexto de A presente, ausência completa de B, revogação de projetos resultando em lista vazia, token de comando recusado no snapshot e leitura conservando A/B e suas capacidades. SQLite e dados são sintéticos; nenhum CLI/conta real foi acionado. Serviço **130/130** e typecheck aprovados.

@@ -48,7 +48,7 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
     const canCommand=!!commandExpected && supplied.length===commandExpected.length && timingSafeEqual(supplied,commandExpected);
     if (!canRead && !canCommand) { response.writeHead(401).end(); return; }
     if (!request.url) { response.writeHead(404).end(); return; }
-    if(isCommandRoute(request.url)) {void handleCommands(request,response,{gateway,actor,targets},canCommand,()=>store.snapshot().capabilities);return;}
+    if(isCommandRoute(request.url)) {void handleCommands(request,response,{gateway,actor,targets},{canRead,canCommand},()=>store.snapshot().capabilities);return;}
     if(!canRead) {response.writeHead(403).end();return;}
     if ((request.method === 'POST' && request.url === '/v1/github/repositories') || (request.method === 'DELETE' && request.url === '/v1/github/repositories')) {
       const length = Number(request.headers['content-length'] ?? 0);

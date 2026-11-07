@@ -3,6 +3,7 @@ import { CommandGateway } from '../commands/gateway.ts';
 import { CommandError, type CommandActor, type CommandTarget } from '../commands/types.ts';
 
 export interface CommandHttpOptions {gateway:CommandGateway;actor:CommandActor;targets:()=>CommandTarget[];}
+export interface CommandHttpAccess {canRead:boolean;canCommand:boolean;}
 const json=(response:ServerResponse,status:number,body:unknown)=>response.writeHead(status,{'Content-Type':'application/json; charset=utf-8'}).end(JSON.stringify(body));
 export function isCommandRoute(url:string):boolean {
   const pathname=url.split('?')[0];return pathname==='/v1/capabilities' || pathname==='/v1/commands' || pathname.startsWith('/v1/commands/');
@@ -16,16 +17,19 @@ async function body(request:IncomingMessage):Promise<unknown> {
   if(total!==size)throw new CommandError('invalid_body',400);
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new CommandError('invalid_body',400);}
 }
-export async function handleCommands(request:IncomingMessage,response:ServerResponse,options:CommandHttpOptions,canCommand:boolean,readCapabilities:()=>unknown):Promise<void> {
+export async function handleCommands(request:IncomingMessage,response:ServerResponse,options:CommandHttpOptions,access:CommandHttpAccess,readCapabilities:()=>unknown):Promise<void> {
   try {
     const authority=`127.0.0.1:${request.socket.localPort}`;
     if(request.headers.host!==authority || (request.headers.origin!==undefined && request.headers.origin!==`http://${authority}`) ||
       (request.headers['sec-fetch-site']!==undefined && request.headers['sec-fetch-site']!=='same-origin'))throw new CommandError('origin_forbidden',403);
     if(request.url==='/v1/capabilities' && request.method==='GET'){
+      if(!access.canRead && !access.canCommand)throw new CommandError('command_forbidden',403);
       if(request.headers['content-length'] || request.headers['transfer-encoding'])throw new CommandError('invalid_body',400);
-      json(response,200,{...options.gateway.capabilities(options.targets()),capabilities:readCapabilities()});return;
+      const targets=options.targets();
+      const visible=access.canRead?targets:targets.filter(target=>options.actor.projectIds.includes(target.projectId));
+      json(response,200,{...options.gateway.capabilities(visible),capabilities:access.canRead?readCapabilities():[]});return;
     }
-    if(!canCommand)throw new CommandError('command_forbidden',403);
+    if(!access.canCommand)throw new CommandError('command_forbidden',403);
     if(request.method==='GET' && /^\/v1\/commands\/[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(request.url??'')){
       if(request.headers['content-length'] || request.headers['transfer-encoding'])throw new CommandError('invalid_body',400);
       const result=options.gateway.get(request.url!.slice('/v1/commands/'.length),options.actor);

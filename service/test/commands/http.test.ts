@@ -50,3 +50,37 @@ test('produção não habilita capacidades sem provas e rejeita credencial compa
   assert.deepEqual((await result.json() as any).sessions,[]);
   assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{Authorization:`Bearer ${readToken}`}})).status,403);
 });
+
+test('descoberta por credencial de comando limita sessões e pedidos ao projeto; leitura conserva seu próprio escopo',async t=>{
+  const store=new EventStore(':memory:');const registry=new CapabilityRegistry();const now=Date.now();
+  const targets=['a','b'].map(id=>({sessionKey:`session-${id}`,projectId:`project-${id}`,provider:'codex' as const,providerVersion:'test-1',active:true}));
+  for(const target of targets){
+    registry.prove({sessionKey:target.sessionKey,projectId:target.projectId,provider:target.provider,providerVersion:target.providerVersion,
+      action:'answer_question',adapterVersion:'fake-1',evidenceRef:`synthetic:proof-${target.projectId}`,
+      provenAt:new Date(now-1000).toISOString(),validUntil:new Date(now+60000).toISOString()});
+    registry.observeRequest({requestId:`request-${target.projectId}`,sessionKey:target.sessionKey,projectId:target.projectId,
+      action:'answer_question',originalContext:`pergunta-privada-${target.projectId}`,consequence:`consequencia-${target.projectId}`,
+      sourceRef:`synthetic:private-${target.projectId}`,deadlineAt:new Date(now+30000).toISOString()});
+  }
+  const adapter:CommandAdapter={provider:'codex',version:'fake-1',actions:['answer_question'],async send(){throw new Error('não deveria enviar');}};
+  const gateway=new CommandGateway({audit:store.commands,registry,adapters:[adapter],resolveTarget:key=>targets.find(target=>target.sessionKey===key)??null,mode:'live'});
+  const actor={actorId:'operador-a',projectIds:['project-a']};
+  const {server,url}=await startReadOnlyServer(store,readToken,0,{gateway,token:commandToken,actor,targets:()=>targets});
+  t.after(async()=>{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));store.close();});
+  const discover=(token:string)=>fetch(`${url}/v1/capabilities`,{headers:{Authorization:`Bearer ${token}`}});
+  const commandResponse=await discover(commandToken);assert.equal(commandResponse.status,200);
+  const scoped=await commandResponse.json() as any;
+  assert.deepEqual(scoped.sessions.map((session:any)=>session.projectId),['project-a']);
+  assert.equal(scoped.sessions[0].requests[0].originalContext,'pergunta-privada-project-a');
+  assert.doesNotMatch(JSON.stringify(scoped),/project-b/);
+  assert.deepEqual(scoped.capabilities,[]);
+  const readResponse=await discover(readToken);assert.equal(readResponse.status,200);
+  const observed=await readResponse.json() as any;
+  assert.deepEqual(observed.sessions.map((session:any)=>session.projectId),['project-a','project-b']);
+  assert.equal(observed.sessions[1].requests[0].originalContext,'pergunta-privada-project-b');
+  assert.deepEqual(observed.capabilities,store.snapshot().capabilities);
+  actor.projectIds.length=0;
+  const revoked=await (await discover(commandToken)).json() as any;
+  assert.deepEqual(revoked.sessions,[]);assert.deepEqual(revoked.capabilities,[]);
+  assert.equal((await fetch(`${url}/v1/snapshot`,{headers:{Authorization:`Bearer ${commandToken}`}})).status,403);
+});

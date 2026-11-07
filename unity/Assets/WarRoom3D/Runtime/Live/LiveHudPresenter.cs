@@ -23,13 +23,15 @@ namespace WarRoom3D
         private Transform replayMarkers;
         private Material replayActiveMaterial;
         private Material replayUnknownMaterial;
+        private DataCenterBuilder dataCenter;
 
         private void Start()
         {
             root = document.rootVisualElement;
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
             orbit.SetHud(this);
-            sector.GetComponentInChildren<DataCenterBuilder>().UseNeutralIndicators();
+            dataCenter = sector.GetComponentInChildren<DataCenterBuilder>();
+            dataCenter.UseNeutralIndicators();
             root.Q<Label>("stage-eyebrow").text = "WAR-ROOM3D / M2 · AO VIVO";
             root.Q<Label>("project-list-heading").text = "PROJETOS OBSERVADOS";
             root.Q<Label>("activity-heading").text = "ATIVIDADE OBSERVADA";
@@ -62,6 +64,7 @@ namespace WarRoom3D
             var history = GetComponent<HistoryHudPresenter>();
             if (history != null) { history.ReplayChanged -= OnReplayChanged; history.ReplayStateChanged -= RenderReplayState; }
             ClearReplayMarkers();
+            if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (replayActiveMaterial != null) Destroy(replayActiveMaterial);
             if (replayUnknownMaterial != null) Destroy(replayUnknownMaterial);
             if (client == null) return;
@@ -115,6 +118,7 @@ namespace WarRoom3D
         private void OnReplayChanged(bool active)
         {
             replayMode = active;
+            if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (!active)
             {
                 ClearReplayMarkers();
@@ -135,6 +139,7 @@ namespace WarRoom3D
             if (!replayMode) return;
             ClearReplayMarkers();
             snapshot = state;
+            if (dataCenter != null) dataCenter.ShowReplayInfrastructure(state);
             if (state == null) { ShowReplayUnavailable(); return; }
             var list = root.Q<ScrollView>("project-list");
             list.Clear();
@@ -152,7 +157,10 @@ namespace WarRoom3D
 
         private void ShowReplayUnavailable()
         {
+            ShowEmpty();
+            selectedResourceId = null;
             root.Q<ScrollView>("project-list").Clear();
+            root.Q<ScrollView>("resource-list").Clear();
             root.Q<Label>("project-name").text = "Projeção histórica indisponível";
             root.Q<Label>("status").text = "Sem dados";
             root.Q<Label>("activity").text = "Aguardando estado do instante selecionado.";

@@ -336,13 +336,14 @@ namespace WarRoom3D
             projectionInFlight = true;
             UnityWebRequest request;
             try { request = client.CreateHistoryRequest("/v1/history/replay/state?at=" + Uri.EscapeDataString(at)); }
-            catch (ArgumentException) { coverage.text = "Projeção histórica indisponível."; projectionInFlight = false; yield break; }
+            catch (ArgumentException) { ReplayStateChanged?.Invoke(null); coverage.text = "Projeção histórica indisponível."; projectionInFlight = false; yield break; }
             using (request)
             {
                 yield return request.SendWebRequest();
                 if (replaying && version == projectionRequestVersion &&
                     (request.result != UnityWebRequest.Result.Success || request.responseCode != 200))
                 {
+                    ReplayStateChanged?.Invoke(null);
                     coverage.text = request.responseCode == 410 ? "Evidência expirada após 7 dias; projeção indisponível." :
                         "Projeção histórica indisponível para este instante.";
                 }
@@ -366,11 +367,11 @@ namespace WarRoom3D
                         if (state.infrastructureReference == "unavailable")
                             coverage.text += " Infraestrutura sem inventário histórico.";
                         else if (state.infrastructureReference == "recorded")
-                            coverage.text += " Infraestrutura do inventário registrado.";
+                            coverage.text += " Infraestrutura do inventário registrado; núcleo 3D resume recursos por tipo.";
                         if (state.ciIncidents.Length > 0)
                             coverage.text += " CI: " + state.ciIncidents.Length + " incidente(s) ativo(s) neste instante.";
                     }
-                    catch (ArgumentException) { coverage.text = "Estado histórico incompatível."; }
+                    catch (ArgumentException) { ReplayStateChanged?.Invoke(null); coverage.text = "Estado histórico incompatível."; }
                 }
             }
             projectionInFlight = false;

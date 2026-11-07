@@ -2,6 +2,13 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Integração técnica da M4 e revisão externa resolvida
+
+- [PR #24](https://github.com/RodReis/war-room3d/pull/24) integrada por squash em `75ad486ce0ed66ef06fae142405685d13f5658dd`, `mergedAt=2026-11-07T23:48:13Z`, após a continuação do PI até a integração técnica. SHA remoto confirmado e branch `feat/m4-interacao` preservada; issue #5 aberta, sem aceite funcional presumido.
+- Revisão externa Codex no HEAD `71bf062` identificou P2 em `service/src/http/commands.ts:26`: credencial de comando A descobria pedidos de B. Correção `510274fc7a3a2073a5eeb38c9d92ab9266641b7c`, com regressão HTTP vermelha/positiva, resposta ao revisor e thread resolvida. Leitura conserva sua própria autorização; comando só descobre seus projetos e não recebe capacidades globais de leitura.
+- CI do HEAD integrado `510274f`: [run 42426787642](https://github.com/RodReis/war-room3d/actions/runs/42426787642), Contratos `SUCCESS` em 7 s e Serviço `SUCCESS` em 16 s. Serviço 130/130 e typecheck locais aprovados; contratos 12/12 no CI. Branch `main` sem proteção/rulesets ativos no instante da integração, sem bypass administrativo.
+- Provas Windows anteriores preservadas: Unity EditMode 15/15, PlayMode 12/12 e build/Player sintético; uma mensagem real por provedor em alvos descartáveis encerrados, recibos CLI e auditoria. Perguntas/permissões reais e vínculo contínuo M1 não comprovados permanecem indisponíveis. [Provas e critérios](validation/m4/resultado.md).
+
 ## 07/11/2026 — Recibo Codex comprovado e revisão técnica M4
 
 - Continuação autorizada pelo PI até o fim, dentro do mesmo laboratório. Correções `b6d1fcc` (IDs MCP literais no valor TOML) e `858796786ee84bff6c317720ada0e99db1d22789` (política global nativa identificada por caminho exato), sem alterar perfil global ou retomar conversas.

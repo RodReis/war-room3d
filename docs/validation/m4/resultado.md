@@ -46,7 +46,7 @@ Imprevistos: primeira compilação encontrou método inexistente `CreateReadRequ
 
 Revisão visual sintética: as imagens mostraram o resultado da mensagem anterior enquanto uma nova permissão era revisada. O painel agora identifica o resultado como `Último comando` e mantém o estado da intenção atual separado. Campos de pedido/decisão/mensagem aparecem apenas na ação correspondente. A prévia usa rótulo da ação em português e evita repetir o mesmo conteúdo.
 
-Arquivos de cenas/configurações reserializados pelo Editor foram restaurados após os ensaios; a cena live existente instala o painel pelo código de inicialização. Builds, XMLs, imagens e bancos permanecem fora do Git. Não houve alteração dos checkouts anteriores nem merge desta entrega.
+Arquivos de cenas/configurações reserializados pelo Editor foram restaurados após os ensaios; a cena live existente instala o painel pelo código de inicialização. Builds, XMLs, imagens e bancos permanecem fora do Git. Os checkouts anteriores foram preservados. A integração técnica posterior foi confirmada na PR #24, commit `75ad486`.
 
 As provas não equivalem a suporte operacional Claude/Codex nem aceite funcional do PI. Issue #5 permanece aberta até os critérios e o aceite aplicáveis.
 
@@ -64,7 +64,7 @@ Esta seção consolida a revisão após os ensaios de mensagens reais e a corre�
 
 A revisão corrigiu os achados reproduzidos durante a execução: validade da própria prévia após espera SQLite; resposta Codex sem `items`; overrides MCP com IDs citados em caminhos; política global nativa confundida com fonte arbitrária de instruções. As duas últimas correções foram verificadas por testes vermelhos/positivos, contraprova nativa sem inferência e recibo do alvo descartável.
 
-Sem supervisor/canal/prova da sessão atual, o serviço normal mantém Claude/Codex indisponíveis. Não foram adicionados hooks, retomada de conversas ou administração de processos ao produto. Vínculo operacional com sessões M1, perguntas/permissões reais e aceite funcional do PI continuam separados desta entrega técnica. Não houve merge ou fechamento da issue.
+Sem supervisor/canal/prova da sessão atual, o serviço normal mantém Claude/Codex indisponíveis. Não foram adicionados hooks, retomada de conversas ou administração de processos ao produto. Vínculo operacional com sessões M1, perguntas/permissões reais e aceite funcional do PI continuam separados desta entrega técnica. A PR #24 foi integrada em `75ad486`; a issue permanece aberta para o aceite do PI.
 
 ### Revisão externa: descoberta respeita a credencial
 

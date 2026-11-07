@@ -417,23 +417,31 @@ function zonedMidnight(date: string, zone: string): number {
   return guess;
 }
 
-function intervals(events: Record<string, unknown>[], key: string, start: number, end: number): { start: number; end: number }[] | null {
+function intervals(events: Record<string, unknown>[], key: 'sessionKey' | 'agentKey', start: number, end: number): { start: number; end: number }[] | null {
   const losses = new Map<string, number[]>();
-  const byEntity = new Map<string, { sourceId: string; observations: { at: number; type: string }[] }>();
+  const sessionEnds = new Map<string, number[]>();
+  const byEntity = new Map<string, { sourceId: string; sessionKey: string; observations: { at: number; type: string }[] }>();
+  let observedInDay = false;
   for (const event of events) {
     const at = Date.parse(String(event.observedAt));
     if (!Number.isFinite(at)) continue;
     const sourceId = typeof event.sourceId === 'string' ? event.sourceId : '';
     if (event.type === 'source.unavailable' && sourceId) losses.set(sourceId,[...(losses.get(sourceId)??[]),at]);
+    if (key === 'agentKey' && event.type === 'session.ended' && typeof event.sessionKey === 'string')
+      sessionEnds.set(event.sessionKey,[...(sessionEnds.get(event.sessionKey)??[]),at]);
+    if (typeof event.type !== 'string' || !event.type.startsWith(key === 'sessionKey' ? 'session.' : 'agent.')) continue;
     if (typeof event[key] !== 'string') continue;
+    if (at>=start && at<end) observedInDay=true;
     const id = String(event[key]);
-    const current = byEntity.get(id) ?? {sourceId,observations:[]};
+    const current = byEntity.get(id) ?? {sourceId,sessionKey:String(event.sessionKey??''),observations:[]};
     current.observations.push({at,type:String(event.type)});
     byEntity.set(id,current);
   }
+  if (byEntity.size===0) return null;
   const result: {start:number;end:number}[] = [];
   for (const entity of byEntity.values()) {
-    const list=[...entity.observations,...(losses.get(entity.sourceId)??[]).map(at=>({at,type:'source.unavailable'}))];
+    const list=[...entity.observations,...(losses.get(entity.sourceId)??[]).map(at=>({at,type:'source.unavailable'})),
+      ...(key==='agentKey' ? (sessionEnds.get(entity.sessionKey)??[]).map(at=>({at,type:'session.ended'})) : [])];
     list.sort((a,b)=>a.at-b.at); let opened: number | null = null;
     for (const e of list) {
       if (e.type.endsWith('.ended') || e.type === 'source.unavailable') { if (opened !== null) result.push({start:Math.max(opened,start),end:Math.min(e.at,end)}); opened=null; }
@@ -441,7 +449,8 @@ function intervals(events: Record<string, unknown>[], key: string, start: number
     }
     if (opened !== null && opened < end) return null;
   }
-  return result.filter(x=>x.end>x.start);
+  const clipped=result.filter(x=>x.end>x.start);
+  return clipped.length || observedInDay ? clipped : null;
 }
 function waitingIntervals(events: Record<string,unknown>[], start:number, end:number): {start:number;end:number}[]|null {
   const ordered=[...events].filter(event=>Number.isFinite(Date.parse(String(event.observedAt))))

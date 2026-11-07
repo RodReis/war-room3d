@@ -44,6 +44,45 @@ test('Meu dia aplica fuso São Paulo e união de sessões sobrepostas sem contar
   assert.equal(summary.coverage.status,'unknown');
 });
 
+test('Meu dia separa fim de agente do fim da sessão',t=>{
+  const store=storeFor(t);
+  const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T15:00:00Z',
+    projectId:'p1',provider:'codex',sessionKey:'s1',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(id:string,type:string,at:string,offset:number,agentKey?:string)=>store.apply(
+    {...base,eventId:id,sourceEventId:id,type,observedAt:at,...(agentKey?{agentKey}:{})},
+    {sourceId:'source1',fileKey:'synthetic',generation:1,offset});
+  apply('session-start','session.observed','2026-11-06T10:00:00Z',1);
+  apply('agent-start','agent.observed','2026-11-06T10:00:00Z',2,'a1');
+  apply('agent-end','agent.ended','2026-11-06T11:00:00Z',3,'a1');
+  apply('session-end','session.ended','2026-11-06T12:00:00Z',4);
+  const day=store.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z') as {elapsedDurationMs:number;agentHours:number};
+  assert.equal(day.elapsedDurationMs,2*3600000);
+  assert.equal(day.agentHours,1);
+});
+
+test('Meu dia encerra horas de agente com a sessão e deixa ausência de coleta desconhecida',t=>{
+  const store=storeFor(t);
+  const empty=store.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z') as
+    {elapsedDurationMs:number|null;elapsedDurationKnown:boolean;agentHours:number|null;agentHoursKnown:boolean};
+  assert.deepEqual([empty.elapsedDurationMs,empty.elapsedDurationKnown,empty.agentHours,empty.agentHoursKnown],[null,false,null,false]);
+  const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T15:00:00Z',
+    projectId:'p1',provider:'codex',sessionKey:'s1',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(id:string,type:string,at:string,offset:number,agentKey?:string)=>store.apply(
+    {...base,eventId:id,sourceEventId:id,type,observedAt:at,...(agentKey?{agentKey}:{})},
+    {sourceId:'source1',fileKey:'synthetic',generation:1,offset});
+  apply('session-start','session.observed','2026-11-06T10:00:00Z',1);
+  apply('agent-start','agent.observed','2026-11-06T10:00:00Z',2,'a1');
+  apply('session-end','session.ended','2026-11-06T12:00:00Z',3);
+  const day=store.history.daySummary('2026-11-06','UTC','2026-11-07T00:00:00Z') as
+    {elapsedDurationMs:number;agentHours:number;agentHoursKnown:boolean};
+  assert.equal(day.elapsedDurationMs,2*3600000);
+  assert.equal(day.agentHours,2);
+  assert.equal(day.agentHoursKnown,true);
+  const next=store.history.daySummary('2026-11-07','UTC','2026-11-08T00:00:00Z') as
+    {elapsedDurationMs:number|null;elapsedDurationKnown:boolean;agentHours:number|null;agentHoursKnown:boolean};
+  assert.deepEqual([next.elapsedDurationMs,next.elapsedDurationKnown,next.agentHours,next.agentHoursKnown],[null,false,null,false]);
+});
+
 test('Meu dia soma espera pela união de sessões e não completa intervalo aberto',t=>{
   const store=storeFor(t);
   const empty=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {waitingDurationMs:number|null;waitingDurationKnown:boolean};

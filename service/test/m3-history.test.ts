@@ -486,6 +486,22 @@ test('GitHub 429 e limite secundário 403 aplicam pausa; coleta de PR e CI não 
   assert.equal(maxActive,1);
 });
 
+test('limite da API interrompe a rodada antes dos outros repositórios',async t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'first',projectId:'p1'});
+  store.history.linkRepository({repositoryId:'43',owner:'owner-b',name:'second',projectId:'p1'});
+  const requested:string[]=[];
+  const client=new GitHubClient('',async input=>{
+    requested.push(String(input));
+    return new Response('{}',{status:429,headers:{'retry-after':'3'}});
+  });
+  const result=await pollLinkedRepositories(store,client);
+  assert.equal(result.repositories,2);
+  assert.deepEqual(result.errors.map(error=>[error.repositoryId,error.retryAfterMs]),[['42',3000]]);
+  assert.equal(requested.length,1);
+  assert.match(requested[0]??'',/owner-a\/first$/);
+});
+
 test('ETag por página evita reprocessar respostas 304 e preserva próxima página',async()=>{
   const requests: {url:string;etag:string|undefined}[]=[];
   const client=new GitHubClient('',async (input,init)=>{

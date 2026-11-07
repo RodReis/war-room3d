@@ -41,6 +41,7 @@ export async function pollLinkedRepositories(store: EventStore, client: GitHubCl
       store.history.markPollFailure(repositoryId,startedAt,error instanceof GitHubRateLimitError?'rate_limited':'api_error',expectedIntervalMs);
       errors.push({ repositoryId, message: error instanceof Error ? error.message : 'Falha de coleta GitHub',
         ...(error instanceof GitHubRateLimitError ? {retryAfterMs:error.retryAfterMs} : {}) });
+      if (error instanceof GitHubRateLimitError) break;
     }
   }
   return { repositories: byRepository.size, milestones, errors };

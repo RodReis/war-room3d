@@ -31,7 +31,7 @@ try {
       if (pollRunning || Date.now() < nextPollAllowedAt) return;
       pollRunning = true;
       try {
-        const result = await pollLinkedRepositories(store, client);
+        const result = await pollLinkedRepositories(store, client, githubToken ? 60000 : 600000);
         nextPollAllowedAt = Math.max(nextPollAllowedAt, ...result.errors.map(error => Date.now() + (error.retryAfterMs ?? 0)));
         process.stdout.write(`GitHub M3: ${result.repositories} repositórios, ${result.milestones} marcos novos, ${result.errors.length} falhas\n`);
       } catch { process.stdout.write('GitHub M3: coleta indisponível\n'); }

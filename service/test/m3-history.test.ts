@@ -43,6 +43,28 @@ test('Meu dia aplica fuso São Paulo e união de sessões sobrepostas sem contar
   assert.equal(summary.coverage.status,'unknown');
 });
 
+test('Meu dia soma espera pela união de sessões e não completa intervalo aberto',t=>{
+  const store=storeFor(t);
+  const empty=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {waitingDurationMs:number|null;waitingDurationKnown:boolean};
+  assert.equal(empty.waitingDurationMs,null);
+  assert.equal(empty.waitingDurationKnown,false);
+  const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T18:00:01Z',projectId:'p1',provider:'codex',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(id:string,sessionKey:string,type:string,observedAt:string,offset:number)=>store.apply({...base,eventId:id,sourceEventId:id,sessionKey,type,observedAt},{sourceId:'source1',fileKey:'synthetic',generation:1,offset});
+  apply('s1-start','s1','session.observed','2026-11-06T14:00:00Z',1);
+  apply('s1-wait','s1','session.waiting','2026-11-06T15:00:00Z',2);
+  let summary=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {waitingDurationMs:number|null;waitingDurationKnown:boolean};
+  assert.equal(summary.waitingDurationMs,null);
+  assert.equal(summary.waitingDurationKnown,false);
+  apply('s2-start','s2','session.observed','2026-11-06T15:30:00Z',3);
+  apply('s2-wait','s2','session.waiting','2026-11-06T16:00:00Z',4);
+  apply('s1-work','s1','session.working','2026-11-06T17:00:00Z',5);
+  apply('s2-end','s2','session.ended','2026-11-06T18:00:00Z',6);
+  apply('s1-end','s1','session.ended','2026-11-06T18:00:00Z',7);
+  summary=store.history.daySummary('2026-11-06','America/Sao_Paulo') as {waitingDurationMs:number|null;waitingDurationKnown:boolean};
+  assert.equal(summary.waitingDurationMs,3*3600000);
+  assert.equal(summary.waitingDurationKnown,true);
+});
+
 test('Meu dia não projeta sessão aberta até meia-noite e encerra intervalo na perda da fonte',t=>{
   const store=storeFor(t);
   const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T16:00:01Z',projectId:'p1',provider:'codex',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
@@ -51,6 +73,38 @@ test('Meu dia não projeta sessão aberta até meia-noite e encerra intervalo na
   assert.equal(store.history.daySummary('2026-11-06','America/Sao_Paulo').elapsedDurationMs,null);
   apply('lost','source.unavailable','2026-11-06T16:00:00Z',2);
   assert.equal(store.history.daySummary('2026-11-06','America/Sao_Paulo').elapsedDurationMs,3600000);
+  apply('recovered','source.recovered','2026-11-06T17:00:00Z',3);
+  const coverage=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-06T18:00:00Z').coverage as {status:string;gaps:{sourceId:string;start:string;end:string}[]};
+  assert.equal(coverage.status,'unknown');
+  assert.deepEqual(coverage.gaps,[{sourceId:'source1',start:'2026-11-06T16:00:00.000Z',end:'2026-11-06T17:00:00.000Z',reason:'source_unavailable'}]);
+});
+
+test('lacuna de fonte iniciada antes da meia-noite é recortada no dia local',t=>{
+  const store=storeFor(t);
+  const base={schemaVersion:'1.0',sourceId:'source1',sourceVersion:'test',receivedAt:'2026-11-06T03:11:00Z',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]};
+  const apply=(eventId:string,type:string,observedAt:string,offset:number)=>store.apply({...base,eventId,sourceEventId:eventId,type,observedAt},{sourceId:'source1',fileKey:'synthetic',generation:1,offset});
+  apply('lost','source.unavailable','2026-11-06T02:59:00Z',1);
+  const stillLost=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-06T03:05:00Z').coverage as {status:string;gaps:{start:string;end:string}[]};
+  assert.equal(stillLost.status,'none');
+  assert.deepEqual(stillLost.gaps,[{sourceId:'source1',start:'2026-11-06T03:00:00.000Z',end:'2026-11-06T03:05:00.000Z',reason:'source_unavailable'}]);
+  apply('recovered','source.recovered','2026-11-06T03:10:00Z',2);
+  const coverage=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-06T03:11:00Z').coverage as {gaps:{start:string;end:string}[]};
+  assert.deepEqual(coverage.gaps,[{sourceId:'source1',start:'2026-11-06T03:00:00.000Z',end:'2026-11-06T03:10:00.000Z',reason:'source_unavailable'}]);
+});
+
+test('Meu dia declara janela GitHub sem coleta no fuso local e recuperação sem afirmar cobertura contínua',t=>{
+  const store=storeFor(t);
+  store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p1'},'2026-11-05T00:00:00Z');
+  store.history.markPollSuccess('42','2026-11-06T02:59:00Z',[],60000,'2026-11-06T02:59:00Z');
+  const missing=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-06T03:03:00Z').githubCoverage as {status:string;gaps:unknown[]};
+  assert.equal(missing.status,'none');
+  assert.deepEqual(missing.gaps,[]);
+  store.history.markPollFailure('42','2026-11-06T03:03:00Z','rate_limited',60000,'2026-11-06T03:03:01Z');
+  store.history.markPollSuccess('42','2026-11-06T03:05:00Z',[],60000,'2026-11-06T03:05:00Z');
+  const recovered=store.history.daySummary('2026-11-06','America/Sao_Paulo','2026-11-06T03:05:30Z').githubCoverage as {status:string;successfulAttempts:number;failedAttempts:number;gaps:{start:string;end:string;reason:string}[]};
+  assert.equal(recovered.status,'partial');
+  assert.deepEqual([recovered.successfulAttempts,recovered.failedAttempts],[1,1]);
+  assert.deepEqual(recovered.gaps,[{repositoryId:'42',start:'2026-11-06T03:00:00.000Z',end:'2026-11-06T03:05:00.000Z',reason:'rate_limited'}]);
 });
 
 test('replay reconstrói estado da sala no instante, inclui evento tardio e não altera live',t=>{
@@ -61,6 +115,8 @@ test('replay reconstrói estado da sala no instante, inclui evento tardio e não
   apply('end','session.ended','2026-11-06T15:00:00Z',2,{sessionKey:'s1'});
   apply('late','agent.working','2026-11-06T14:00:00Z',3,{sessionKey:'s1',agentKey:'a1'});
   apply('fraction','agent.waiting','2026-11-06T14:30:00.900Z',4,{sessionKey:'s1',agentKey:'a1'});
+  apply('lost','source.unavailable','2026-11-06T14:45:00Z',5);
+  apply('recovered','source.recovered','2026-11-06T14:50:00Z',6);
   const before=store.historicalSnapshot('2026-11-06T13:30:00Z') as {mode:string;sessions:{presence:string}[];agents:unknown[]};
   assert.equal(before.mode,'replay');
   assert.equal(before.sessions[0]?.presence,'observada');
@@ -71,6 +127,11 @@ test('replay reconstrói estado da sala no instante, inclui evento tardio e não
   const beforeFraction=store.historicalSnapshot('2026-11-06T14:30:00Z') as {agents:{presence:string}[]};
   assert.equal(beforeFraction.agents[0]?.presence,'trabalhando');
   assert.equal((store.historicalSnapshot('2026-11-06T14:30:01Z') as {agents:{presence:string}[]}).agents[0]?.presence,'aguardando');
+  const duringLoss=store.historicalSnapshot('2026-11-06T14:47:00Z') as {coverage:{status:string;gaps:{sourceId:string}[]};sessions:{presence:string}[]};
+  assert.equal(duringLoss.coverage.status,'gap');
+  assert.equal(duringLoss.coverage.gaps[0]?.sourceId,'source1');
+  assert.equal(duringLoss.sessions[0]?.presence,'desconhecida');
+  assert.equal((store.historicalSnapshot('2026-11-06T14:55:00Z') as {coverage:{status:string}}).coverage.status,'unknown');
   const after=store.historicalSnapshot('2026-11-06T15:30:00Z') as {sessions:{presence:string}[];agents:{presence:string}[]};
   assert.equal(after.sessions[0]?.presence,'encerrada');
   assert.equal(after.agents[0]?.presence,'encerrada');
@@ -224,9 +285,10 @@ test('limite GitHub converte Retry-After em segundos e não marca coleta como co
   assert.equal(result.milestones,0);
   assert.equal(result.errors[0]?.retryAfterMs,2000);
   assert.equal(store.history.hasSuccessfulPoll('42'),false);
-  const coverage=store.history.daySummary(new Date().toISOString().slice(0,10),'UTC').githubCoverage as {status:string;gaps:{reason:string}[]};
+  const coverage=store.history.daySummary(new Date().toISOString().slice(0,10),'UTC',new Date(Date.now()+1000).toISOString()).githubCoverage as {status:string;failedAttempts:number;gaps:unknown[]};
   assert.equal(coverage.status,'failed');
-  assert.equal(coverage.gaps[0]?.reason,'rate_limited');
+  assert.equal(coverage.failedAttempts,1);
+  assert.deepEqual(coverage.gaps,[]);
 });
 
 test('ETag por página evita reprocessar respostas 304 e preserva próxima página',async()=>{
@@ -317,6 +379,8 @@ test('erro em workflows invalida ETag de PR antes da gravação parcial',async t
 
 test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados no backend',async t=>{
   const store=storeFor(t); const token=randomBytes(32).toString('hex');
+  store.apply({schemaVersion:'1.0',eventId:'source-lost',sourceEventId:'source-lost',sourceId:'source1',sourceVersion:'test',type:'source.unavailable',observedAt:'2026-11-06T14:00:00Z',receivedAt:'2026-11-06T14:00:01Z',provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]},
+    {sourceId:'source1',fileKey:'synthetic',generation:1,offset:1});
   const {server,url}=await startReadOnlyServer(store,token); t.after(()=>server.close());
   const headers={Authorization:`Bearer ${token}`};
   const day=await fetch(`${url}/v1/history/day?date=2026-11-06&timeZone=America%2FSao_Paulo`,{headers});
@@ -327,7 +391,10 @@ test('rotas de dia e replay autenticadas; comandos replay continuam rejeitados n
   assert.equal((await replay.json() as {viewMode:string}).viewMode,'replay');
   const state=await fetch(`${url}/v1/history/replay/state?at=2026-11-06T15%3A00%3A00Z`,{headers});
   assert.equal(state.status,200);
-  assert.equal((await state.json() as {mode:string}).mode,'replay');
+  const historicalState=(await state.json()) as {mode:string;coverage:{status:string;gaps:{sourceId:string}[]}};
+  assert.equal(historicalState.mode,'replay');
+  assert.deepEqual(historicalState.coverage,
+    {status:'gap',reason:'expected_collection_windows_not_recorded',gaps:[{sourceId:'source1',start:'2026-11-06T14:00:00Z',end:'2026-11-06T15:00:00Z',reason:'source_unavailable'}]});
   assert.equal((await fetch(`${url}/v1/history/replay/state?at=invalid`,{headers})).status,400);
   assert.equal((await fetch(`${url}/v1/commands`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'})).status,405);
 });

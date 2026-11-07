@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3';
 import type { GitHubPageCacheEntry } from '../github/github-client.ts';
+import { compareTimestamp } from '../domain/session-reducer.ts';
 
 type EventRow = { event_id: string; stream_sequence: number; event_json: string };
 
@@ -45,18 +46,20 @@ export class HistoryStore {
     return row?.last_success_at??null;
   }
 
-  markPollSuccess(repositoryId: string, startedAt: string, cacheEntries: readonly GitHubPageCacheEntry[], completedAt = new Date().toISOString()): void {
+  markPollSuccess(repositoryId: string, startedAt: string, cacheEntries: readonly GitHubPageCacheEntry[], expectedIntervalMs: number, completedAt = new Date().toISOString()): void {
+    if (!Number.isSafeInteger(expectedIntervalMs) || expectedIntervalMs < 1000 || expectedIntervalMs > 86400000) throw new Error('Cadência GitHub inválida');
     this.db.transaction(() => {
       this.db.prepare('INSERT INTO github_poll_state(repository_id,last_success_at) VALUES (?,?) ON CONFLICT(repository_id) DO UPDATE SET last_success_at=excluded.last_success_at').run(repositoryId,completedAt);
-      this.db.prepare("INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,'success')").run(repositoryId,startedAt,completedAt);
+      this.db.prepare("INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status,expected_interval_ms) VALUES (?,?,?,'success',?)").run(repositoryId,startedAt,completedAt,expectedIntervalMs);
       this.db.prepare('DELETE FROM github_page_cache').run();
       const insert=this.db.prepare('INSERT INTO github_page_cache(url,etag,next_url,saved_at) VALUES (?,?,?,?)');
       for (const entry of cacheEntries) insert.run(entry.url,entry.etag,entry.next,completedAt);
     })();
   }
 
-  markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', completedAt = new Date().toISOString()): void {
-    this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status) VALUES (?,?,?,?)').run(repositoryId,startedAt,completedAt,status);
+  markPollFailure(repositoryId: string, startedAt: string, status: 'api_error' | 'rate_limited', expectedIntervalMs: number, completedAt = new Date().toISOString()): void {
+    if (!Number.isSafeInteger(expectedIntervalMs) || expectedIntervalMs < 1000 || expectedIntervalMs > 86400000) throw new Error('Cadência GitHub inválida');
+    this.db.prepare('INSERT INTO github_poll_attempts(repository_id,started_at,completed_at,status,expected_interval_ms) VALUES (?,?,?,?,?)').run(repositoryId,startedAt,completedAt,status,expectedIntervalMs);
   }
 
   githubPageCache(): GitHubPageCacheEntry[] {
@@ -138,7 +141,7 @@ export class HistoryStore {
     return { viewMode:'replay',fromSequence:cursor,throughSequence:page.at(-1)?.sequence??cursor,events:page.map(x=>x.item),nextCursor:items.length>limit?page.at(-1)!.sequence:null,hasMore:items.length>limit };
   }
 
-  daySummary(date: string, timeZone: string): Record<string, unknown> {
+  daySummary(date: string, timeZone: string, now = new Date().toISOString()): Record<string, unknown> {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data inválida');
     new Intl.DateTimeFormat('pt-BR', { timeZone }).format(new Date(`${date}T12:00:00Z`));
     const rows = this.db.prepare("SELECT stream_sequence,event_json FROM events WHERE json_extract(event_json,'$.observedAt') IS NOT NULL ORDER BY stream_sequence").all() as { stream_sequence: number; event_json: string }[];
@@ -150,23 +153,82 @@ export class HistoryStore {
     const dayEnd = zonedMidnight(nextDate, timeZone);
     const sessions = intervals(events, 'sessionKey', dayStart, dayEnd);
     const agents = intervals(events, 'agentKey', dayStart, dayEnd);
+    const waiting = waitingIntervals(events,dayStart,dayEnd);
     const sessionUnion = sessions === null ? null : unionDuration(sessions);
     const agentMs = agents === null ? null : agents.reduce((sum, x) => sum + x.end - x.start, 0);
+    const waitingMs = waiting === null || !events.some(e => String(e.type).startsWith('session.') && Date.parse(String(e.observedAt)) >= dayStart && Date.parse(String(e.observedAt)) < dayEnd)
+      ? null : unionDuration(waiting);
     const dayEvents = events.filter(e => { const t = Date.parse(String(e.observedAt)); return t >= dayStart && t < dayEnd; });
-    const githubAttempts = this.db.prepare('SELECT repository_id,started_at,completed_at,status FROM github_poll_attempts WHERE started_at>=? AND started_at<? ORDER BY started_at,id')
-      .all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {repository_id:string;started_at:string;completed_at:string;status:string}[];
+    const sourceGaps = sourceCollectionGaps(events,dayStart,dayEnd,Date.parse(now));
+    const githubHistory = this.db.prepare('SELECT repository_id,started_at,completed_at,status,expected_interval_ms FROM github_poll_attempts WHERE started_at<=? ORDER BY repository_id,started_at,id')
+      .all(now) as GithubPollAttempt[];
+    const githubAttempts = githubHistory.filter(x=>Date.parse(x.started_at)>=dayStart && Date.parse(x.started_at)<dayEnd);
     const successfulAttempts = githubAttempts.filter(x=>x.status==='success');
     const failedAttempts = githubAttempts.filter(x=>x.status!=='success');
+    const gaps = githubPollGaps(githubHistory,dayStart,dayEnd,Date.parse(now));
     return { date, timeZone, elapsedDurationMs: sessionUnion, elapsedDurationKnown:sessionUnion !== null,
       agentHours: agentMs === null ? null : agentMs / 3600000, agentHoursKnown:agentMs !== null,
-      coverage: { status: dayEvents.length ? 'unknown' : 'none', observedEventCount: dayEvents.length, reason: 'expected_collection_windows_not_recorded', gaps: dayEvents.length ? null : [{ start: new Date(dayStart).toISOString(), end: new Date(dayEnd).toISOString(), reason: 'no_observations' }] },
-      githubCoverage: { status: githubAttempts.length===0?'none':successfulAttempts.length===0?'failed':failedAttempts.length?'partial':'sampled',
+      waitingDurationMs:waitingMs,waitingDurationKnown:waitingMs!==null,
+      coverage: { status: dayEvents.length ? 'unknown' : 'none', observedEventCount: dayEvents.length, reason: 'expected_collection_windows_not_recorded',
+        gaps: dayEvents.length || sourceGaps.length ? sourceGaps : Math.min(dayEnd,Date.parse(now))>dayStart
+          ? [{ start: new Date(dayStart).toISOString(), end: new Date(Math.min(dayEnd,Date.parse(now))).toISOString(), reason: 'no_observations' }] : [] },
+      githubCoverage: { status: githubAttempts.length===0?(gaps.length?'gap':'none'):successfulAttempts.length===0?'failed':failedAttempts.length||gaps.length?'partial':'sampled',
         attempts:githubAttempts.length,successfulAttempts:successfulAttempts.length,failedAttempts:failedAttempts.length,
         lastSuccessfulPollAt:successfulAttempts.at(-1)?.completed_at??null,
-        gaps:failedAttempts.map(x=>({repositoryId:x.repository_id,start:x.started_at,end:x.completed_at,reason:x.status})) },
+        gaps },
       milestones: (this.db.prepare('SELECT repository_id,project_id,entity_type,entity_id,transition,occurred_at,payload_json,ingestion_mode FROM history_milestones WHERE occurred_at>=? AND occurred_at<? ORDER BY occurred_at').all(new Date(dayStart).toISOString(), new Date(dayEnd).toISOString()) as { repository_id:string;project_id:string;entity_type:string;entity_id:string;transition:string;occurred_at:string;payload_json:string;ingestion_mode:string }[]).map(r=>({repositoryId:r.repository_id,projectId:r.project_id,entityType:r.entity_type,entityId:r.entity_id,transition:r.transition,occurredAt:r.occurred_at,payload:JSON.parse(r.payload_json),ingestionMode:r.ingestion_mode})),
       incidentMarkers: (this.db.prepare('SELECT incident_id,repository_id,project_id,workflow_id,run_id,ref,head_sha,opened_at,resolved_at,last_attempt,evidence_url FROM history_incidents WHERE (opened_at>=? AND opened_at<?) OR (resolved_at>=? AND resolved_at<?) ORDER BY opened_at').all(new Date(dayStart).toISOString(),new Date(dayEnd).toISOString(),new Date(dayStart).toISOString(),new Date(dayEnd).toISOString()) as {incident_id:string;repository_id:string;project_id:string;workflow_id:number;run_id:number;ref:string;head_sha:string;opened_at:string;resolved_at:string|null;last_attempt:number;evidence_url:string}[]).map(r=>({incidentId:r.incident_id,repositoryId:r.repository_id,projectId:r.project_id,workflowId:r.workflow_id,runId:r.run_id,ref:r.ref,headSha:r.head_sha,openedAt:r.opened_at,resolvedAt:r.resolved_at,lastAttempt:r.last_attempt,evidenceUrl:r.evidence_url})), costs: null };
   }
+}
+
+type GithubPollAttempt = {repository_id:string;started_at:string;completed_at:string;status:string;expected_interval_ms:number|null};
+function sourceCollectionGaps(events: Record<string,unknown>[], dayStart:number, dayEnd:number, now:number): {sourceId:string;start:string;end:string;reason:string}[] {
+  const ordered=[...events].filter(event=>typeof event.sourceId==='string' && Number.isFinite(Date.parse(String(event.observedAt))))
+    .sort((a,b)=>compareTimestamp(String(a.observedAt),String(b.observedAt)));
+  const open=new Map<string,number>();
+  const gaps:{sourceId:string;start:string;end:string;reason:string}[]=[];
+  const close=(sourceId:string,at:number):void=>{
+    const since=open.get(sourceId);if(since===undefined)return;
+    const start=Math.max(since,dayStart);const end=Math.min(at,dayEnd,now);
+    if(end>start)gaps.push({sourceId,start:new Date(start).toISOString(),end:new Date(end).toISOString(),reason:'source_unavailable'});
+    open.delete(sourceId);
+  };
+  for(const event of ordered){
+    const sourceId=String(event.sourceId);const at=Date.parse(String(event.observedAt));
+    if(at>now)break;
+    if(event.type==='source.unavailable'){if(!open.has(sourceId))open.set(sourceId,at);}
+    else close(sourceId,at);
+  }
+  for(const sourceId of open.keys())close(sourceId,Math.min(dayEnd,now));
+  return gaps.sort((a,b)=>a.start.localeCompare(b.start)||a.sourceId.localeCompare(b.sourceId));
+}
+function githubPollGaps(attempts: GithubPollAttempt[], dayStart:number, dayEnd:number, now:number): {repositoryId:string;start:string;end:string;reason:string}[] {
+  const byRepository = new Map<string,GithubPollAttempt[]>();
+  for (const attempt of attempts) {
+    const list=byRepository.get(attempt.repository_id)??[];
+    list.push(attempt);
+    byRepository.set(attempt.repository_id,list);
+  }
+  const gaps: {repositoryId:string;start:string;end:string;reason:string}[] = [];
+  for (const [repositoryId,history] of byRepository) {
+    let lastSuccess: GithubPollAttempt|null = null;
+    let firstFailure: GithubPollAttempt|null = null;
+    const emit = (from:number,to:number,reason:string): void => {
+      const start=Math.max(from,dayStart); const end=Math.min(to,dayEnd,now);
+      if (Number.isFinite(start) && Number.isFinite(end) && end>start) gaps.push({repositoryId,start:new Date(start).toISOString(),end:new Date(end).toISOString(),reason});
+    };
+    for (const attempt of history) {
+      if (Date.parse(attempt.started_at)>now) break;
+      if (attempt.status==='success') {
+        const due=lastSuccess?.expected_interval_ms==null?null:Date.parse(lastSuccess.completed_at)+lastSuccess.expected_interval_ms;
+        const from=due??(firstFailure?Date.parse(firstFailure.started_at):null);
+        if (from!==null) emit(from,Date.parse(attempt.completed_at),firstFailure?.status??'missed_poll');
+        lastSuccess=attempt;
+        firstFailure=null;
+      } else if (!firstFailure) firstFailure=attempt;
+    }
+  }
+  return gaps.sort((a,b)=>a.start.localeCompare(b.start)||a.repositoryId.localeCompare(b.repositoryId));
 }
 
 function zonedMidnight(date: string, zone: string): number {
@@ -206,6 +268,35 @@ function intervals(events: Record<string, unknown>[], key: string, start: number
     if (opened !== null && opened < end) return null;
   }
   return result.filter(x=>x.end>x.start);
+}
+function waitingIntervals(events: Record<string,unknown>[], start:number, end:number): {start:number;end:number}[]|null {
+  const ordered=[...events].filter(event=>Number.isFinite(Date.parse(String(event.observedAt))))
+    .sort((a,b)=>compareTimestamp(String(a.observedAt),String(b.observedAt)));
+  const sourceBySession=new Map<string,string>();
+  const opened=new Map<string,number>();
+  const result:{start:number;end:number}[]=[];
+  const close=(sessionKey:string,at:number):void=>{
+    const since=opened.get(sessionKey);if(since===undefined)return;
+    const clippedStart=Math.max(since,start);const clippedEnd=Math.min(at,end);
+    if(clippedEnd>clippedStart)result.push({start:clippedStart,end:clippedEnd});
+    opened.delete(sessionKey);
+  };
+  for(const event of ordered){
+    const at=Date.parse(String(event.observedAt));
+    if(at>=end)break;
+    if(event.type==='source.unavailable'){
+      for(const [sessionKey,sourceId] of sourceBySession)if(sourceId===event.sourceId)close(sessionKey,at);
+      continue;
+    }
+    if(typeof event.sessionKey!=='string' || !String(event.type).startsWith('session.'))continue;
+    const sessionKey=event.sessionKey;
+    if(typeof event.sourceId==='string')sourceBySession.set(sessionKey,event.sourceId);
+    if(event.type==='session.waiting'){
+      if(!opened.has(sessionKey))opened.set(sessionKey,at);
+    }else close(sessionKey,at);
+  }
+  if([...opened.values()].some(at=>at<end))return null;
+  return result;
 }
 function unionDuration(items: {start:number;end:number}[]): number {
   const sorted=[...items].sort((a,b)=>a.start-b.start); let end=-Infinity,total=0;

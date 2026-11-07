@@ -68,7 +68,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 6) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 7) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -83,6 +83,9 @@ export class EventStore {
     })();
     if (schemaVersion < 6) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0006_github_page_cache.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 7) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0007_poll_cadence.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -283,10 +286,13 @@ export class EventStore {
         projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
       }
       const state = projection.snapshot(at);
+      const activeSourceLosses=projection.db.prepare("SELECT source_id,last_unavailable_at FROM sources WHERE status='indisponivel' AND last_unavailable_at IS NOT NULL ORDER BY source_id")
+        .all() as {source_id:string;last_unavailable_at:string}[];
       const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
       const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
       return { ...state, mode:'replay', at, revision:input.revision, streamSequence:input.streamSequence,
-        feed, capabilities:['sessions','agents','feed'], coverage:{status:historicalEvents.length?'unknown':'none',reason:'expected_collection_windows_not_recorded'} };
+        feed, capabilities:['sessions','agents','feed'], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
+          reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
     } finally { projection.close(); }
   }
 

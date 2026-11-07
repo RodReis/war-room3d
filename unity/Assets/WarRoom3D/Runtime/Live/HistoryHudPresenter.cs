@@ -123,10 +123,17 @@ namespace WarRoom3D
         {
             if (day == null) return;
             metrics.text = (day.elapsedDurationKnown ? $"Tempo decorrido: {day.elapsedDurationMs / 3600000:0.##} h" : "Tempo decorrido: indisponível") +
-                "\n" + (day.agentHoursKnown ? $"Horas-agente: {day.agentHours:0.##} h" : "Horas-agente: indisponível");
+                "\n" + (day.agentHoursKnown ? $"Horas-agente: {day.agentHours:0.##} h" : "Horas-agente: indisponível") +
+                "\n" + (day.waitingDurationKnown ? $"Espera observada: {day.waitingDurationMs / 3600000:0.##} h" : "Espera observada: indisponível");
             coverage.text = day.coverage.status == "none" ? "Sem observações de sessão neste dia. Cobertura incompleta." :
                 "Cobertura de sessão não comprovada; janelas esperadas não registradas.";
-            coverage.text += day.githubCoverage.status == "none" ? " GitHub: sem coletas registradas." :
+            var sourceGapCount = 0;
+            foreach (var gap in day.coverage.gaps)
+                if (gap.reason == "source_unavailable") sourceGapCount++;
+            if (sourceGapCount > 0)
+                coverage.text += " " + sourceGapCount + " lacuna(s) de fonte registrada(s).";
+            coverage.text += day.githubCoverage.status == "none" ? " GitHub: sem coletas registradas neste dia." :
+                day.githubCoverage.status == "gap" ? " GitHub: janela esperada sem coleta; cobertura indisponível." :
                 day.githubCoverage.status == "failed" ? " GitHub: coletas falharam; cobertura indisponível." :
                 day.githubCoverage.status == "partial" ? " GitHub: " + day.githubCoverage.successfulAttempts + " coleta(s), " + day.githubCoverage.failedAttempts + " falha(s); cobertura contínua não comprovada." :
                 " GitHub: " + day.githubCoverage.successfulAttempts + " coleta(s) pontuais; cobertura contínua não comprovada.";
@@ -140,6 +147,11 @@ namespace WarRoom3D
             foreach (var incident in day.incidentMarkers)
                 timeline.Add(new Label(incident.openedAt + " · CI com falha · workflow " + incident.workflowId +
                     " · " + incident.@ref + (string.IsNullOrEmpty(incident.resolvedAt) ? " · sem recuperação registrada" : " · recuperado " + incident.resolvedAt)));
+            foreach (var gap in day.coverage.gaps)
+                if (gap.reason == "source_unavailable")
+                    timeline.Add(new Label(gap.start + "–" + gap.end + " · fonte " + gap.sourceId + " indisponível"));
+            foreach (var gap in day.githubCoverage.gaps)
+                timeline.Add(new Label(gap.start + "–" + gap.end + " · janela GitHub sem coleta · repositório " + gap.repositoryId));
             if (day.milestones.Length == 0 && day.incidentMarkers.Length == 0) timeline.Add(new Label("Nenhum marco registrado neste dia."));
         }
 
@@ -287,7 +299,9 @@ namespace WarRoom3D
                     {
                         var state = LiveSnapshot.Parse(request.downloadHandler.text, "replay");
                         ReplayStateChanged?.Invoke(state);
-                        coverage.text = "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
+                        coverage.text = state.coverage.status == "gap"
+                            ? "LACUNA · fonte indisponível em " + at + ". Estado exibido com incerteza."
+                            : "Cena projetada em " + at + ". Cobertura de coleta não comprovada.";
                     }
                     catch (ArgumentException) { coverage.text = "Estado histórico incompatível."; }
                 }
@@ -354,6 +368,8 @@ namespace WarRoom3D
         public bool elapsedDurationKnown;
         public double agentHours;
         public bool agentHoursKnown;
+        public double waitingDurationMs;
+        public bool waitingDurationKnown;
         public HistoryCoverage coverage;
         public HistoryGithubCoverage githubCoverage;
         public HistoryMilestone[] milestones;
@@ -365,13 +381,15 @@ namespace WarRoom3D
             try { value = JsonUtility.FromJson<HistoryDayData>(json); }
             catch (Exception) { throw new ArgumentException("Meu dia inválido"); }
             if (value == null || string.IsNullOrEmpty(value.date) || string.IsNullOrEmpty(value.timeZone) ||
-                value.coverage == null || value.githubCoverage == null || value.milestones == null || value.incidentMarkers == null)
+                value.coverage == null || value.coverage.gaps == null || value.githubCoverage == null || value.githubCoverage.gaps == null ||
+                value.milestones == null || value.incidentMarkers == null)
                 throw new ArgumentException("Contrato Meu dia incompatível");
             return value;
         }
     }
-    [Serializable] public sealed class HistoryCoverage { public string status; public int observedEventCount; }
-    [Serializable] public sealed class HistoryGithubCoverage { public string status; public int attempts; public int successfulAttempts; public int failedAttempts; }
+    [Serializable] public sealed class HistoryCoverage { public string status; public int observedEventCount; public HistoryGap[] gaps; }
+    [Serializable] public sealed class HistoryGithubCoverage { public string status; public int attempts; public int successfulAttempts; public int failedAttempts; public HistoryGap[] gaps; }
+    [Serializable] public sealed class HistoryGap { public string sourceId; public string repositoryId; public string start; public string end; public string reason; }
     [Serializable] public sealed class HistoryMilestone { public string projectId; public string entityType; public string transition; public string occurredAt; public string ingestionMode; }
     [Serializable] public sealed class HistoryIncident { public long workflowId; public string @ref; public string openedAt; public string resolvedAt; }
     [Serializable]

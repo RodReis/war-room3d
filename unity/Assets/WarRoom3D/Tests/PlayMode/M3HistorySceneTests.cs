@@ -97,7 +97,9 @@ namespace WarRoom3D.Tests
                 var deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-metrics").text.Contains("Tempo decorrido")) yield return null;
                 Assert.That(root.Q<Label>("history-metrics").text, Does.Contain("Tempo decorrido"));
-                Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.childCount, Is.GreaterThan(0));
+                Assert.That(root.Q<Label>("history-metrics").text, Does.Match("Espera observada: 0[.,]5 h"));
+                Assert.That(root.Q<ScrollView>("history-timeline").contentContainer.childCount, Is.EqualTo(3));
+                Assert.That(root.Q<Label>("history-coverage").text, Does.Contain("lacuna"));
                 history.SendMessage("BeginReplay");
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && root.Q<VisualElement>("history-mask").style.display.value != DisplayStyle.Flex) yield return null;
@@ -111,6 +113,7 @@ namespace WarRoom3D.Tests
                 deadline = Time.realtimeSinceStartup + 5f;
                 while (Time.realtimeSinceStartup < deadline && !root.Q<Label>("history-coverage").text.Contains("15:10:00Z")) yield return null;
                 Assert.That(GameObject.Find("ReplayMarker:p1"), Is.Not.Null);
+                Assert.That(root.Q<Label>("history-coverage").text, Does.StartWith("LACUNA"));
                 history.SendMessage("CycleSpeed");
                 Assert.That(root.Q<Button>("history-speed").text, Is.EqualTo("60×"));
                 history.SendMessage("TogglePlayback");
@@ -155,14 +158,16 @@ namespace WarRoom3D.Tests
                         if (line == "Authorization: Bearer " + token) authorized = true;
                     var status = authorized ? "200 OK" : "401 Unauthorized";
                     var body = first != null && first.Contains("/v1/history/replay/state?at=") ?
-                        "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[]}" :
+                        "{\"schemaVersion\":\"1.0\",\"mode\":\"replay\",\"revision\":1,\"streamSequence\":1,\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto\"}],\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}],\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"observada\",\"freshness\":\"atual\"}],\"agents\":[],\"feed\":[],\"resources\":[],\"resourceStates\":[],\"incidents\":[],\"coverage\":{\"status\":\"unknown\",\"gaps\":[]}}" :
                         first != null && first.Contains("/v1/history/replay?cursor=2") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":2,\"throughSequence\":3,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":3,\"entityType\":\"workflow\",\"transition\":\"attempt-1-failure\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"ci-3\",\"effectType\":\"ci.alarm\",\"ingestionMode\":\"live\",\"durationMs\":5000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?cursor=1") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":1,\"throughSequence\":2,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":2,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"ingestionMode\":\"live\",\"effects\":[{\"causationId\":\"merge-2\",\"effectType\":\"merge.celebration\",\"ingestionMode\":\"live\",\"durationMs\":8000}]}]}" :
                         first != null && first.Contains("/v1/history/replay?") ?
                         "{\"viewMode\":\"replay\",\"fromSequence\":0,\"throughSequence\":1,\"nextCursor\":null,\"hasMore\":false,\"events\":[{\"kind\":\"github.milestone\",\"streamSequence\":1,\"entityType\":\"pull_request\",\"transition\":\"merged\",\"projectId\":\"p1\",\"occurredAt\":\"2026-11-06T15:00:00Z\",\"ingestionMode\":\"backfill\",\"effects\":[]}]}" :
-                        "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2},\"githubCoverage\":{\"status\":\"sampled\",\"attempts\":1,\"successfulAttempts\":1},\"milestones\":[],\"incidentMarkers\":[]}";
+                        "{\"date\":\"2026-11-06\",\"timeZone\":\"America/Sao_Paulo\",\"elapsedDurationMs\":3600000,\"elapsedDurationKnown\":true,\"agentHours\":1,\"agentHoursKnown\":true,\"waitingDurationMs\":1800000,\"waitingDurationKnown\":true,\"coverage\":{\"status\":\"unknown\",\"observedEventCount\":2,\"gaps\":[{\"sourceId\":\"source1\",\"start\":\"2026-11-06T15:00:00Z\",\"end\":\"2026-11-06T15:05:00Z\",\"reason\":\"source_unavailable\"}]},\"githubCoverage\":{\"status\":\"partial\",\"attempts\":2,\"successfulAttempts\":1,\"failedAttempts\":1,\"gaps\":[{\"repositoryId\":\"42\",\"start\":\"2026-11-06T15:01:00Z\",\"end\":\"2026-11-06T15:06:00Z\",\"reason\":\"rate_limited\"}]},\"milestones\":[],\"incidentMarkers\":[]}";
+                    if (first != null && first.Contains("15%3A10%3A00Z"))
+                        body = body.Replace("\"status\":\"unknown\",\"gaps\":[]", "\"status\":\"gap\",\"gaps\":[{\"sourceId\":\"source1\",\"reason\":\"source_unavailable\"}]");
                     var bytes = Encoding.UTF8.GetBytes(authorized ? body : "");
                     var header = Encoding.ASCII.GetBytes($"HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {bytes.Length}\r\nConnection: close\r\n\r\n");
                     await stream.WriteAsync(header, 0, header.Length);

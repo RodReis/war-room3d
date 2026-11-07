@@ -17,7 +17,7 @@ As dependências não exigem um único PR por etapa. Cada fatia deve produzir co
 
 - Repositório público: `RodReis/war-room3d`, branch `main`.
 - Cliente M0: Unity 6000.3.27f1, URP 17.3.0, Windows x64; versões e provas em [baseline M0](validation/m0/baseline.md) e [resultado M0](validation/m0/resultado.md).
-- Serviço M1 integrado pela PR #8: Node.js 24, TypeScript e SQLite local. A fatia M2 adicionou snapshot HTTP/SSE e cena Unity live; adaptadores reais de sessões M1 seguem pendentes na issue #2.
+- Serviço M1 integrado pela PR #8: Node.js 24, TypeScript e SQLite local. A fatia M2 adicionou snapshot HTTP/SSE e cena Unity live; adaptadores reais de sessões M1 seguem pendentes. A issue #2 foi fechada pelo PI como planejamento, sem prova de ingestão operacional.
 - A fatia M2 adiciona grafo, estado de infraestrutura e sondas de host/HTTP testadas sinteticamente. O proxy e a sonda Docker foram [ensaiados pontualmente](validation/m2/docker-proxy.md); [outros dois serviços autorizados](validation/m2/laboratorio.md) foram observados somente via metadata Docker. A coleta contínua ainda não foi ativada, e o banco não foi consultado por SQL.
 - O [snapshot HTTP e os avisos SSE](validation/m2/transport.md) foram testados com estado M1/M2 sintético. A [cena Unity live](validation/m2/unity-live.md) consome esse transporte em ensaio sintético separado da fixture demonstrativa.
 - A [sonda PostgreSQL](validation/m2/database-probe.md) usa transação de leitura e consulta fixa em testes sintéticos. Nenhuma credencial ou consulta real do banco do laboratório foi usada.

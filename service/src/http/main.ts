@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { GitHubClient } from '../github/github-client.ts';
 import { pollLinkedRepositories } from '../github/github-poller.ts';
 import { configureGithub } from '../github/github-config.ts';
+import { parseSessionSources, SessionFileCollector } from '../sessions/file-source.ts';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -22,12 +23,18 @@ try {
   retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
   const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
+  const sessionConfigPath = process.env.WR3D_SESSIONS_CONFIG_PATH;
+  const sessionConfig = sessionConfigPath ? parseSessionSources(JSON.parse(readFileSync(sessionConfigPath,'utf8')) as unknown) : null;
+  store.configureSessionSources(sessionConfig?.projects ?? [],sessionConfig?.sources ?? []);
+  const sessions = sessionConfig ? new SessionFileCollector(store,sessionConfig.sources) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const commandToken=process.env.WR3D_COMMAND_TOKEN;
   const commandProjects=process.env.WR3D_COMMAND_PROJECT_IDS?.split(',').map(value=>value.trim()).filter(Boolean)??[];
   const { server, url } = await startReadOnlyServer(store, token, port, {token:commandToken,actor:{actorId:'operador-local',projectIds:commandProjects}});
   monitoring?.runner.start(monitoring.intervalMs);
+  sessions?.poll();
+  const sessionsTimer = sessions ? setInterval(() => sessions.poll(),1000) : null;
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
@@ -53,6 +60,7 @@ try {
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {
     clearInterval(retentionTimer);
     if (githubTimer) clearInterval(githubTimer);
+    if (sessionsTimer) clearInterval(sessionsTimer);
     await monitoring?.runner.stop();
     server.closeAllConnections();
     server.close(() => store.close());

@@ -45,3 +45,17 @@ test('snapshot live inclui estruturas do HUD e não aceita fixture demo', () => 
   assert.equal(snapshot({ ...empty, feed: undefined }), false);
   assert.equal(snapshot({ ...empty, sessions: [{ sessionKey: 's' }] }), false);
 });
+
+test('atividade aceita apenas identidade e metadados redigidos', () => {
+  const base = { ...session, eventId: 'activity-1' };
+  const task = { ...base, type: 'task.observed', payload: { taskId: 'task-1', title: 'Revisar' } };
+  const skill = { ...base, type: 'skill.observed', payload: { invocationId: 'skill-1', name: 'review' } };
+  const message = { ...base, type: 'message.observed', payload: { messageId: 'message-1' } };
+  for (const value of [task, skill, message]) assert.equal(event(value), true, JSON.stringify(event.errors));
+  for (const value of [
+    { ...task, payload: { title: 'Revisar' } },
+    { ...skill, payload: { invocationId: 'skill-1' } },
+    { ...message, payload: { messageId: 'message-1', content: 'texto privado' } },
+    { ...task, sessionKey: undefined }
+  ]) assert.equal(event(value), false);
+});

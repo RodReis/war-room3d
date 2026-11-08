@@ -1,15 +1,21 @@
 # Desenvolvimento
 
-## Ordem de execução
+## Próxima entrega prioritária — sala de referência
+
+Direção autorizada pelo PI em 08/11/2026: [#28](https://github.com/RodReis/war-room3d/issues/28), [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). #29 arte/luz, #30 layout, #31 hooks/observação, #32 avatares/atividade, #33 chat, #34 logs e #35 Player/aceite. Uma sala acabada e funcional deve passar por revisão visual inicial e aceite final no Player; replicação do acabamento fica bloqueada até decisão explícita do PI.
+
+O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #1–#6 estão fechadas; #16 permanece aberta, com RNF-02 pendente. A nova entrega é planejada, sem implementação ou aceite registrados. PRs #26 (M5) e #27 (validação M2) estão draft na consulta e não são código integrado à base documental b630edd.
+
+## Registro técnico das etapas anteriores
 
 | Etapa | Issue | Plano | Estado |
 |---|---|---|---|
 | M0 — contrato e cena modular | [#1](https://github.com/RodReis/war-room3d/issues/1) | [M0](superpowers/plans/2026-11-06-m0-fundacao-visual.md) | [PR #7](https://github.com/RodReis/war-room3d/pull/7) integrada em `e962a532`; aceite funcional pendente |
 | M1 — sessões e salas vivas | [#2](https://github.com/RodReis/war-room3d/issues/2) | [M1](superpowers/plans/2026-11-06-m1-quartel-vivo.md) | [PR #8](https://github.com/RodReis/war-room3d/pull/8) de contrato/store integrada em `fd15d106`; integração real M1 pendente |
-| M2 — data center essencial | [#3](https://github.com/RodReis/war-room3d/issues/3) | [M2](superpowers/plans/2026-11-06-m2-infraestrutura.md) | [PR #9](https://github.com/RodReis/war-room3d/pull/9)–[#15](https://github.com/RodReis/war-room3d/pull/15) integradas em `3018e980`; [PR #18](https://github.com/RodReis/war-room3d/pull/18) integrada em `2cdc6d9` com ativação local; [PR #20](https://github.com/RodReis/war-room3d/pull/20) integrada em `34386cb` com prova pontual do Player. #3 aberta; SQL real e Docker contínuo na [#16](https://github.com/RodReis/war-room3d/issues/16) |
+| M2 — data center essencial | [#3](https://github.com/RodReis/war-room3d/issues/3) | [M2](superpowers/plans/2026-11-06-m2-infraestrutura.md) | [PR #9](https://github.com/RodReis/war-room3d/pull/9)–[#15](https://github.com/RodReis/war-room3d/pull/15) integradas em `3018e980`; [PR #18](https://github.com/RodReis/war-room3d/pull/18) integrada em `2cdc6d9` com ativação local; [PR #20](https://github.com/RodReis/war-room3d/pull/20) integrada em `34386cb` com prova pontual do Player. #3 fechada no GitHub; validação operacional restante na [#16](https://github.com/RodReis/war-room3d/issues/16) |
 | M3 — histórico e GitHub | [#4](https://github.com/RodReis/war-room3d/issues/4) | [M3](superpowers/plans/2026-11-06-m3-historico-github.md) | [PR #23](https://github.com/RodReis/war-room3d/pull/23) integrada; serviço, painel e retenção ainda parciais; [provas e limites](validation/m3/resultado.md) |
 | M4 — interação assistida | [#5](https://github.com/RodReis/war-room3d/issues/5) | [M4](superpowers/plans/2026-11-06-m4-interacao.md) | [PR #24](https://github.com/RodReis/war-room3d/pull/24) integrada em `75ad486`, com gateway, auditoria, painel, [protocolos](validation/m4/protocolos.md) e descoberta restrita à credencial; recibos pontuais [Claude](validation/m4/claude-windows.md) e [Codex](validation/m4/codex-windows.md), alvos encerrados. [Aceite com limites](validation/m4/aceite-funcional.md) do PI em 07/11/2026 e issue encerrada; vínculo contínuo M1 e perguntas/permissões reais não comprovados |
-| M5 — operação ampliada | [#6](https://github.com/RodReis/war-room3d/issues/6) | [M5](superpowers/plans/2026-11-06-m5-operacao-ampliada.md) | Planejada; depende do grafo M2 |
+| M5 — operação ampliada | [#6](https://github.com/RodReis/war-room3d/issues/6) | [M5](superpowers/plans/2026-11-06-m5-operacao-ampliada.md) | PR #26 draft, fora da main consultada; integração/revisão necessária para #34 |
 
 As dependências não exigem um único PR por etapa. Cada fatia deve produzir comportamento verificável e não misturar subsistemas independentes. A ordem pode mudar por decisão de produto registrada em [DECISIONS](DECISIONS.md).
 

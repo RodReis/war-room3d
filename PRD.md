@@ -1,6 +1,6 @@
 # War-Room3D — Documento de Requisitos do Produto
 
-Versão: 1.0 · Data: 06/11/2026 · Responsável de produto: Rodrigo.
+Versão: 1.1 · Base: 06/11/2026 · Revisão de entrega: 08/11/2026 · Responsável de produto: Rodrigo.
 
 **Estado:** PRD e [GDD](GDD.md) aprovados em 06/11/2026 como referência de planejamento. Requisitos e metas abaixo descrevem o produto a construir, não funcionalidades entregues. Os relatórios anteriores permanecem como evidência histórica.
 
@@ -33,7 +33,7 @@ Plataforma inicial proposta: Windows 11 x64, aplicação desktop local, teclado 
 | Direção técnica consolidada | Apresentação Unity separada da coleta; adaptação híbrida do GLB; múltiplas sessões principais; infraestrutura com telemetria própria |
 | Evidência existente | Conceitos visuais e arquivos GLB fornecidos para avaliação local; sua publicação exige revisão de direitos |
 | Padrões propostos nesta versão | Plataforma inicial, retenção, limites de carga, cadências, metas de desempenho e etapas; sujeitos à revisão e medição |
-| Ainda não entregue | Projeto Unity executável, serviço próprio, conectores, persistência do War-Room3D, automação e instalador |
+| Estado no planejamento original (06/11/2026) | Unity, serviço e conectores ainda seriam construídos; consultar [STATUS](docs/STATUS.md) para entregas e limites atuais |
 
 O arquivo v2 tem quatro salas periféricas. O requisito do produto continua sendo até seis posições de projeto por setor, com expansão para outros setores. Isso requer adaptação artística; não é capacidade pronta do GLB.
 
@@ -53,6 +53,10 @@ O arquivo v2 tem quatro salas periféricas. O requisito do produto continua send
 ## 5. Escopo por entregas
 
 As etapas são unidades de produto com aceite próprio. Não constituem cronograma nem autorização para instalar integrações ou atuar em produção.
+
+<a id="sala-referencia"></a>
+
+**Prioridade aprovada em 08/11/2026:** entregar [uma sala completa no Unity Player (#28)](https://github.com/RodReis/war-room3d/issues/28), com design rico e fiel ao conceito, detalhes de qualidade, iluminação e cores vivas, layout contextual e fluxo hooks/agentes/skills/chats/logs. [Especificação](docs/specs/2026-11-08-sala-referencia-design.md) e [plano](docs/superpowers/plans/2026-11-08-sala-referencia-player.md) detalham #29–#35. A sala deve ser validada no Player pelo PI antes de replicar acabamento para outras salas/setores. Isso corrige a execução transversal de M0/M1/M4/M5, sem reduzir M0–M5 a uma fase estrutural nem reescrever aceites anteriores. Build/CI e fechamento de issue não equivalem à conclusão dessa experiência.
 
 | Etapa | Entrega | Critério de saída |
 |---|---|---|

@@ -1,6 +1,6 @@
 # War-Room3D — Concepção da Experiência e Projeto Técnico
 
-Versão: 1.0 · Data: 06/11/2026 · Complemento do [PRD](PRD.md).
+Versão: 1.1 · Base: 06/11/2026 · Revisão visual: 08/11/2026 · Complemento do [PRD](PRD.md).
 
 **Estado:** documento aprovado em 06/11/2026 como referência de planejamento. “GDD” descreve aqui a experiência espacial e lúdica de um produto de operação, além de sua arquitetura técnica. O quartel não transforma tarefas reais em objetivos fictícios de jogo. Tecnologias e orçamentos propostos não significam instalação, integração ou desempenho já validados.
 
@@ -101,6 +101,8 @@ Paredes e painel curvo que ocluem o alvo usam ocultação/transparência por mó
 No MVP, o usuário controla câmera e seleção. Passear com um avatar humano fica posterior, sem se tornar obrigatório para navegar ou resolver solicitações.
 
 ## 6. Direção de arte e interface
+
+**Revisão aprovada pelo PI em 08/11/2026:** design rico, detalhes de qualidade, iluminação trabalhada e cores vivas, fiel ao conceito. A [sala de referência (#28)](https://github.com/RodReis/war-room3d/issues/28) prova mobiliário, materiais, avatares humanos estilizados, holograma, vegetação, profundidade e luz no Player antes de expandir o acabamento. Ciano/turquesa e verde vivos com acentos quentes devem valorizar pontos de interesse; sobriedade não significa cena apagada ou geometria provisória. Bloom/neon não podem destruir legibilidade. A [especificação](docs/specs/2026-11-08-sala-referencia-design.md) fixa critérios observáveis, layout e jornada hooks/agentes/skills/chats/logs; não tratar render conceitual ou troca de cores como produto entregue.
 
 Dark mode com arquitetura sci-fi sóbria: grafite, metais com variação controlada, vidro fumê, telas ciano e verde. Sem pixel art, corpos voxel ou neon cobrindo todas as arestas. Teto removido e paredes preparadas para corte; profundidade deve continuar evidente.
 

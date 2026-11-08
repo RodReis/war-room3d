@@ -20,3 +20,16 @@ Testes unitários cobrem regras determinísticas; integração cobre SQLite, HTT
 Guardar em `docs/validation/<etapa>/resultado.md`: issue/PR/SHA, comando, resultado, total de casos, falhas, ambiente, evidência e limitações. Artefatos brutos volumosos podem ficar no CI, com link e retenção registrada. Se não houver SPEC numerada, usar a issue da etapa; não inventar identificador.
 
 Ao alterar testes ou geradores, verificar que uma falha deliberada é detectada pelo gate antes de confiar no novo relatório. Correção de bug verificável deve ter regressão; se não for viável, justificar e anexar prova alternativa.
+
+## Sala de referência — #28 e #35
+
+Aplicar a [especificação](specs/2026-11-08-sala-referencia-design.md) e o [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). Resultados ainda não executados. Guardar manifesto, roteiro, matriz por provedor e resultado em docs/validation/sala-referencia/ na implementação.
+
+- G1: arte no Player, quartel/interior/ângulo oposto da mesma instância, comparação ao conceito e revisão do PI.
+- G2: jornada controlada identificada, seleção/atividade/chat/pedido/log/evidência/retorno e negativos.
+- G3: duas principais Claude/Codex, subagente real, atividade/skills expostas, chat de ida/volta por provedor e fonte real de logs, em laboratório especificamente autorizado; correlação até Player. Obrigatório sem suporte exige decisão do PI, não PASS automático.
+- G4: mesmo build final, hash/SHA, ambiente, matriz de fontes, capturas e decisão explícita do PI. Nada de replicar acabamento antes do aceite.
+- RNF-01: p95 ≤2 s em 10 eventos/s; RNF-02: 1080p/10 minutos, apresentação p95 ≤16,67 ms visual e ≤33,33 ms reduzido; perda de amostras, CPU/GPU/memória e janela visível registradas. FPS interno não substitui apresentação. Relacionar #16.
+- RNF-06: 1920×1080 e 1440×900 em 100/125/150%, mais regressão 1366×768; contexto/ações legíveis e input de UI separado da câmera.
+
+Editor, CI, build, fixture, operação real e aceite humano são evidências distintas. Capturas de builds diferentes não formam uma entrega final única. Ausência de fonte e not_run ficam explícitos; não contornar revisão automática por outro canal.

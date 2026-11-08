@@ -1,7 +1,10 @@
 # War-Room3D
 
-Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infraestrutura relacionada. A M0 contém uma demonstração Unity com dados sintéticos. Conectores operacionais de Claude, Codex e infraestrutura pertencem às etapas seguintes.
+Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infraestrutura relacionada. Há uma demonstração Unity e fatias técnicas de serviço/infraestrutura/histórico/interação; isso não representa a experiência visual completa. A próxima entrega é uma sala de referência acabada e funcional no Player, antes de replicar. Ver [estado e limites](docs/STATUS.md).
 
+- [Próxima entrega — sala completa no Player (#28)](https://github.com/RodReis/war-room3d/issues/28)
+- [Especificação da sala de referência](docs/specs/2026-11-08-sala-referencia-design.md)
+- [Plano da sala de referência](docs/superpowers/plans/2026-11-08-sala-referencia-player.md)
 - [PRD — requisitos do produto](PRD.md)
 - [GDD — experiência e arquitetura](GDD.md)
 - [ChatGPT Canvas, ferramentas MCP e produção de arte](docs/PIPELINE-ARTE-MCP.md)

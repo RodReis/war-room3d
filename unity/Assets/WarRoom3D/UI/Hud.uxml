@@ -55,9 +55,26 @@
                 <ui:Label text="Histórico observado e comando são trilhas distintas. Recibo de envio não comprova resposta do agente." class="hint" />
               </ui:VisualElement>
               <ui:VisualElement name="page-logs">
-                <ui:Label name="feed-heading" text="FEED · EVENTOS OBSERVADOS" class="eyebrow section-space" />
-                <ui:Label name="feed" text="Sem eventos" class="activity" />
-                <ui:Label text="○ Logs de sessão não disponíveis nesta fatia." class="hint" />
+                <ui:Label name="feed-heading" text="LOGS E EVIDÊNCIAS" class="eyebrow section-space" />
+                <ui:Label name="feed" text="Sem eventos" class="hint" />
+                <ui:Label name="log-scope" text="Selecione um projeto." class="hint" />
+                <ui:DropdownField name="log-category" label="Categoria" />
+                <ui:Button name="log-filter-toggle" text="Mostrar filtros adicionais" class="secondary-button" />
+                <ui:VisualElement name="log-filters" class="log-filters">
+                  <ui:Toggle name="log-agent-filter" label="Somente agente selecionado" />
+                  <ui:DropdownField name="log-environment" label="Ambiente" />
+                  <ui:DropdownField name="log-resource" label="Recurso" />
+                  <ui:DropdownField name="log-severity" label="Severidade" />
+                  <ui:TextField name="log-from" label="De (UTC ISO 8601)" />
+                  <ui:TextField name="log-to" label="Até (UTC ISO 8601)" />
+                  <ui:TextField name="log-request" label="Request ID explícito" />
+                </ui:VisualElement>
+                <ui:Button name="log-query" text="Consultar logs" class="primary-button" />
+                <ui:Label name="log-status" text="Consulta pendente." class="hint" />
+                <ui:VisualElement name="log-results" class="log-results" />
+                <ui:Button name="log-more" text="Carregar página anterior" class="secondary-button" />
+                <ui:Button name="log-refresh" text="Atualizar página recente" class="secondary-button" />
+                <ui:Label text="Sem fonte = sem cobertura. Logs de infraestrutura sem sessão não recebem agente por aproximação temporal." class="hint" />
               </ui:VisualElement>
               <ui:VisualElement name="page-sources">
                 <ui:Label text="FONTES E INFRAESTRUTURA" class="eyebrow section-space" />

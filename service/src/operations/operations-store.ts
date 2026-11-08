@@ -12,12 +12,22 @@ export interface Observation {
   observedAt: string; receivedAt: string; category: OperationCategory; classification: string; confidence: 'observed' | 'derived' | 'inferred';
   evidenceRef: string; coverage: 'covered'; correlation?: { traceId?: string; spanId?: string; requestId?: string }; fields: Record<string, string | number | boolean | null>;
 }
+export type LogSeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
 export interface OperationRule { ruleId: string; version: number; category: 'network' | 'security_detection'; field: string; operator: 'eq' | 'gt' | 'gte' | 'lt' | 'lte'; expectedValue: string | number | boolean; severity: 'info' | 'low' | 'medium' | 'high' | 'critical'; enabled: boolean }
 type Row = Record<string, unknown>;
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/observation.v1.schema.json', import.meta.url), 'utf8'));
 const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/;
 const secretKey = /(?:secret|password|passwd|token|api[_-]?key|authorization|cookie|connection[_-]?string|credential)/i;
+const logSeverities: readonly LogSeverity[] = ['info','low','medium','high','critical'];
+function toObservation(row: Row): Observation {
+  return {schemaVersion:'1.0',observationId:String(row.observation_id),sourceId:String(row.source_id),sourceVersion:String(row.source_version),
+    environmentId:String(row.environment_id),resourceId:row.resource_id===null?null:String(row.resource_id),
+    observedAt:String(row.observed_at),receivedAt:String(row.received_at),category:row.category as OperationCategory,
+    classification:String(row.classification),confidence:row.confidence as Observation['confidence'],
+    evidenceRef:String(row.evidence_ref),coverage:'covered',correlation:JSON.parse(String(row.correlation_json)),
+    fields:JSON.parse(String(row.fields_json))};
+}
 
 function redactString(value: string): string {
   return value
@@ -41,7 +51,11 @@ function sanitizeFields(fields: Observation['fields']): Observation['fields'] {
   const result: Observation['fields'] = {};
   for (const [key, value] of Object.entries(fields)) {
     if (!/^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(key)) throw new Error('Campo de observação inválido');
-    result[key] = secretKey.test(key) ? '[REDACTED]' : typeof value === 'string' ? redactString(value.slice(0, 4096)) : value;
+    if (secretKey.test(key)) result[key]='[REDACTED]';
+    else if (typeof value === 'string') {
+      const redacted=redactString(value);
+      result[key]=redacted.length>4096?redacted.slice(0,4096)+' [TRUNCADO PELO SERVIÇO]':redacted;
+    } else result[key]=value;
   }
   return result;
 }
@@ -208,31 +222,43 @@ export class OperationsStore {
       .run(randomUUID(),incidentId,transition,actor,at,reason,evidenceRef??null);
   }
 
-  query(options: { environmentId: string; category: OperationCategory; sourceId?: string; resourceId?: string; projectId?: string; traceId?: string; spanId?:string; requestId?: string; from?: string; to?: string; cursor?: number; limit?: number }): { items: Observation[]; nextCursor: number | null; coverage: Coverage } {
-    const { environmentId,category,sourceId,resourceId,projectId,traceId,spanId,requestId,from,to }=options;
-    const cursor=options.cursor??0, limit=options.limit??50;
+  query(options: { environmentId: string; category: OperationCategory; sourceId?: string; resourceId?: string; projectId?: string; traceId?: string; spanId?:string; requestId?: string; severity?: LogSeverity; from?: string; to?: string; cursor?: number; limit?: number; order?:'asc'|'desc' }): { items: Observation[]; nextCursor: number | null; coverage: Coverage } {
+    const { environmentId,category,sourceId,resourceId,projectId,traceId,spanId,requestId,severity,from,to }=options;
+    const order=options.order??'asc';
+    const cursor=options.cursor??(order==='desc'?Number.MAX_SAFE_INTEGER:0), limit=options.limit??50;
     if (!idPattern.test(environmentId) || !operationCategories.includes(category) || !Number.isSafeInteger(cursor) || cursor<0 || !Number.isSafeInteger(limit) || limit<1 || limit>100 ||
+        !['asc','desc'].includes(order) || (order==='desc'&&category!=='log') ||
         (sourceId!==undefined&&!idPattern.test(sourceId)) || (resourceId!==undefined&&!idPattern.test(resourceId)) || (projectId!==undefined&&!idPattern.test(projectId)) ||
         (traceId!==undefined&&!/^[A-Fa-f0-9]{16,32}$/.test(traceId)) || (spanId!==undefined&&!/^[A-Fa-f0-9]{16}$/.test(spanId)) || (requestId!==undefined&&!idPattern.test(requestId)) ||
+        (severity!==undefined&&(category!=='log'||!logSeverities.includes(severity))) ||
         (from!==undefined&&(!Number.isFinite(Date.parse(from))||!/Z$/.test(from))) || (to!==undefined&&(!Number.isFinite(Date.parse(to))||!/Z$/.test(to))) ||
         (from!==undefined&&to!==undefined&&Date.parse(from)>Date.parse(to))) throw new Error('Consulta de operações inválida');
     if (sourceId) {
       const source=this.db.prepare('SELECT environment_id,enabled,status,permissions_json FROM operation_sources WHERE source_id=?').get(sourceId) as Row|undefined;
       if (!source || source.environment_id!==environmentId) throw new Error('Fonte fora do ambiente solicitado');
-      if (!Number(source.enabled) || source.status!=='active' || !(JSON.parse(String(source.permissions_json)) as string[]).includes(category)) return {items:[],nextCursor:null,coverage:this.coverage(environmentId,category)};
+      if (!Number(source.enabled) || source.status!=='active' || !(JSON.parse(String(source.permissions_json)) as string[]).includes(category))
+        return {items:[],nextCursor:null,coverage:this.sources(environmentId).find(item=>item.sourceId===sourceId)!.coverage[category]};
     }
     if (projectId&&!this.db.prepare('SELECT 1 FROM projects WHERE project_id=?').get(projectId)) throw new Error('Projeto desconhecido');
     const rows=this.db.prepare(`SELECT sequence,observation_id,source_id,source_version,environment_id,resource_id,observed_at,received_at,category,classification,confidence,evidence_ref,correlation_json,fields_json
-      FROM operation_observations WHERE environment_id=? AND category=? AND sequence>? AND (? IS NULL OR source_id=?) AND (? IS NULL OR resource_id=?)
+      FROM operation_observations WHERE environment_id=? AND category=? AND sequence${order==='desc'?'<':'>'}? AND (? IS NULL OR source_id=?) AND (? IS NULL OR resource_id=?)
       AND (? IS NULL OR EXISTS (SELECT 1 FROM infra_project_resources p WHERE p.project_id=? AND p.resource_id=operation_observations.resource_id))
       AND (? IS NULL OR json_extract(correlation_json,'$.traceId')=?) AND (? IS NULL OR json_extract(correlation_json,'$.spanId')=?) AND (? IS NULL OR json_extract(correlation_json,'$.requestId')=?)
-      AND (? IS NULL OR observed_at>=?) AND (? IS NULL OR observed_at<=?) ORDER BY sequence LIMIT ?`)
-      .all(environmentId,category,cursor,sourceId??null,sourceId??null,resourceId??null,resourceId??null,projectId??null,projectId??null,traceId??null,traceId??null,spanId??null,spanId??null,requestId??null,requestId??null,from??null,from??null,to??null,to??null,limit+1) as Row[];
+      AND (? IS NULL OR json_extract(fields_json,'$.severity')=?)
+      AND (? IS NULL OR julianday(observed_at)>=julianday(?)) AND (? IS NULL OR julianday(observed_at)<=julianday(?)) ORDER BY sequence ${order==='desc'?'DESC':'ASC'} LIMIT ?`)
+      .all(environmentId,category,cursor,sourceId??null,sourceId??null,resourceId??null,resourceId??null,projectId??null,projectId??null,traceId??null,traceId??null,spanId??null,spanId??null,requestId??null,requestId??null,severity??null,severity??null,from??null,from??null,to??null,to??null,limit+1) as Row[];
     const hasMore=rows.length>limit; const page=hasMore?rows.slice(0,limit):rows;
-    const items=page.map(row=>({schemaVersion:'1.0' as const,observationId:String(row.observation_id),sourceId:String(row.source_id),sourceVersion:String(row.source_version),environmentId:String(row.environment_id),
-      resourceId:row.resource_id===null?null:String(row.resource_id),observedAt:String(row.observed_at),receivedAt:String(row.received_at),category:row.category as OperationCategory,classification:String(row.classification),
-      confidence:row.confidence as Observation['confidence'],evidenceRef:String(row.evidence_ref),coverage:'covered' as const,correlation:JSON.parse(String(row.correlation_json)),fields:JSON.parse(String(row.fields_json))} as Observation));
-    return {items,nextCursor:hasMore?Number(page[page.length-1]!.sequence):null,coverage:this.coverage(environmentId,category)};
+    const items=page.map(toObservation);
+    const coverage=sourceId?this.sources(environmentId).find(item=>item.sourceId===sourceId)!.coverage[category]:this.coverage(environmentId,category);
+    return {items,nextCursor:hasMore?Number(page[page.length-1]!.sequence):null,coverage};
+  }
+
+  evidence(environmentId:string,projectId:string,observationId:string):Observation|null {
+    if(!idPattern.test(environmentId)||!idPattern.test(projectId)||!idPattern.test(observationId))throw new Error('Escopo de evidência inválido');
+    const row=this.db.prepare(`SELECT o.* FROM operation_observations o JOIN infra_project_resources p ON p.resource_id=o.resource_id
+      WHERE o.observation_id=? AND o.environment_id=? AND p.project_id=? LIMIT 1`)
+      .get(observationId,environmentId,projectId) as Row|undefined;
+    return row?toObservation(row):null;
   }
 
   incidents(environmentId: string, status?: 'open'|'acknowledged'|'resolved', severity?: OperationRule['severity'], projectId?:string) {

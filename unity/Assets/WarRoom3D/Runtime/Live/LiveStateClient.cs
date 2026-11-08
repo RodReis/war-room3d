@@ -120,6 +120,31 @@ namespace WarRoom3D
             StartCoroutine(RequestOperations(relativePath, completed));
         }
 
+        public void GetSessionEvents(string relativePath, Action<long, string> completed)
+        {
+            if (!configured || completed == null || string.IsNullOrEmpty(relativePath) ||
+                !(relativePath.StartsWith("/v1/session-events?", StringComparison.Ordinal) ||
+                  relativePath.StartsWith("/v1/session-events/", StringComparison.Ordinal)) ||
+                relativePath.Contains("..") || relativePath.Contains("#") || relativePath.Contains("\\") || relativePath.Contains("//"))
+            {
+                completed?.Invoke(0, "Consulta de eventos indisponível ou rota inválida.");
+                return;
+            }
+            StartCoroutine(RequestSessionEvents(relativePath, completed));
+        }
+
+        private IEnumerator RequestSessionEvents(string relativePath, Action<long, string> completed)
+        {
+            using (var request = UnityWebRequest.Get(baseUrl + relativePath))
+            {
+                request.redirectLimit = 0;
+                request.timeout = 5;
+                request.SetRequestHeader("Authorization", "Bearer " + token);
+                yield return request.SendWebRequest();
+                completed?.Invoke(request.responseCode, request.result == UnityWebRequest.Result.Success ? request.downloadHandler.text : "Consulta de eventos indisponível.");
+            }
+        }
+
         private IEnumerator RequestOperations(string relativePath, Action<long, string> completed)
         {
             using (var request = UnityWebRequest.Get(baseUrl + relativePath))

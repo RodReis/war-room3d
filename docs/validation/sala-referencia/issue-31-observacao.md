@@ -40,4 +40,4 @@ Ambiente: Windows, Node 24.15.0, Unity 6000.3.27f1. Testes usam arquivos e sess�
 
 ## Impedimento externo para G3
 
-A issue e o planejamento da #28 proíbem inferir autorização para hooks, contas e sessões. Falta alvo autorizado para ensaio real: projeto/caminho, novas sessões Claude/Codex descartáveis, conta e custo/prazo máximos, um subagente real e permissão de instalar/remover hook local. Sem isso, não há prova fonte → store/API → Player nem decisão sobre capacidades obrigatórias ausentes. PR permanece draft e #31 em `proplan:doing` até resolução; CI verde sintética não substitui G3.
+A issue e o planejamento da #28 proíbem inferir autorização para hooks, contas e sessões. Falta alvo autorizado para ensaio real: projeto/caminho, novas sessões Claude/Codex descartáveis, conta e custo/prazo máximos, um subagente real e permissão de instalar/remover hook local. Sem isso, não há prova fonte → store/API → Player nem decisão sobre capacidades obrigatórias ausentes. Esta PR contém somente a base opt-in validada com dados sintéticos; a #31 permanece em `proplan:doing` até G3 e decisão do PI. CI verde sintética não substitui G3.

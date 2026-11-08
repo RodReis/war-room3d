@@ -103,3 +103,7 @@ Versões locais ensaiadas na #35: Claude Code 2.1.319 e Codex CLI 0.166.0. `pass
 | Decisão visual/funcional do PI | `not_run` |
 
 Enquanto G2–G4 estiverem pendentes, #28 e #35 permanecem abertas; não replicar a sala.
+
+## Continuação preparada após decisão do PI
+
+O PI escolheu completar os gates e autorizou preparar um [novo ensaio G2/G3](ensaio-g3-continuacao.md). O build de desenvolvimento G3 foi gerado em diretório separado e passou compilação Windows; o capturador de chat/log na sala passou com fixture sintética. Esse candidato ainda não recebeu sessões novas Claude/Codex nem contêiner Docker; a autorização específica foi solicitada separadamente. As métricas e o manifesto acima continuam restritos ao build anterior. Se G3 for adotado como build final, RNF-01/02 e matriz física serão repetidos no hash novo antes de G4.

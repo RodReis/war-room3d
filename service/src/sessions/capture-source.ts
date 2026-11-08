@@ -46,6 +46,9 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown): 
     ...(item && string(item.type) && string(item.id) ? {item:{type:string(item.type),id:string(item.id),
       ...(string(item.status) ? {status:string(item.status)} : {}),
       ...(string(item.senderThreadId) ? {senderThreadId:string(item.senderThreadId)} : {}),
+      ...(item.type === 'subAgentActivity' && string(item.agentThreadId) ? {agentThreadId:string(item.agentThreadId)} : {}),
+      ...(item.type === 'subAgentActivity' && ['started','interacted','interrupted','completed'].includes(String(item.kind))
+        ? {kind:item.kind} : {}),
       ...(receivers.length ? {receiverThreadIds:receivers} : {})}} : {})
   },...(capturedAt ? {capturedAt} : {})};
 }

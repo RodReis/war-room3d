@@ -46,6 +46,7 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
   });
   const mainAgent = `a-${id(key,nativeSessionId)}`;
   const agent = (native: string) => `a-${id(key,native)}`;
+  const codexAgent = (native: string) => `a-${id(sessionKey('codex',source.accountRef,native),native)}`;
   if (source.provider === 'claude') {
     const subagentId = string(input.agent_id);
     const currentAgent = subagentId ? agent(subagentId) : mainAgent;
@@ -88,11 +89,29 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
     const itemId = string(item.id);
     if (!itemType || !itemId) return [];
     if (itemType === 'userMessage' && method === 'item/completed') return [base('message.observed','message',{messageId:`m-${id(key,itemId)}`})];
+    if (itemType === 'subAgentActivity') {
+      const receiver = string(item.agentThreadId);
+      const kind = string(item.kind);
+      if (!receiver || !['started','interacted','interrupted','completed'].includes(kind ?? '')) return [];
+      const childKey = sessionKey('codex',source.accountRef,receiver);
+      const childAgent = codexAgent(receiver);
+      return [
+        {...base('session.observed','child-session'),sessionKey:childKey},
+        {...base('agent.observed','child-agent',{parentAgentKey:codexAgent(nativeSessionId)},childAgent),sessionKey:childKey},
+        ...(kind === 'completed' && method === 'item/completed'
+          ? [{...base('agent.ended','child-ended',{},childAgent),sessionKey:childKey}] : [])
+      ];
+    }
     if (itemType === 'collabAgentToolCall' && method === 'item/completed') {
       const receivers = Array.isArray(item.receiverThreadIds) ? item.receiverThreadIds : [];
       const sender = string(item.senderThreadId) ?? nativeSessionId;
-      return receivers.filter((x): x is string => typeof x === 'string' && x.length > 0).map((receiver,index) =>
-        base('agent.observed',`child-${index}`,{parentAgentKey:agent(sender)},agent(receiver)));
+      return receivers.filter((x): x is string => typeof x === 'string' && x.length > 0).flatMap((receiver,index) => {
+        const childKey = sessionKey('codex',source.accountRef,receiver);
+        return [
+          {...base('session.observed',`child-session-${index}`),sessionKey:childKey},
+          {...base('agent.observed',`child-agent-${index}`,{parentAgentKey:codexAgent(sender)},codexAgent(receiver)),sessionKey:childKey}
+        ];
+      });
     }
     const toolNames: Record<string,string> = {commandExecution:'CommandExecution',fileChange:'FileChange',mcpToolCall:'McpToolCall',dynamicToolCall:'DynamicToolCall'};
     const name = toolNames[itemType];

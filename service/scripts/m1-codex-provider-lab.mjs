@@ -118,11 +118,12 @@ try {
   report.threadStarted=true;
   mainThreadId=thread.thread.id;
   const turn=await rpc('turn/start',{threadId:thread.thread.id,input:[{type:'text',text:
-    'Ensaio sintético. Use a ferramenta de colaboração para criar exatamente um subagente real, peça WR3D_CHILD_ACK e aguarde. Responda WR3D_MAIN_ACK. Não use outras ferramentas.'}],clientUserMessageId:randomUUID()});
+    'Ensaio sintético. Use spawn_agent exatamente uma vez com fork_turns="none" para criar um subagente real sem herdar o histórico. Peça WR3D_CHILD_ACK e aguarde o filho. Responda WR3D_MAIN_ACK. Não use outras ferramentas. Se spawn_agent falhar, informe a falha sem nova tentativa.'}],clientUserMessageId:randomUUID()});
   if(!turn.turn?.id)throw new Error('turn_unconfirmed');
   report.turnStarted=true;
   await Promise.race([new Promise(resolve=>{completionPoll=setInterval(()=>{if(report.turnCompleted){clearInterval(completionPoll);resolve();}},100);}),exited]);
   report.exitCode=child.exitCode;
+  if(report.childActivities===0 && report.childReceivers===0) report.failureCode='child_not_observed';
 }catch(error){report.failureCode=error?.message??'lab_failed';}
 finally{
   if(timer)clearTimeout(timer);

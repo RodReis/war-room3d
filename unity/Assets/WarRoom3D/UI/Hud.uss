@@ -42,10 +42,16 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .room-content .activity { min-height: 0; }
 .chat-active .agent-list-section { max-height: 100px; }
 .chat-active .agent-list { max-height: 68px; }
+.log-active .agent-list-section { display: none; }
 .chat-messages { min-height: 80px; margin-top: 8px; border-top-width: 1px; border-top-color: rgb(33, 96, 108); }
 .chat-message { margin-top: 7px; padding: 9px; background-color: rgb(22, 49, 61); color: rgb(226, 243, 247); white-space: normal; font-size: 13px; }
 .chat-assistant { border-left-width: 3px; border-left-color: rgb(54, 198, 213); }
 .chat-user { border-left-width: 3px; border-left-color: rgb(255, 185, 92); }
+.log-results { margin-top: 10px; border-top-width: 1px; border-top-color: rgb(33, 96, 108); }
+.log-filters { display: none; padding: 8px; background-color: rgb(17, 39, 50); }
+#page-logs #feed { display: none; }
+.log-entry { min-height: 68px; margin-top: 6px; padding: 8px; background-color: rgb(22, 49, 61); color: rgb(226, 243, 247); white-space: normal; -unity-text-align: middle-left; font-size: 13px; }
+#page-logs .unity-base-field__input { background-color: rgb(30, 45, 58); color: rgb(226, 243, 247); }
 .evidence-detail { display: none; position: absolute; top: 116px; right: 390px; width: 360px; max-height: 320px; padding: 16px; background-color: rgba(8, 21, 31, 0.98); border-left-width: 2px; border-left-color: rgb(54, 198, 213); }
 .evidence-detail #evidence-scroll { flex-grow: 1; min-height: 45px; margin-top: 10px; }
 .history-button { display: none; }

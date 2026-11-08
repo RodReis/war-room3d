@@ -66,6 +66,7 @@ test('cobertura distingue fonte ausente, sem dados, sem permissão, desligada, i
   assert.equal(store.operations.record(observation()),false);
   assert.equal(store.operations.coverage('env-a','log','2026-11-07T12:00:00.000Z'),'covered');
   assert.equal(store.operations.sources('env-a','2026-11-07T12:02:00.000Z').find(x=>x.sourceId==='logs-lab')?.coverage.log,'stale');
+  assert.equal(store.operations.query({environmentId:'env-a',category:'log',sourceId:'off'}).coverage,'disabled');
 });
 
 test('observação redige segredo antes de persistir e pagina sem misturar ambiente',t=>{
@@ -81,6 +82,55 @@ test('observação redige segredo antes de persistir e pagina sem misturar ambie
   assert.throws(()=>store.operations.query({environmentId:'env-b',category:'log',sourceId:'logs-lab'}),/fora do ambiente/);
   const second=store.operations.query({environmentId:'env-a',category:'log',cursor:page.nextCursor!,limit:5});
   assert.equal(second.items[0]?.observationId,'obs-2');
+});
+
+test('log filtra severidade e ID explícitos; detalhe revalida projeto e mantém redação',async t=>{
+  const {store}=setup(t);
+  store.registerProject({projectId:'project-b',name:'Outro projeto',canonicalPath:'C:\\Projetos\\outro'});
+  store.operations.record(observation({observationId:'log-info',fields:{severity:'info',message:'token=primeiro'},correlation:{requestId:'req-1'}}));
+  store.operations.record(observation({observationId:'log-high',fields:{severity:'high',message:'Bearer segundo'},correlation:{requestId:'req-2'}}));
+  store.operations.record(observation({observationId:'log-unknown',fields:{message:'sem nível informado'}}));
+  const high=store.operations.query({environmentId:'env-a',category:'log',projectId:'project-a',severity:'high'});
+  assert.deepEqual(high.items.map(item=>item.observationId),['log-high']);
+  assert.deepEqual(store.operations.query({environmentId:'env-a',category:'log',requestId:'req-1'}).items.map(item=>item.observationId),['log-info']);
+  assert.throws(()=>store.operations.query({environmentId:'env-a',category:'log',severity:'unsupported' as 'high'}),/inválida/);
+  const first=store.operations.query({environmentId:'env-a',category:'log',limit:1});
+  const second=store.operations.query({environmentId:'env-a',category:'log',cursor:first.nextCursor!,limit:1});
+  assert.deepEqual([...first.items,...second.items].map(item=>item.observationId),['log-info','log-high']);
+  assert.equal(store.operations.evidence('env-a','project-b','log-info'),null);
+  assert.equal(store.operations.evidence('env-b','project-a','log-info'),null);
+  assert.equal(store.operations.evidence('env-a','project-a','log-high')?.fields.message,'Bearer [REDACTED]');
+  const token=randomBytes(32).toString('hex');
+  const started=await startReadOnlyServer(store,token,0);
+  t.after(()=>new Promise<void>(resolve=>started.server.close(()=>resolve())));
+  const headers={Authorization:`Bearer ${token}`};
+  const route=`${started.url}/v1/operations/evidence/log-high?environmentId=env-a&projectId=project-a`;
+  assert.equal((await fetch(route)).status,401);
+  assert.equal((await fetch(route.replace('project-a','project-b'),{headers})).status,404);
+  const response=await fetch(route,{headers});
+  assert.equal(response.status,200);
+  assert.equal((await response.json() as Observation).fields.message,'Bearer [REDACTED]');
+  assert.equal((await fetch(`${started.url}/v1/logs?environmentId=env-a&projectId=project-a&severity=high`,{headers})).status,200);
+  const newest=store.operations.query({environmentId:'env-a',category:'log',projectId:'project-a',order:'desc',limit:1});
+  const older=store.operations.query({environmentId:'env-a',category:'log',projectId:'project-a',order:'desc',cursor:newest.nextCursor!,limit:1});
+  assert.deepEqual([...newest.items,...older.items].map(item=>item.observationId),['log-unknown','log-high']);
+  assert.equal((await fetch(`${started.url}/v1/logs?environmentId=env-a&projectId=project-a&order=desc&limit=1`,{headers})).status,200);
+});
+
+test('linha longa sinaliza truncamento após redação antes de persistir',t=>{
+  const {store}=setup(t);
+  store.operations.record(observation({observationId:'long-log',fields:{message:'Bearer sensitive-token '+ 'x'.repeat(5000)}}));
+  const item=store.operations.query({environmentId:'env-a',category:'log'}).items[0]!;
+  assert.match(String(item.fields.message),/Bearer \[REDACTED\]/);
+  assert.match(String(item.fields.message),/\[TRUNCADO PELO SERVIÇO\]$/);
+  assert.doesNotMatch(JSON.stringify(item),/sensitive-token/);
+});
+
+test('intervalo aceita instante com fração quando filtro usa segundo inteiro',t=>{
+  const {store}=setup(t);
+  store.operations.record(observation({observationId:'fractional-log',observedAt:'2026-11-07T12:00:00.500Z',receivedAt:'2026-11-07T12:00:00.500Z'}));
+  assert.deepEqual(store.operations.query({environmentId:'env-a',category:'log',from:'2026-11-07T12:00:00Z',
+    to:'2026-11-07T12:00:01Z'}).items.map(item=>item.observationId),['fractional-log']);
 });
 
 test('correlação de rastros usa IDs explícitos e não proximidade temporal',t=>{

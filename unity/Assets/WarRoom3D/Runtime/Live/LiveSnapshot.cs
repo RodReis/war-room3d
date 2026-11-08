@@ -22,6 +22,7 @@ namespace WarRoom3D
         public LiveSource[] sources;
         public LiveFeedItem[] feed;
         public LiveResource[] resources;
+        public LiveProjectResource[] projectResources;
         public LiveResourceState[] resourceStates;
         public LiveIncident[] incidents;
         public ReplayCiIncident[] ciIncidents;
@@ -34,7 +35,7 @@ namespace WarRoom3D
             catch (Exception) { throw new ArgumentException("Snapshot live inválido"); }
             if (snapshot == null || snapshot.schemaVersion != "1.0" || snapshot.mode != expectedMode || snapshot.streamSequence < 0 ||
                 snapshot.projects == null || snapshot.roomPlacements == null || snapshot.sessions == null || snapshot.agents == null || snapshot.feed == null ||
-                snapshot.resources == null || snapshot.resourceStates == null || snapshot.incidents == null)
+                snapshot.resources == null || snapshot.projectResources == null || snapshot.resourceStates == null || snapshot.incidents == null)
                 throw new ArgumentException("Contrato live incompatível");
             if (expectedMode == "replay" && (snapshot.coverage == null || snapshot.coverage.gaps == null || snapshot.ciIncidents == null ||
                 (snapshot.infrastructureReference != "recorded" && snapshot.infrastructureReference != "unavailable")))
@@ -48,6 +49,9 @@ namespace WarRoom3D
                 if (resource == null || string.IsNullOrWhiteSpace(resource.resourceId) || string.IsNullOrWhiteSpace(resource.environmentId) ||
                     string.IsNullOrWhiteSpace(resource.name) || !resources.Add(resource.resourceId))
                     throw new ArgumentException("Recurso live inválido");
+            foreach (var link in snapshot.projectResources)
+                if (link == null || !projects.Contains(link.projectId) || !resources.Contains(link.resourceId))
+                    throw new ArgumentException("Vínculo de recurso live inválido");
             var states = new HashSet<string>();
             foreach (var state in snapshot.resourceStates)
             {
@@ -73,8 +77,9 @@ namespace WarRoom3D
     [Serializable] public sealed class LiveTask { public string taskId; public string sessionKey; public string agentKey; public string title; public string status; public string provenance; }
     [Serializable] public sealed class LiveInvocation { public string invocationId; public string sessionKey; public string agentKey; public string kind; public string name; public string status; }
     [Serializable] public sealed class LiveSource { public string sourceId; public string sourceVersion; public string status; public string errorCode; public string lastReceived; public string lastApplied; public string lastEvidenceAt; }
-    [Serializable] public sealed class LiveFeedItem { public string type; public string projectId; public string observedAt; }
+    [Serializable] public sealed class LiveFeedItem { public string eventId; public long streamSequence; public string type; public string projectId; public string sessionKey; public string agentKey; public string observedAt; public string provenance; }
     [Serializable] public sealed class LiveResource { public string resourceId; public string environmentId; public string kind; public string name; public string sourceId; }
+    [Serializable] public sealed class LiveProjectResource { public string projectId; public string resourceId; public string origin; public string confidence; }
     [Serializable] public sealed class LiveResourceState
     {
         public string resourceId;

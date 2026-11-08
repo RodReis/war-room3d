@@ -59,7 +59,7 @@ namespace WarRoom3D
             root.Q<Label>("room-label").text = room && !string.IsNullOrEmpty(projectName)
                 ? "SALA · " + projectName : "SELECIONE UMA SALA";
             root.Q<VisualElement>("room-tabs").style.display = room ? DisplayStyle.Flex : DisplayStyle.None;
-            root.Q<VisualElement>("agent-list-section").style.display = room ? DisplayStyle.Flex : DisplayStyle.None;
+            root.Q<VisualElement>("agent-list-section").style.display = room && activeTab != 2 ? DisplayStyle.Flex : DisplayStyle.None;
             root.Q<VisualElement>("room-summary").style.display = room ? DisplayStyle.None : DisplayStyle.Flex;
             root.Q<VisualElement>("room-content").style.display = room ? DisplayStyle.Flex : DisplayStyle.None;
             expandToggle.style.display = room && (activeTab == 1 || activeTab == 2) ? DisplayStyle.Flex : DisplayStyle.None;
@@ -76,8 +76,10 @@ namespace WarRoom3D
                 pages[i].style.display = i == index ? DisplayStyle.Flex : DisplayStyle.None;
             }
             expandToggle.style.display = insideRoom && (index == 1 || index == 2) ? DisplayStyle.Flex : DisplayStyle.None;
+            root.Q<VisualElement>("agent-list-section").style.display = insideRoom && index != 2 ? DisplayStyle.Flex : DisplayStyle.None;
             panel.EnableInClassList("chat-active", index == 1);
-            SetExpanded(index == 1);
+            panel.EnableInClassList("log-active", index == 2);
+            SetExpanded(index == 1 || index == 2);
             CloseEvidence();
         }
 
@@ -141,6 +143,12 @@ namespace WarRoom3D
         {
             detail.style.display = DisplayStyle.Flex;
             root.Q<Button>("evidence-close").Focus();
+        }
+
+        public void SetEvidence(string content)
+        {
+            root.Q<Label>("evidence-body").text = content;
+            OpenEvidence();
         }
 
         public void CloseEvidence()

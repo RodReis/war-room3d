@@ -1,0 +1,1 @@
+{"status":"pass","source":"docker-engine-local","composeProject":"wr3d3495f319c2","projectId":"lab-34-docker","environmentId":"env-34-docker","resourceId":"api-34-docker","sourceId":"docker-5636b25765fc4b2de0402aa9a1b27d8a","recorded":1,"requestId":"req-34-docker","coverage":"covered","playerExit":0,"content":"synthetic","ports":0,"volumes":0,"network":"none"}

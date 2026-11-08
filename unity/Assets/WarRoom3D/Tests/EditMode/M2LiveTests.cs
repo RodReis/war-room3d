@@ -9,6 +9,7 @@ namespace WarRoom3D.Tests
         private const string Snapshot = "{\"schemaVersion\":\"1.0\",\"mode\":\"live\",\"revision\":1,\"streamSequence\":12," +
             "\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto sintético\"}],\"roomPlacements\":[],\"sessions\":[],\"agents\":[],\"feed\":[]," +
             "\"resources\":[{\"resourceId\":\"r1\",\"environmentId\":\"lab\",\"kind\":\"database\",\"name\":\"Banco sintético\",\"sourceId\":\"s1\"}]," +
+            "\"projectResources\":[{\"projectId\":\"p1\",\"resourceId\":\"r1\",\"origin\":\"configured\",\"confidence\":\"confirmed\"}]," +
             "\"resourceStates\":[{\"resourceId\":\"r1\",\"dependentProjectIds\":[\"p1\"],\"health\":\"saudavel\",\"freshness\":\"atual\",\"coverage\":\"atual\",\"observedAt\":\"2026-11-06T16:00:00Z\"}]," +
             "\"incidents\":[{\"incidentId\":\"i1\",\"resourceId\":\"r1\",\"projectIds\":[\"p1\"]}]}";
 
@@ -19,6 +20,7 @@ namespace WarRoom3D.Tests
             Assert.Throws<ArgumentException>(() => LiveSnapshot.Parse(Snapshot.Replace("\"mode\":\"live\"", "\"mode\":\"demo\"")));
             Assert.Throws<ArgumentException>(() => LiveSnapshot.Parse(Snapshot.Replace("\"coverage\":\"atual\"", "\"coverage\":\"perdida\"")));
             Assert.Throws<ArgumentException>(() => LiveSnapshot.Parse(Snapshot.Replace("\"projectIds\":[\"p1\"]", "\"projectIds\":[\"outro\"]")));
+            Assert.Throws<ArgumentException>(() => LiveSnapshot.Parse(Snapshot.Replace("\"resourceId\":\"r1\",\"origin\"", "\"resourceId\":\"outro\",\"origin\"")));
         }
 
         [Test]

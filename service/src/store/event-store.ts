@@ -433,6 +433,49 @@ export class EventStore {
     return this.db.transaction(() => this.snapshotInsideTransaction(now))();
   }
 
+  pageSessionEvents(options:{projectId:string;sessionKey?:string;agentKey?:string;from?:string;to?:string;before?:number;limit?:number}) {
+    const {projectId,sessionKey,agentKey,from,to}=options;
+    const before=options.before??null,limit=options.limit??20;
+    if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(projectId)||
+      (sessionKey!==undefined&&!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(sessionKey))||
+      (agentKey!==undefined&&!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(agentKey))||
+      (before!==null&&(!Number.isSafeInteger(before)||before<1))||!Number.isSafeInteger(limit)||limit<1||limit>50||
+      (from!==undefined&&(!Number.isFinite(Date.parse(from))||!from.endsWith('Z')))||
+      (to!==undefined&&(!Number.isFinite(Date.parse(to))||!to.endsWith('Z')))||
+      (from!==undefined&&to!==undefined&&Date.parse(from)>Date.parse(to)))throw new Error('Consulta de eventos inválida');
+    if(!this.db.prepare('SELECT 1 FROM projects WHERE project_id=?').get(projectId))return null;
+    const rows=this.db.prepare(`SELECT event_json,stream_sequence FROM events WHERE json_extract(event_json,'$.projectId')=?
+      AND (? IS NULL OR json_extract(event_json,'$.sessionKey')=?) AND (? IS NULL OR json_extract(event_json,'$.agentKey')=?)
+      AND (? IS NULL OR stream_sequence<?) AND (? IS NULL OR julianday(json_extract(event_json,'$.observedAt'))>=julianday(?))
+      AND (? IS NULL OR julianday(json_extract(event_json,'$.observedAt'))<=julianday(?)) ORDER BY stream_sequence DESC LIMIT ?`)
+      .all(projectId,sessionKey??null,sessionKey??null,agentKey??null,agentKey??null,before,before,from??null,from??null,to??null,to??null,limit+1) as
+      {event_json:string;stream_sequence:number}[];
+    const hasMore=rows.length>limit;
+    const items=rows.slice(0,limit).map(row=>this.sessionEventView(JSON.parse(row.event_json) as NormalizedEvent,row.stream_sequence));
+    const sources=this.db.prepare(`SELECT DISTINCT COALESCE(src.status,'indisponivel') AS status FROM sessions s
+      LEFT JOIN sources src ON src.source_id=s.source_id WHERE s.project_id=? AND (? IS NULL OR s.session_key=?)`)
+      .all(projectId,sessionKey??null,sessionKey??null) as {status:string}[];
+    const coverage=sources.length===0?'absent':sources.some(item=>item.status==='indisponivel')?'unavailable':
+      sources.every(item=>item.status==='atual')?'covered':'stale';
+    return {projectId,items,nextBefore:hasMore?items[items.length-1]!.streamSequence:null,coverage};
+  }
+
+  getSessionEvent(projectId:string,eventId:string) {
+    if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(projectId)||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(eventId))
+      throw new Error('Escopo de evento inválido');
+    const row=this.db.prepare('SELECT event_json,stream_sequence FROM events WHERE event_id=?').get(eventId) as
+      {event_json:string;stream_sequence:number}|undefined;
+    if(!row)return null;
+    const event=JSON.parse(row.event_json) as NormalizedEvent;
+    return event.projectId===projectId?{...this.sessionEventView(event,row.stream_sequence),evidenceRefs:event.evidenceRefs}:null;
+  }
+
+  private sessionEventView(event:NormalizedEvent,sequence:number) {
+    return {eventId:event.eventId,streamSequence:sequence,projectId:event.projectId,sessionKey:event.sessionKey??null,
+      agentKey:event.agentKey??null,type:event.type,sourceId:event.sourceId,observedAt:event.observedAt,
+      provenance:event.provenance,evidenceCount:event.evidenceRefs.length};
+  }
+
   historicalSnapshot(at: string, now = new Date().toISOString()): Row {
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(at) || !Number.isFinite(Date.parse(at)) ||
         new Date(at).toISOString().slice(0,19) !== at.slice(0,19))

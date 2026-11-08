@@ -38,16 +38,30 @@ export async function handleOperations(request:IncomingMessage,response:ServerRe
       const environmentId=url.searchParams.get('environmentId')!;
       sendJson(response,200,{environmentId,sources:store.sources(environmentId),coverage:Object.fromEntries(operationCategories.map(category=>[category,store.coverage(environmentId,category)]))}); return true;
     }
+    const evidence=url.pathname.match(/^\/v1\/operations\/evidence\/([A-Za-z0-9][A-Za-z0-9._:-]{0,159})$/);
+    if(request.method==='GET'&&evidence){
+      if(query.length!==2||!url.searchParams.has('environmentId')||!url.searchParams.has('projectId')){
+        sendJson(response,400,{code:'invalid_query'});return true;
+      }
+      const item=store.evidence(url.searchParams.get('environmentId')!,url.searchParams.get('projectId')!,evidence[1]!);
+      sendJson(response,item?200:404,item??{code:'not_found'});return true;
+    }
     if (request.method==='GET'&&dataRoute) {
       const traceRoute=url.pathname==='/v1/traces';
-      const allowed=traceRoute?['environmentId','sourceId','resourceId','projectId','traceId','spanId','requestId','from','to','cursor','limit']:['environmentId','sourceId','resourceId','projectId','from','to','cursor','limit'];
+      const allowed=traceRoute?['environmentId','sourceId','resourceId','projectId','traceId','spanId','requestId','from','to','cursor','limit']:
+        url.pathname==='/v1/logs'?['environmentId','sourceId','resourceId','projectId','traceId','spanId','requestId','severity','order','from','to','cursor','limit']:
+        ['environmentId','sourceId','resourceId','projectId','from','to','cursor','limit'];
       if (!url.searchParams.has('environmentId')||query.some(key=>!allowed.includes(key)) || (traceRoute&&!url.searchParams.has('traceId')&&!url.searchParams.has('spanId')&&!url.searchParams.has('requestId'))) { sendJson(response,400,{code:'invalid_query'}); return true; }
-      const cursor=integer(url.searchParams.get('cursor'),0),limit=integer(url.searchParams.get('limit'),50);
+      const order=url.searchParams.get('order')??'asc';
+      const cursor=integer(url.searchParams.get('cursor'),order==='desc'?Number.MAX_SAFE_INTEGER:0),limit=integer(url.searchParams.get('limit'),50);
       if (cursor===null||limit===null) { sendJson(response,400,{code:'invalid_query'}); return true; }
       const category=url.pathname==='/v1/logs'?'log':url.pathname==='/v1/traces'?'trace':url.pathname==='/v1/network'?'network':url.pathname==='/v1/security/reports'?'security_report':'security_detection';
       const result=store.query({environmentId:url.searchParams.get('environmentId')!,category,
         sourceId:url.searchParams.get('sourceId')??undefined,resourceId:url.searchParams.get('resourceId')??undefined,projectId:url.searchParams.get('projectId')??undefined,traceId:url.searchParams.get('traceId')??undefined,
-        spanId:url.searchParams.get('spanId')??undefined,requestId:url.searchParams.get('requestId')??undefined,from:url.searchParams.get('from')??undefined,to:url.searchParams.get('to')??undefined,cursor,limit});
+        spanId:url.searchParams.get('spanId')??undefined,requestId:url.searchParams.get('requestId')??undefined,
+        severity:url.pathname==='/v1/logs'?(url.searchParams.get('severity')??undefined) as 'info'|'low'|'medium'|'high'|'critical'|undefined:undefined,
+        from:url.searchParams.get('from')??undefined,to:url.searchParams.get('to')??undefined,cursor,limit,
+        order:url.pathname==='/v1/logs'?order as 'asc'|'desc':undefined});
       sendJson(response,200,result); return true;
     }
     if (request.method==='GET'&&url.pathname==='/v1/operations/incidents') {

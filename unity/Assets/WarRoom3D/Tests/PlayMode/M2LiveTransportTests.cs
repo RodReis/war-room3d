@@ -22,6 +22,7 @@ namespace WarRoom3D.Tests
             "\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}]," +
             "\"sessions\":[],\"agents\":[],\"feed\":[]," +
             "\"resources\":[{\"resourceId\":\"r1\",\"environmentId\":\"lab\",\"kind\":\"database\",\"name\":\"Banco sintético\",\"sourceId\":\"s1\"}]," +
+            "\"projectResources\":[{\"projectId\":\"p1\",\"resourceId\":\"r1\",\"origin\":\"configured\",\"confidence\":\"confirmed\"}]," +
             "\"resourceStates\":[{\"resourceId\":\"r1\",\"dependentProjectIds\":[\"p1\"],\"health\":\"" + health + "\",\"freshness\":\"atual\",\"coverage\":\"atual\",\"observedAt\":\"2026-11-06T16:00:00Z\"}]," +
             "\"incidents\":[]}";
 

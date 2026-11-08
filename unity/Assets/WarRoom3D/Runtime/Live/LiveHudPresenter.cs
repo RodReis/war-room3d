@@ -31,6 +31,7 @@ namespace WarRoom3D
         private ReferenceRoomNavigation navigation;
         private AgentPresenter agentPresenter;
         private ChatPresenter chat;
+        private RoomLogPresenter logs;
 
         private void Start()
         {
@@ -43,7 +44,7 @@ namespace WarRoom3D
             root.Q<Label>("project-list-heading").text = "PROJETOS OBSERVADOS";
             root.Q<Label>("activity-heading").text = "ATIVIDADE OBSERVADA";
             root.Q<Label>("agents-heading").text = "AGENTES OBSERVADOS";
-            root.Q<Label>("feed-heading").text = "FEED · EVENTOS OBSERVADOS";
+            root.Q<Label>("feed-heading").text = "LOGS E EVIDÊNCIAS";
             root.Q<Label>("resource-list-heading").text = "RECURSOS OBSERVADOS";
             root.Q<Button>("enter-button").clicked += EnterRoom;
             root.Q<Button>("back-button").clicked += ReturnToSector;
@@ -67,6 +68,8 @@ namespace WarRoom3D
             commands.Configure(root, client, history);
             chat = gameObject.AddComponent<ChatPresenter>();
             chat.Configure(root, client, commands);
+            logs = gameObject.AddComponent<RoomLogPresenter>();
+            logs.Configure(root, client, navigation);
             history.ReplayChanged += OnReplayChanged;
             history.ReplayStateChanged += RenderReplayState;
             gameObject.AddComponent<EffectDirector>().Configure(root, client, history, sector);
@@ -141,6 +144,7 @@ namespace WarRoom3D
         {
             replayMode = active;
             if (chat != null) chat.SetReplayMode(active);
+            if (logs != null) logs.SetReplayMode(active);
             if (operations != null) operations.SetReplayMode(active);
             if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (!active)
@@ -273,6 +277,7 @@ namespace WarRoom3D
             navigation.SetAgents(agentEntries);
             var selectedAgent = projection.Find(item => item.AgentKey == navigation.SelectedAgentKey);
             chat?.SetTarget(project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
+            logs?.SetTarget(snapshot, project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
             var placement = PlacementFor(project.projectId);
             var reference = placement != null && sector.Rooms.TryGetValue(placement.slotId, out var target) && target != null &&
                 target.GetComponentInChildren<ReferenceRoomView>() != null ? target : null;
@@ -499,6 +504,7 @@ namespace WarRoom3D
             agentPresenter.Show(AgentPresenterRoom(), projection, key);
             var selected = projection.Find(item => item.AgentKey == key);
             chat?.SetTarget(selectedProjectId, selected?.SessionKey, selected?.AgentKey);
+            logs?.SetTarget(snapshot, selectedProjectId, selected?.SessionKey, selected?.AgentKey);
             if (insideRoom)
             {
                 var target = agentPresenter.FindAgent(key);
@@ -512,6 +518,8 @@ namespace WarRoom3D
         private void SelectAgentForValidation(string key) => navigation?.SelectAgent(key);
         private void OpenEvidenceForValidation() => navigation?.OpenEvidence();
         private void OpenChatForValidation() => navigation?.SelectTab(1);
+        private void OpenLogsForValidation() => navigation?.SelectTab(2);
+        private void CloseEvidenceForValidation() => navigation?.CloseEvidence();
 #endif
 
         private Transform AgentPresenterRoom()

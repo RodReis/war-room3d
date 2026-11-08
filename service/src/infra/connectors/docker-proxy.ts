@@ -74,15 +74,17 @@ function parseDockerLogFrames(buffer: Buffer): DockerLogEntry[] {
   const entries: DockerLogEntry[] = [];
   for (const frame of dockerLogFrames(buffer)) for (const line of frame.text.split(/\r?\n/)) {
     if (!line) continue;
+    if (entries.length >= 1000) throw new Error('Resposta Docker excedeu 1000 linhas de log');
     const timestamp = line.match(/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z) (.*)$/);
     if (!timestamp || !Number.isFinite(Date.parse(timestamp[1]!))) throw new Error('Timestamp de log Docker inválido');
-    const message = timestamp[2]!.slice(0, 4096);
+    const message = timestamp[2]!;
+    if (message.length > 4096) throw new Error('Linha de log Docker excedeu o limite');
     const correlation = message.match(/(?:correlationId|requestId)\s*[=:]\s*["']?([A-Za-z0-9][A-Za-z0-9._:-]{0,159})/i) ??
       message.match(/\[(corr-[A-Za-z0-9._:-]{1,150})\]/i);
     entries.push({ observedAt: timestamp[1]!, stream: frame.stream, message,
       ...(correlation ? { requestId: correlation[1] } : {}) });
   }
-  return entries.slice(-100);
+  return entries;
 }
 
 export async function collectDockerApiLogs(engine: DockerEngineReader, scope: DockerScope, since: string,
@@ -110,7 +112,7 @@ export async function collectDockerApiLogs(engine: DockerEngineReader, scope: Do
   });
   if (matches.length !== 1) throw new Error('Contêiner API não encontrado de forma única no checkout autorizado');
   const container = matches[0]!;
-  const query = new URLSearchParams({ follow: '0', stdout: '1', stderr: '1', since: String(Math.floor(Date.parse(since) / 1000)), timestamps: '1', tail: '100' });
+  const query = new URLSearchParams({ follow: '0', stdout: '1', stderr: '1', since: String(Math.floor(Date.parse(since) / 1000)), timestamps: '1', tail: 'all' });
   const raw = await engine.getRaw(`/containers/${container.id}/logs?${query}`, signal);
   return { version: 1, observedAt: now(), service: 'api', containerName: container.name, containerState: container.state,
     entries: parseDockerLogFrames(raw) };

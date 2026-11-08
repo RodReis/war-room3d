@@ -10,7 +10,8 @@ Entrega revisável: [PR #26](https://github.com/RodReis/war-room3d/pull/26), dra
 - Catálogo por fonte/ambiente/categoria, retenção explícita, redação antes de persistir e consulta paginada.
 - Correlação exata por trace/span/request ID e filtros por projeto, ambiente, recurso e período.
 - Regras versionadas, incidentes com trilha de abertura/atualização/reconhecimento/resolução/reabertura e autorização por projeto vinculado.
-- Sinal de latência HTTP opt-in derivado de sondas API M2 existentes; nenhum alvo novo foi consultado.
+- Sinal de latência HTTP opt-in derivado de sondas API M2 existentes; esse sinal não adiciona alvo de coleta.
+- Leitura Docker opt-in dos logs do serviço `api` do ContaIA, limitada por projeto e diretório Compose exatos, com redação antes da persistência.
 - Painel Unity para cobertura, logs, rastros, rede, detecção, relatórios e incidentes, bloqueado durante replay.
 
 ## Provas
@@ -18,14 +19,16 @@ Entrega revisável: [PR #26](https://github.com/RodReis/war-room3d/pull/26), dra
 | Prova | Resultado | Limite |
 |---|---|---|
 | Contrato M5 | `pass` — 13/13 testes | Sem conteúdo de serviço real |
-| Serviço, migração SQLite e HTTP | `pass` — typecheck e 137/137 testes | Apenas fixtures e loopback |
+| Serviço, migração SQLite e HTTP | `pass` — typecheck e 143/143 testes | Testes de contrato local e conectores; integração real descrita abaixo |
 | Unity EditMode | `pass` — 15/15 testes | Projeto da worktree; sem build |
 | Unity PlayMode | `pass` — 14/14 testes | Inclui demo sem botão operacional, escopo obrigatório e replay; transporte exercitado em loopback |
 | Build Windows | `pass` — Editor 6000.3.27f1, exit 0, 172.370.309 bytes | `M2LiveProjectSetup.BuildWindowsM5Operations`, `Logs/m5-build-final.log`; build local Development, Player não ensaiado visualmente |
-| CI do código inicial `c54a600fbc1928d178b1460ed340d7c489869d1f` | `pass` — jobs `Contratos` e `Serviço` | Último HEAD deve ser conferido na PR; CI não inclui build Unity |
-| Logs, traces e fonte de segurança reais | `not_run` | Backend e permissões por ambiente ainda não escolhidos |
+| CI do HEAD anterior `fa2d6ed4dbe28f9180b91e28ba62f87e68723f48` | `pass` — jobs `Contratos` e `Serviço` | Conferir checks no HEAD desta revisão; CI não inclui build Unity |
+| ContaIA API local | `pass` — Docker `running (healthy)`, `GET /health` HTTP 200 | Verificação pontual; não prova disponibilidade contínua |
+| Logs Docker da API ContaIA | `pass` — 330 linhas reais em SQLite temporário, 0 duplicatas na segunda rodada, cobertura `covered` no instante | Janela inicial 10 min; 0 request IDs reconhecidos; limite 1 MiB/1.000 linhas por leitura; detalhes em `laboratorio.md` |
+| Traces distribuídos e fonte de segurança reais | `not_run` | Backend e detector não presentes no escopo autorizado |
 | Aceite visual do PI | `not_run` | Integração técnica não equivale a aceite |
 
 ## Lacunas para concluir M5
 
-Nenhum backend de logs/rastros ou detector foi escolhido no plano. Sem essa decisão e autorização de fonte, não há como provar paginação contra backend real, falsos positivos de detector real, perda/recuperação contínua ou cobertura de segurança operacional. A rede limitada a healthcheck HTTP não é coleta de pacotes. O painel tem paginação por cursor e oculta consulta operacional na demo, mas ainda precisa de ensaio visual no Player. Issue #6 não deve ser fechada com esta fatia.
+A fonte local de logs Docker da API ContaIA foi autorizada e ensaiada. Backend de traces distribuídos e detector não foram definidos; assim, falsos positivos de detector real e cobertura de segurança operacional continuam sem prova. O ensaio Docker é pontual; perda/recuperação contínua ainda não foi medida. A rede limitada a healthcheck HTTP não é coleta de pacotes. O painel tem paginação por cursor e oculta consulta operacional na demo, mas ainda precisa de ensaio visual no Player. Issue #6 permanece aberta.

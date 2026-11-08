@@ -149,7 +149,7 @@ test('coletor Docker persiste API redigida, correlaciona ID explícito e marca c
       {observedAt:'2026-11-06T19:41:58.676Z',stream:'stdout',message:'falha CPF 123.456.789-09 email cliente@example.com tenantId=tenant-42 [corr-abc]',requestId:'corr-abc'}
     ]}),{status:200,headers:{'Content-Type':'application/json'}}),()=>new Date('2026-11-08T12:00:00.000Z'));
   const result=await collector.collectOnce();
-  assert.deepEqual(result,{recorded:1,state:'unavailable',truncated:false});
+  assert.deepEqual(result,{recorded:1,state:'unavailable'});
   const logs=store.operations.query({environmentId:'env-a',category:'log'}).items;
   assert.equal(logs.length,1);
   assert.equal(logs[0]?.correlation?.requestId,'corr-abc');

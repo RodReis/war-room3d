@@ -34,11 +34,16 @@ export interface DockerLogsCollectorConfig {
 
 export interface DockerLogsProxyAuth { url: string; token: string }
 
-export function createDockerLogsCollector(store:OperationsStore,config:DockerLogsCollectorConfig,auth:DockerLogsProxyAuth,
-  fetcher:typeof fetch=fetch,now:()=>Date=()=>new Date()) {
+export function validateDockerLogsProxyAuth(auth:DockerLogsProxyAuth):URL {
   const base=new URL(auth.url);
   if (base.protocol!=='http:'||base.hostname!=='127.0.0.1'||base.pathname!=='/v1/logs'||base.search||base.hash||base.username||base.password||Buffer.byteLength(auth.token)<32)
     throw new Error('Proxy de logs Docker deve usar loopback e token válido');
+  return base;
+}
+
+export function createDockerLogsCollector(store:OperationsStore,config:DockerLogsCollectorConfig,auth:DockerLogsProxyAuth,
+  fetcher:typeof fetch=fetch,now:()=>Date=()=>new Date()) {
+  const base=validateDockerLogsProxyAuth(auth);
   if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(config.environmentId)||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(config.resourceId)||
       !Number.isSafeInteger(config.retentionDays)||config.retentionDays<1||config.retentionDays>3650||
       !Number.isSafeInteger(config.initialLookbackMinutes)||config.initialLookbackMinutes<1||config.initialLookbackMinutes>10080||
@@ -53,7 +58,7 @@ export function createDockerLogsCollector(store:OperationsStore,config:DockerLog
   let timer:NodeJS.Timeout|null=null;
   let pending:Promise<void>|null=null;
 
-  const collectOnce=async():Promise<{recorded:number;state:'running'|'unavailable';truncated:boolean}>=>{
+  const collectOnce=async():Promise<{recorded:number;state:'running'|'unavailable'}>=>{
     if (running) throw new Error('Coleta de logs Docker simultânea não permitida');
     running=true;
     const controller=new AbortController();
@@ -65,7 +70,7 @@ export function createDockerLogsCollector(store:OperationsStore,config:DockerLog
         if(response.status!==200) throw new Error('Fonte de logs Docker indisponível');
         const snapshot=await response.json() as DockerLogsSnapshot;
         if(snapshot.version!==1||snapshot.service!=='api'||!['created','running','paused','restarting','exited','removing','dead'].includes(snapshot.containerState)||
-            typeof snapshot.containerName!=='string'||!Array.isArray(snapshot.entries)||snapshot.entries.length>100||!Number.isFinite(Date.parse(snapshot.observedAt)))
+            typeof snapshot.containerName!=='string'||!Array.isArray(snapshot.entries)||snapshot.entries.length>1000||!Number.isFinite(Date.parse(snapshot.observedAt)))
           throw new Error('Resposta de logs Docker inválida');
         const receivedAt=now().toISOString();
         store.setSourceStatus(sourceId,'active');
@@ -81,10 +86,9 @@ export function createDockerLogsCollector(store:OperationsStore,config:DockerLog
           if(store.record(observation))recorded++;
           if(Date.parse(entry.observedAt)>latest.getTime())latest=new Date(entry.observedAt);
         }
-        const truncated=snapshot.entries.length===100;
-        if(snapshot.containerState!=='running'||truncated) store.setSourceStatus(sourceId,'unavailable');
+        if(snapshot.containerState!=='running') store.setSourceStatus(sourceId,'unavailable');
         else since=new Date(Math.max(latest.getTime(),Date.parse(snapshot.observedAt))-1000);
-        return {recorded,state:snapshot.containerState==='running'&&!truncated?'running':'unavailable',truncated};
+        return {recorded,state:snapshot.containerState==='running'?'running':'unavailable'};
       }finally{if(response.body&&!response.bodyUsed)await response.body.cancel();}
     }catch(error){
       store.setSourceStatus(sourceId,'unavailable');

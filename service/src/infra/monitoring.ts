@@ -5,7 +5,7 @@ import { parseInventory, type Inventory } from './inventory.ts';
 import type { EventStore } from '../store/event-store.ts';
 import type { ProjectRecord } from '../domain/identity.ts';
 import { normalizeProjectPath } from '../domain/identity.ts';
-import { createDockerLogsCollector, createHttpNetworkSink, type DockerLogsProxyAuth } from '../operations/operation-collector.ts';
+import { createDockerLogsCollector, createHttpNetworkSink, validateDockerLogsProxyAuth, type DockerLogsProxyAuth } from '../operations/operation-collector.ts';
 import type { OperationRule } from '../operations/operations-store.ts';
 
 interface MonitoringConfig {
@@ -110,6 +110,10 @@ function parseConfig(input: unknown): MonitoringConfig {
 
 export function configureMonitoring(store: EventStore, input: unknown, dockerLogsProxy?:DockerLogsProxyAuth): { runner: CollectorRunner; intervalMs: number; dockerLogs?:ReturnType<typeof createDockerLogsCollector> } {
   const config = parseConfig(input);
+  if(config.m5DockerLogs?.enabled){
+    if(!dockerLogsProxy) throw new Error('Fonte de logs M5 habilitada sem proxy Docker e token');
+    validateDockerLogsProxyAuth(dockerLogsProxy);
+  }
   const resources = new Map(config.inventory.resources.map(resource => [resource.resourceId, resource]));
   const probes: Probe[] = config.probes.map(item => {
     const resource = resources.get(item.resourceId)!;
@@ -137,8 +141,7 @@ export function configureMonitoring(store: EventStore, input: unknown, dockerLog
   const sink=config.m5NetworkSignals?createHttpNetworkSink(store.operations,apiResources,config.intervalMs,config.m5NetworkRetentionDays!):undefined;
   let dockerLogs:ReturnType<typeof createDockerLogsCollector>|undefined;
   if(config.m5DockerLogs?.enabled){
-    if(!dockerLogsProxy) throw new Error('Fonte de logs M5 habilitada sem proxy Docker e token');
-    dockerLogs=createDockerLogsCollector(store.operations,config.m5DockerLogs,dockerLogsProxy);
+    dockerLogs=createDockerLogsCollector(store.operations,config.m5DockerLogs,dockerLogsProxy!);
   }
   return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs, undefined, sink), intervalMs: config.intervalMs, dockerLogs };
 }

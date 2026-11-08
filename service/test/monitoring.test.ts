@@ -83,6 +83,23 @@ test('configuração recusa sonda fora do inventário antes de cadastrar projeto
   assert.deepEqual(store.snapshot().projects, []);
 });
 
+test('fonte Docker M5 exige proxy local válido antes de alterar inventário',t=>{
+  const directory=mkdtempSync(path.join(tmpdir(),'war-room3d-monitoring-docker-'));
+  const store=new EventStore(path.join(directory,'state.db'));
+  t.after(()=>{store.close();rmSync(directory,{recursive:true,force:true});});
+  const config={schemaVersion:'1.0',projects,inventory,intervalMs:1000,timeoutMs:1000,
+    probes:[{kind:'api',resourceId:'api-lab',url:'http://127.0.0.1:12345/health'}],
+    m5DockerLogs:{enabled:true,composeProject:'contaia',composeWorkingDir:'C:\\Desenv\\Projetos\\rrb-contaia\\infra\\docker',service:'api',
+      environmentId:'lab',resourceId:'api-lab',retentionDays:1,initialLookbackMinutes:10,intervalMs:60000}};
+  assert.throws(()=>configureMonitoring(store,config),/sem proxy Docker/);
+  assert.throws(()=>configureMonitoring(store,config,{url:'http://example.invalid/v1/logs',token:'x'.repeat(64)}),/loopback/);
+  assert.deepEqual(store.snapshot().projects,[]);
+  assert.deepEqual(store.snapshot().resources,[]);
+  const configured=configureMonitoring(store,config,{url:'http://127.0.0.1:12345/v1/logs',token:'x'.repeat(64)});
+  assert.ok(configured.dockerLogs);
+  assert.equal(store.operations.sources('lab').find(source=>source.sourceId===configured.dockerLogs!.sourceId)?.coverage.log,'no_data');
+});
+
 test('caminho novo em projeto existente falha antes de cadastrar outros projetos', t => {
   const directory = mkdtempSync(path.join(tmpdir(), 'war-room3d-monitoring-'));
   const store = new EventStore(path.join(directory, 'state.db'));

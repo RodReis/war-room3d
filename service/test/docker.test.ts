@@ -89,7 +89,7 @@ test('logs Docker leem somente serviço api do projeto e checkout exatos, com ja
     'com.docker.compose.project=laboratorio',`com.docker.compose.project.working_dir=${scope.composeWorkingDir}`,'com.docker.compose.service=api'
   ]);
   const logUrl=new URL(calls[1]!, 'http://docker');
-  assert.equal(logUrl.searchParams.get('follow'),'0');assert.equal(logUrl.searchParams.get('tail'),'100');assert.equal(logUrl.searchParams.get('stdout'),'1');assert.equal(logUrl.searchParams.get('stderr'),'1');
+  assert.equal(logUrl.searchParams.get('follow'),'0');assert.equal(logUrl.searchParams.get('tail'),'all');assert.equal(logUrl.searchParams.get('stdout'),'1');assert.equal(logUrl.searchParams.get('stderr'),'1');
   assert.match(logUrl.pathname,/^\/containers\/[a-f0-9]{64}\/logs$/);
 });
 
@@ -116,4 +116,15 @@ test('logs Docker falham fechados em checkout, identidade ou quadro inválidos',
   const badFrame:DockerEngineReader={async get(){return [row('api','running','none')];},async getRaw(){return Buffer.from('TTY sem multiplexação');}};
   await assert.rejects(collectDockerApiLogs(badFrame,scope,at,new AbortController().signal),/Quadro/);
   await assert.rejects(collectDockerApiLogs(badId,scope,'2020-01-01T00:00:00.000Z',new AbortController().signal),/janela/);
+});
+
+test('logs Docker preservam mais de 100 linhas sem corte silencioso e recusam lote acima do limite',async()=>{
+  let count=101;
+  const engine:DockerEngineReader={async get(){return [row('api','running','none')];},async getRaw(){return frame(1,Array.from({length:count},(_,i)=>`2026-11-08T12:11:10.${String(i).padStart(9,'0')}Z linha ${i}\n`).join(''));}};
+  const since='2026-11-08T12:10:00.000Z';
+  assert.equal((await collectDockerApiLogs(engine,scope,since,new AbortController().signal)).entries.length,101);
+  count=1001;
+  await assert.rejects(collectDockerApiLogs(engine,scope,since,new AbortController().signal),/1000 linhas/);
+  const longLine:DockerEngineReader={async get(){return [row('api','running','none')];},async getRaw(){return frame(1,`2026-11-08T12:11:10.000Z ${'x'.repeat(4097)}\n`);}};
+  await assert.rejects(collectDockerApiLogs(longLine,scope,since,new AbortController().signal),/Linha de log Docker excedeu/);
 });

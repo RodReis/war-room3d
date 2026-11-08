@@ -22,8 +22,8 @@ Entrega revisável: [PR #26](https://github.com/RodReis/war-room3d/pull/26), dra
 | Serviço, migração SQLite e HTTP | `pass` — typecheck e 143/143 testes | Testes de contrato local e conectores; integração real descrita abaixo |
 | Unity EditMode | `pass` — 15/15 testes | Projeto da worktree; sem build |
 | Unity PlayMode | `pass` — 14/14 testes | Inclui demo sem botão operacional, escopo obrigatório e replay; transporte exercitado em loopback |
-| Build Windows | `pass` — Editor 6000.3.27f1, exit 0, 172.376.301 bytes | `M2LiveProjectSetup.BuildWindowsM5Operations`, `Logs/m5-visual-build.log`; build Development com capturador M5 opt-in; Player não ensaiado visualmente |
-| CI do HEAD anterior `fa2d6ed4dbe28f9180b91e28ba62f87e68723f48` | `pass` — jobs `Contratos` e `Serviço` | Conferir checks no HEAD desta revisão; CI não inclui build Unity |
+| Build Windows | `pass` — Editor 6000.3.27f1, exit 0, 172.376.894 bytes | `M2LiveProjectSetup.BuildWindowsM5Operations`, `Logs/m5-visual-build-recheck.log`; capturador M5 exige conteúdo sintético esperado; Player não ensaiado visualmente |
+| CI do HEAD anterior `42a78537b6a0d477081f883cadc458a1f119fabf` | `pass` — jobs `Contratos` e `Serviço` | Conferir checks no HEAD desta revisão; CI não inclui build Unity |
 | ContaIA API local | `pass` — Docker `running (healthy)`, `GET /health` HTTP 200 | Verificação pontual; não prova disponibilidade contínua |
 | Logs Docker da API ContaIA | `pass` — 330 linhas reais em SQLite temporário, 0 duplicatas na segunda rodada, cobertura `covered` no instante | Janela inicial 10 min; 0 request IDs reconhecidos; limite 1 MiB/1.000 linhas por leitura; detalhes em `laboratorio.md` |
 | Traces distribuídos e fonte de segurança reais | `not_run` | Backend e detector não presentes no escopo autorizado |

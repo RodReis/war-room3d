@@ -22,6 +22,7 @@ Os PNGs e `result.json` iriam para `Logs/m5-visual-proof-*`, ignorado pelo Git. 
 - Serviço sintético: `/v1/snapshot`, cobertura, logs (10 itens e cursor), rastro (1) e incidentes (1) responderam HTTP 200; processo e porta do laboratório foram encerrados.
 - `npm run typecheck` passou com o script de laboratório.
 - Build Windows M5 concluiu com exit 0 e 172.376.301 bytes; log local `Logs/m5-visual-build.log`. Compilação incluiu o capturador de desenvolvimento. O Editor regravou cena/settings; alterações geradas foram restauradas, preservando apenas os arquivos de prova novos.
+- O capturador agora exige o identificador esperado em cada resposta sintética antes de salvar o PNG. A recompilação Windows concluiu com exit 0 e 172.376.894 bytes; log local `Logs/m5-visual-build-recheck.log`. Isso valida a compilação, não a captura ou a aparência do Player.
 
 ## Impedimento da captura
 

@@ -47,30 +47,30 @@ namespace WarRoom3D
             root.Q<TextField>("operations-environment").value = "m5-lab";
             presenter.SendMessage("Open");
             yield return WaitForResponse(root);
-            if (!ResponseReady(root)) { Fail("coverage_missing"); yield break; }
+            if (!ResponseReady(root, "m5-synthetic-source")) { Fail("coverage_missing"); yield break; }
             yield return Capture("01-coverage");
 
             presenter.SendMessage("QuerySignals");
             yield return WaitForResponse(root);
-            if (!ResponseReady(root) || !root.Q<Button>("operations-next").enabledSelf)
+            if (!ResponseReady(root, "m5-log-01") || !root.Q<Button>("operations-next").enabledSelf)
             { Fail("logs_first_page_missing"); yield break; }
             yield return Capture("02-logs-first-page");
 
             presenter.SendMessage("NextPage");
             yield return WaitForResponse(root);
-            if (!ResponseReady(root)) { Fail("logs_second_page_missing"); yield break; }
+            if (!ResponseReady(root, "m5-log-13")) { Fail("logs_second_page_missing"); yield break; }
             yield return Capture("03-logs-second-page");
 
             root.Q<DropdownField>("operations-category").value = "Rastros";
             root.Q<TextField>("operations-trace").value = "req-m5-lab";
             presenter.SendMessage("QuerySignals");
             yield return WaitForResponse(root);
-            if (!ResponseReady(root)) { Fail("trace_result_missing"); yield break; }
+            if (!ResponseReady(root, "m5-trace-01")) { Fail("trace_result_missing"); yield break; }
             yield return Capture("04-trace-explicit-id");
 
             presenter.SendMessage("LoadIncidents");
             yield return WaitForResponse(root);
-            if (!ResponseReady(root)) { Fail("incident_result_missing"); yield break; }
+            if (!ResponseReady(root, "m5-visual-alert")) { Fail("incident_result_missing"); yield break; }
             yield return Capture("05-incidents");
 
             presenter.SetReplayMode(true);
@@ -85,8 +85,13 @@ namespace WarRoom3D
             Application.Quit(0);
         }
 
-        private static bool ResponseReady(VisualElement root) =>
-            root.Q<Label>("operations-status")?.text == "Resposta da API local · conteúdo redigido pelo serviço.";
+        private static bool ResponseReady(VisualElement root, string expectedContent = null)
+        {
+            if (root.Q<Label>("operations-status")?.text != "Resposta da API local · conteúdo redigido pelo serviço.") return false;
+            if (expectedContent == null) return true;
+            var results = root.Q<ScrollView>("operations-results");
+            return results?.Q<Label>()?.text?.Contains(expectedContent) == true;
+        }
 
         private static IEnumerator WaitForResponse(VisualElement root)
         {

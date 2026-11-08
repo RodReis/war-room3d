@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "scope": "issue-33-synthetic-provider-lab",
+  "date": "2026-11-08",
+  "contentPublished": false,
+  "providers": [
+    {
+      "provider": "claude",
+      "version": "2.1.319",
+      "newSessions": 1,
+      "promptCount": 1,
+      "hookScope": "temporary-project-only",
+      "hooksObserved": ["SessionStart", "UserPromptSubmit", "Stop"],
+      "hookRevoked": true,
+      "timeoutMs": 60000,
+      "budgetUsd": 0.1,
+      "cliReportedCostUsd": 0.006398900000000001,
+      "exitCode": 0,
+      "rateLimitEventObserved": true,
+      "resultError": false,
+      "httpStatus": 200,
+      "scopedSessions": 1,
+      "messageRoles": ["user", "assistant"],
+      "replyMarkerMatched": true,
+      "receiptIsResponse": false
+    },
+    {
+      "provider": "codex",
+      "version": "0.166.0",
+      "newThreads": 1,
+      "promptCount": 1,
+      "firstInspection": "timeout-before-thread-and-send",
+      "secondInspection": "pass-without-thread-or-send",
+      "inheritedMcpServersDisabled": 13,
+      "sandbox": "read-only",
+      "approvalPolicy": "never",
+      "timeoutMs": 45000,
+      "monetaryCapVerified": false,
+      "receipt": "confirmed",
+      "turnCompleted": true,
+      "processTerminated": true,
+      "httpStatus": 200,
+      "scopedSessions": 1,
+      "messageRoles": ["user", "assistant"],
+      "replyMarkerMatched": true,
+      "receiptIsResponse": false
+    }
+  ],
+  "realQuestionPermission": "unsupported-native-fallback",
+  "personalSessionsAccessed": false,
+  "g3Complete": false
+}

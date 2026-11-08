@@ -2,6 +2,8 @@
 
 Estado: implementação local em revisão; issue permanece aberta. Nenhum merge ou aceite funcional registrado.
 
+Entrega revisável: [PR #26](https://github.com/RodReis/war-room3d/pull/26), draft. No HEAD `c54a600fbc1928d178b1460ed340d7c489869d1f`, checks obrigatórios `Contratos` e `Serviço` passaram.
+
 ## Escopo desta fatia
 
 - Contrato versionado de observação com ambiente, recurso, IDs de correlação, cobertura e evidência.
@@ -20,6 +22,7 @@ Estado: implementação local em revisão; issue permanece aberta. Nenhum merge 
 | Unity EditMode | `pass` — 15/15 testes | Projeto da worktree; sem build |
 | Unity PlayMode | `pass` — 12/12 testes | Transporte exercitado em loopback |
 | Build Windows | `not_run` | CLI reportou ausência de instância Pipeline para o projeto desta worktree; Unity aberto em outro projeto |
+| CI no HEAD `c54a600fbc1928d178b1460ed340d7c489869d1f` | `pass` — jobs `Contratos` e `Serviço` | Não inclui build Unity |
 | Logs, traces e fonte de segurança reais | `not_run` | Backend e permissões por ambiente ainda não escolhidos |
 | Aceite visual do PI | `not_run` | Integração técnica não equivale a aceite |
 

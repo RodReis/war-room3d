@@ -22,8 +22,12 @@ try {
   }, 86400000);
   retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
-  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown,
-    { dockerToken: process.env.WR3D_DOCKER_PROXY_TOKEN }) : null;
+  const dockerLogsProxyUrl=process.env.WR3D_DOCKER_LOGS_PROXY_URL;
+  const dockerLogsProxyToken=process.env.WR3D_DOCKER_LOGS_PROXY_TOKEN;
+  const dockerLogsProxy=dockerLogsProxyUrl&&dockerLogsProxyToken?{url:dockerLogsProxyUrl,token:dockerLogsProxyToken}:undefined;
+  const monitoringInput=configPath?JSON.parse(readFileSync(configPath,'utf8')) as unknown:null;
+  const monitoring = configPath ? configureMonitoring(store,monitoringInput,
+    { dockerToken: process.env.WR3D_DOCKER_PROXY_TOKEN, dockerLogsProxy }) : null;
   const sessionConfigPath = process.env.WR3D_SESSIONS_CONFIG_PATH;
   const sessionConfig = sessionConfigPath ? parseSessionSources(JSON.parse(readFileSync(sessionConfigPath,'utf8')) as unknown) : null;
   store.configureSessionSources(sessionConfig?.projects ?? [],sessionConfig?.sources ?? []);
@@ -34,6 +38,8 @@ try {
   const commandProjects=process.env.WR3D_COMMAND_PROJECT_IDS?.split(',').map(value=>value.trim()).filter(Boolean)??[];
   const { server, url } = await startReadOnlyServer(store, token, port, {token:commandToken,actor:{actorId:'operador-local',projectIds:commandProjects}});
   monitoring?.runner.start(monitoring.intervalMs);
+  const dockerLogInterval=(monitoringInput as {m5DockerLogs?:{intervalMs?:number}}|null)?.m5DockerLogs?.intervalMs;
+  if(monitoring?.dockerLogs&&dockerLogInterval)monitoring.dockerLogs.start(dockerLogInterval);
   sessions?.poll();
   const sessionsTimer = sessions ? setInterval(() => sessions.poll(),1000) : null;
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
@@ -63,6 +69,7 @@ try {
     if (githubTimer) clearInterval(githubTimer);
     if (sessionsTimer) clearInterval(sessionsTimer);
     await monitoring?.runner.stop();
+    await monitoring?.dockerLogs?.stop();
     server.closeAllConnections();
     server.close(() => store.close());
   });

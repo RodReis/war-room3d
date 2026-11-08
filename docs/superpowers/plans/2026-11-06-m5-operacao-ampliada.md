@@ -31,9 +31,9 @@ PRD RF-14–RF-23, RF-35–RF-38 e RNF-03/RNF-04/RNF-08/RNF-09; GDD seções 3.3
 
 **Files:** Create observation schema, `source-catalog.ts`, tests e `docs/validation/m5/laboratorio.md`.
 
-- [ ] **Step 1: Testar fonte presente, sem permissão, atraso, falha e ambiente não monitorado.** Esperado: cada caso possui cobertura distinta; nenhum produz verde implícito.
-- [ ] **Step 2: Rodar testes; esperar falha.**
-- [ ] **Step 3: Contrato exige `sourceId`, `sourceVersion`, `environmentId`, `resourceId?`, `observedAt`, `receivedAt`, `category`, `classification`, `confidence`, `evidenceRef?` e `coverage`.** `classification` distingue `metric`, `log`, `trace`, `network`, `security_detection` e `security_report`. Não aceitar campo de coordenada geográfica sem origem autorizada e precisão declarada.
+- [x] **Step 1: Testar fonte presente, sem permissão, atraso, falha e ambiente não monitorado.** Esperado: cada caso possui cobertura distinta; nenhum produz verde implícito.
+- [x] **Step 2: Rodar testes; esperar falha.**
+- [x] **Step 3: Contrato exige `sourceId`, `sourceVersion`, `environmentId`, `resourceId?`, `observedAt`, `receivedAt`, `category`, `classification`, `confidence`, `evidenceRef?` e `coverage`.** `classification` distingue `metric`, `log`, `trace`, `network`, `security_detection` e `security_report`. Não aceitar campo de coordenada geográfica sem origem autorizada e precisão declarada.
 - [ ] **Step 4: Inventariar backend de laboratório por ambiente, tipo, permissão e retenção sem credenciais no Git.** Rodar testes e commit seletivo.
 
 ## Task 2: Consultar logs e rastros com redação e limites
@@ -41,9 +41,9 @@ PRD RF-14–RF-23, RF-35–RF-38 e RNF-03/RNF-04/RNF-08/RNF-09; GDD seções 3.3
 **Files:** Create `log-query.ts`, `trace-link.ts`, tests e rotas `/v1/logs`, `/v1/traces`.
 
 - [ ] **Step 1: Testar consulta paginada, token/cookie/string de conexão fictícios, log ausente, trace sem span pai e evidência expirada.** Esperado: campos sensíveis são redigidos antes de persistir/exibir; falta de span não cria causalidade.
-- [ ] **Step 2: Rodar testes; esperar falha.**
-- [ ] **Step 3: Buscar somente fontes e intervalos autorizados, com limite de página e timeout.** Armazenar metadados e referências de evidência, não copiar todo o volume bruto para SQLite. Revalidar autorização ao abrir detalhe.
-- [ ] **Step 4: Correlacionar apenas `traceId`, `spanId`, `requestId` ou vínculo explícito; proximidade temporal vira sugestão marcada como inferência.** Rodar testes, incluindo acesso cruzado de ambiente negado; commit seletivo.
+- [x] **Step 2: Rodar testes; esperar falha.**
+- [ ] **Step 3: Buscar somente fontes e intervalos autorizados, com limite de página e timeout.** Armazenar metadados e referências de evidência, não copiar todo o volume bruto para SQLite. Revalidar autorização ao abrir detalhe. Ainda sem backend configurado para consulta externa.
+- [x] **Step 4: Correlacionar apenas `traceId`, `spanId`, `requestId` ou vínculo explícito; proximidade temporal vira sugestão marcada como inferência.** Rodar testes, incluindo acesso cruzado de ambiente negado; commit seletivo.
 
 ## Task 3: Normalizar sinais de rede e segurança
 

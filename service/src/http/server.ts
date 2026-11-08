@@ -10,6 +10,7 @@ import { CapabilityRegistry } from '../commands/capability-registry.ts';
 import { claudeCommands } from '../commands/providers/claude.ts';
 import { codexCommands } from '../commands/providers/codex.ts';
 import type { CommandActor, CommandTarget } from '../commands/types.ts';
+import { handleOperations } from './operations.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/snapshot.v1.schema.json', import.meta.url), 'utf8'));
 const validateSnapshot = new Ajv2020({ strict: true }).compile(schema);
@@ -49,6 +50,10 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
     if (!canRead && !canCommand) { response.writeHead(401).end(); return; }
     if (!request.url) { response.writeHead(404).end(); return; }
     if(isCommandRoute(request.url)) {void handleCommands(request,response,{gateway,actor,targets},{canRead,canCommand},()=>store.snapshot().capabilities);return;}
+    const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
+    if (pathname.startsWith('/v1/operations') || pathname === '/v1/logs' || pathname === '/v1/traces' || pathname === '/v1/network' || pathname === '/v1/security' || pathname === '/v1/security/reports') {
+      void handleOperations(request,response,store.operations,{canRead,canCommand,actor}); return;
+    }
     if(!canRead) {response.writeHead(403).end();return;}
     if ((request.method === 'POST' && request.url === '/v1/github/repositories') || (request.method === 'DELETE' && request.url === '/v1/github/repositories')) {
       const length = Number(request.headers['content-length'] ?? 0);

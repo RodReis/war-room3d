@@ -25,6 +25,7 @@ namespace WarRoom3D
         private Material replayActiveMaterial;
         private Material replayUnknownMaterial;
         private DataCenterBuilder dataCenter;
+        private OperationsHudPresenter operations;
         private ReferenceRoomNavigation navigation;
 
         private void Start()
@@ -51,6 +52,8 @@ namespace WarRoom3D
             navigation = new ReferenceRoomNavigation(root, ReturnToSector);
             var history = gameObject.AddComponent<HistoryHudPresenter>();
             history.Configure(root, client);
+            operations = gameObject.AddComponent<OperationsHudPresenter>();
+            operations.Configure(root, client);
             gameObject.AddComponent<CommandPresenter>().Configure(root, client, history);
             history.ReplayChanged += OnReplayChanged;
             history.ReplayStateChanged += RenderReplayState;
@@ -123,6 +126,7 @@ namespace WarRoom3D
         private void OnReplayChanged(bool active)
         {
             replayMode = active;
+            if (operations != null) operations.SetReplayMode(active);
             if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (!active)
             {
@@ -385,6 +389,7 @@ namespace WarRoom3D
             var resource = Array.Find(snapshot.resources, item => item.resourceId == resourceId);
             if (resource == null) return;
             selectedResourceId = resourceId;
+            if (operations != null) operations.SetResourceScope(resource.environmentId, resource.resourceId);
             var state = StateFor(resourceId);
             root.Q<Label>("resource-name").text = resource.name;
             var status = root.Q<Label>("resource-status");
@@ -435,7 +440,10 @@ namespace WarRoom3D
             if (root == null || root.panel == null) return false;
             Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
             return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
-                Contains("summary-toggle", point) || Contains("evidence-detail", point) || Contains("history-panel", point) || Contains("history-mask", point) || Contains("command-panel", point) || Contains("command-mask", point);
+                Contains("summary-toggle", point) || Contains("evidence-detail", point) ||
+                Contains("history-panel", point) || Contains("history-mask", point) ||
+                Contains("operations-panel", point) || Contains("operations-mask", point) ||
+                Contains("command-panel", point) || Contains("command-mask", point);
         }
 
         private void Update()
@@ -445,6 +453,7 @@ namespace WarRoom3D
             {
                 if (GetComponent<CommandPresenter>()?.HandleEscape() == true) return;
                 if (GetComponent<HistoryHudPresenter>()?.HandleEscape() == true) return;
+                if (operations?.HandleEscape() == true) return;
                 if (navigation.HandleEscape()) return;
             }
             if (insideRoom || insideDataCenter || snapshot == null) return;

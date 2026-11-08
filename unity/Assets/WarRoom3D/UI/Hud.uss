@@ -55,6 +55,15 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .history-time-controls { display: none; margin-top: 8px; }
 .history-time-actions { flex-direction: row; }
 .history-time-actions Button { flex-grow: 1; margin-right: 5px; height: 32px; }
+.operations-panel { display: none; position: absolute; top: 5%; right: 3%; bottom: 5%; width: 500px; padding: 20px; background-color: rgba(8, 21, 31, 0.98); border-right-width: 2px; border-right-color: rgb(54, 198, 213); }
+.operations-panel Label { white-space: normal; color: rgb(226, 243, 247); }
+.operations-panel TextField { margin-top: 5px; margin-bottom: 3px; }
+.operations-panel .unity-base-field__input { background-color: rgb(30, 45, 58); color: rgb(226, 243, 247); }
+.operations-actions { flex-direction: row; margin-top: 6px; }
+.operations-actions Button { flex-grow: 1; margin-right: 5px; min-height: 32px; background-color: rgb(22, 67, 79); color: rgb(226, 243, 247); }
+.operations-results { flex-grow: 1; margin-top: 8px; margin-bottom: 8px; border-top-width: 1px; border-top-color: rgb(33, 96, 108); }
+.operations-open-button { display: none; }
+.operations-results Label { white-space: normal; margin-top: 7px; font-size: 12px; -unity-text-align: upper-left; }
 .effects-toggle { display: none; }
 .effect-banner { display: none; position: absolute; top: 78px; left: 190px; right: 390px; min-height: 44px; padding: 10px 14px; background-color: rgba(8, 49, 58, 0.95); border-left-width: 3px; border-left-color: rgb(54, 198, 213); color: rgb(225, 241, 245); -unity-font-style: bold; white-space: normal; }
 .effect-alarm { background-color: rgba(73, 33, 21, 0.97); border-left-color: rgb(255, 185, 92); }

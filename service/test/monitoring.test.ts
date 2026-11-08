@@ -31,11 +31,27 @@ test('configuração local liga coleta HTTP ao snapshot sem sessões e mantém i
     rmSync(directory, { recursive: true, force: true });
   });
   const config = {
-    schemaVersion: '1.0', projects, inventory, intervalMs: 1000, timeoutMs: 1000,
+    schemaVersion: '1.0', projects, inventory, intervalMs: 1000, timeoutMs: 1000, m5NetworkSignals:true, m5NetworkRetentionDays:14,
+    m5Rules:[{ruleId:'http-degraded',version:1,category:'network',field:'health',operator:'eq',expectedValue:'degradado',severity:'medium',enabled:true}],
     probes: [{ kind: 'api', resourceId: 'api-lab', url: `http://127.0.0.1:${sourceAddress.port}/health` }]
   };
   const { runner } = configureMonitoring(store, config);
   assert.deepEqual(await runner.collectOnce(), { collected: ['api-lab'], failed: [] });
+  assert.equal(store.operations.coverage('lab','network'),'covered');
+  const network=store.operations.query({environmentId:'lab',category:'network',resourceId:'api-lab'});
+  assert.equal(network.items[0]?.fields.health,'degradado');
+  assert.equal(network.items[0]?.evidenceRef,'http-status-503');
+  assert.equal(store.operations.incidents('lab')[0]?.status,'open');
+  status=401;
+  assert.deepEqual(await runner.collectOnce(),{collected:[],failed:['api-lab']});
+  assert.equal(store.operations.coverage('lab','network'),'unavailable');
+  assert.equal(store.operations.incidents('lab')[0]?.status,'open');
+  status=200;
+  assert.deepEqual(await runner.collectOnce(),{collected:['api-lab'],failed:[]});
+  assert.equal(store.operations.coverage('lab','network'),'covered');
+  assert.equal(store.operations.incidents('lab')[0]?.status,'open');
+  status=503;
+  assert.deepEqual(await runner.collectOnce(),{collected:['api-lab'],failed:[]});
   const first = store.snapshot();
   assert.equal((first.sessions as unknown[]).length, 0);
   assert.deepEqual((first.incidents as { projectIds: string[] }[])[0].projectIds, ['p1', 'p2']);
@@ -66,6 +82,23 @@ test('configuração recusa sonda fora do inventário antes de cadastrar projeto
     probes: [{ kind: 'api', resourceId: 'api-lab', url: 'http://127.0.0.1:12345/health' }]
   }), /Projeto de monitoração inválido/);
   assert.deepEqual(store.snapshot().projects, []);
+});
+
+test('fonte Docker M5 exige proxy local válido antes de alterar inventário',t=>{
+  const directory=mkdtempSync(path.join(tmpdir(),'war-room3d-monitoring-docker-'));
+  const store=new EventStore(path.join(directory,'state.db'));
+  t.after(()=>{store.close();rmSync(directory,{recursive:true,force:true});});
+  const config={schemaVersion:'1.0',projects,inventory,intervalMs:1000,timeoutMs:1000,
+    probes:[{kind:'api',resourceId:'api-lab',url:'http://127.0.0.1:12345/health'}],
+    m5DockerLogs:{enabled:true,composeProject:'contaia',composeWorkingDir:'C:\\Desenv\\Projetos\\rrb-contaia\\infra\\docker',service:'api',
+      environmentId:'lab',resourceId:'api-lab',retentionDays:1,initialLookbackMinutes:10,intervalMs:60000}};
+  assert.throws(()=>configureMonitoring(store,config),/sem proxy Docker/);
+  assert.throws(()=>configureMonitoring(store,config,{dockerLogsProxy:{url:'http://example.invalid/v1/logs',token:'x'.repeat(64)}}),/loopback/);
+  assert.deepEqual(store.snapshot().projects,[]);
+  assert.deepEqual(store.snapshot().resources,[]);
+  const configured=configureMonitoring(store,config,{dockerLogsProxy:{url:'http://127.0.0.1:12345/v1/logs',token:'x'.repeat(64)}});
+  assert.ok(configured.dockerLogs);
+  assert.equal(store.operations.sources('lab').find(source=>source.sourceId===configured.dockerLogs!.sourceId)?.coverage.log,'no_data');
 });
 
 test('monitoração Docker coleta estados sucessivos pelo proxy sintético sem sessões', async t => {

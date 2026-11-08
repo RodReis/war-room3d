@@ -9,6 +9,7 @@ import { appendStateChange } from './change-log.ts';
 import { HistoryStore, retentionCutoffs } from '../history/history.ts';
 import type { RepositoryLink } from '../history/history.ts';
 import { CommandAudit } from '../commands/audit.ts';
+import { OperationsStore } from '../operations/operations-store.ts';
 import { createHash } from 'node:crypto';
 import type { SessionSource } from '../sessions/adapters.ts';
 
@@ -63,6 +64,7 @@ export class EventStore {
   readonly infrastructure: InfrastructureStore;
   readonly history: HistoryStore;
   readonly commands: CommandAudit;
+  readonly operations: OperationsStore;
 
   constructor(databasePath: string) {
     if (!databasePath) throw new Error('Caminho do banco obrigatório');
@@ -72,7 +74,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 17) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 18) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -123,9 +125,13 @@ export class EventStore {
       if (!columns.some(column => column.name === 'last_error_code')) this.db.exec('ALTER TABLE sources ADD COLUMN last_error_code TEXT');
       this.db.exec(readFileSync(new URL('./migrations/0017_session_activity.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 18) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0018_operations.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
     this.commands = new CommandAudit(this.db);
+    this.operations = new OperationsStore(this.db);
   }
 
   close(): void { this.db.close(); }

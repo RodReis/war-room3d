@@ -11,9 +11,11 @@ A M0 tem código e provas em `docs/validation/m0/resultado.md`. A primeira fatia
 | M2 | Vínculo muitos-para-muitos, sem dados, coletor perdido, recurso compartilhado, infraestrutura sem agentes |
 | M3 | Merge/CI por entidade, Meu dia com fuso/lacuna, replay isolado |
 | M4 | Capacidade por provedor, prazo, idempotência, timeout incerto, auditoria e rejeição demo/replay |
-| M5 | Redação de logs, paginação, correlação explícita, detector ausente, incidente e falso positivo |
+| M5 | Redação antes da persistência, paginação/retensão, isolamento por ambiente/projeto, correlação exata por trace/span/request ID, cobertura por fonte, regras imutáveis e incidente que não se resolve com perda de coleta |
 
 Testes unitários cobrem regras determinísticas; integração cobre SQLite, HTTP/SSE e adaptadores com fakes controlados; Unity EditMode/PlayMode cobre cena/input/UI. E2E real exige fonte e laboratório autorizados. Prova visual inclui captura com versão, resolução, câmera/estado e descrição do que a imagem demonstra. Dados sintéticos devem estar marcados; não usar sessões pessoais para fazer o CI passar.
+
+As provas atuais de M5 ficam em [laboratório](validation/m5/laboratorio.md) e [resultado](validation/m5/resultado.md). `m5NetworkSignals` é opt-in, deriva somente health/latência da sonda API M2 e exige retenção explícita. Nenhuma prova sintética é apresentada como conexão de logs, rastros ou detecção real.
 
 ## Relatório por SPEC/issue
 

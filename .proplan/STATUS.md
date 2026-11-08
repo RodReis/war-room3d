@@ -14,26 +14,25 @@ updated: 2026-11-08
 
 ## A Fazer
 
-### Sem épico
-
-- Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34)
-- Sala de referência — chat por sessão, histórico e interação assistida (#33)
-- Sala de referência — avatares, estações e atividade vinculados à observação (#32)
+_(vazio)_
 
 ## Em Andamento
 
-### Sem épico
-
-- Sala de referência — hooks e observação real de sessões, agentes e skills (#31)
+_(vazio)_
 
 ## Feito
 
-_(vazio)_
+### Sem épico
+
+- Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34)
 
 ## Finalizado
 
 ### Sem épico
 
+- Sala de referência — chat por sessão, histórico e interação assistida (#33, finalizado em: 2026-11-08)
+- Sala de referência — avatares, estações e atividade vinculados à observação (#32, finalizado em: 2026-11-08)
+- Sala de referência — hooks e observação real de sessões, agentes e skills (#31, finalizado em: 2026-11-08)
 - Sala de referência — HUD contextual, navegação e interação legível (#30, finalizado em: 2026-11-08)
 - Sala de referência — arte 3D, materiais e iluminação fiel ao conceito (#29, finalizado em: 2026-11-08)
 - M2 — validação operacional restante em laboratório (#16, finalizado em: 2026-11-08)

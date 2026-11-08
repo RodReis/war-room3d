@@ -21,7 +21,6 @@ updated: 2026-11-08
 - Sala de referência — avatares, estações e atividade vinculados à observação (#32)
 - Sala de referência — hooks e observação real de sessões, agentes e skills (#31)
 - Sala de referência — HUD contextual, navegação e interação legível (#30)
-- Sala de referência — arte 3D, materiais e iluminação fiel ao conceito (#29)
 
 ## Em Andamento
 
@@ -35,6 +34,7 @@ _(vazio)_
 
 ### Sem épico
 
+- Sala de referência — arte 3D, materiais e iluminação fiel ao conceito (#29, finalizado em: 2026-11-08)
 - M2 — validação operacional restante em laboratório (#16, finalizado em: 2026-11-08)
 - M5 — Logs, rede e segurança operacional (#6, finalizado em: 2026-11-08)
 - M4 — Mensagens e permissões assistidas (#5, finalizado em: 2026-11-08)

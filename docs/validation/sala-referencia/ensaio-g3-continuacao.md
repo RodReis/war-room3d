@@ -4,7 +4,7 @@
 
 PI escolheu completar os gates e autorizou a **preparação** em 08/11/2026. Esta página prepara novo ensaio; não é recibo de execução nem aceite. A autorização anterior para Claude, Codex e Docker foi consumida no ensaio registrado em [resultado.md](resultado.md). A execução de novas fontes requer autorização específica do PI, solicitada separadamente.
 
-O build de continuação de desenvolvimento fica em `unity/Builds/WarRoom3D-M5-G3/WarRoom3D.exe`. Ele inclui um capturador opt-in adicional; o build anterior `WarRoom3D-M5` e seu [manifesto](player-build-manifest.json) permanecem preservados. As três medições de 600 s e a matriz física pertencem ao build anterior. Se o build G3 virar candidato final, repetir RNF-01/02 e matriz no hash dele antes de G4.
+O build de continuação de desenvolvimento fica em `unity/Builds/WarRoom3D-M5-G3/WarRoom3D.exe`. Ele inclui capturadores opt-in e as cenas live e ilustrativa no mesmo executável; o build anterior `WarRoom3D-M5` e seu [manifesto](player-build-manifest.json) permanecem preservados. As três medições de 600 s e a matriz física pertencem ao build anterior. Se o build G3 virar candidato final, repetir RNF-01/02 e matriz no hash dele antes de G4.
 
 ## Escopo do novo laboratório proposto
 
@@ -19,13 +19,13 @@ O build de continuação de desenvolvimento fica em `unity/Builds/WarRoom3D-M5-G
 
 ## Preparação já validada
 
-- Unity 6000.3.27f1: EditMode 15/15; build G3 `Build Finished, Result: Success`, 175.637.428 bytes. O novo código condicionado a `DEVELOPMENT_BUILD && !UNITY_EDITOR` compilou no build Windows.
-- No build G3, fixture sintética: chat na sala `playerExit=0`, duas mensagens e marcador de resposta visível; log na sala `playerExit=0`, um resultado, Request ID exato e `[REDACTED]`. Capturas e recibos brutos: `Logs/issue-35-continuation-chat-synthetic/` e `Logs/issue-35-continuation-logs-synthetic/`.
+- Unity 6000.3.27f1: EditMode 15/15, PlayMode 22/22; build G3 com as duas cenas `Build Finished, Result: Success`, 304 arquivos/175.673.128 bytes, árvore SHA-256 `ecbff36349675059123d9edbe7ab5975bff074125dbe6b191defe7a4968f7b1c`. Manifesto bruto em `Logs/issue-35-continuation-demo-manifest.json`. O novo código condicionado a `DEVELOPMENT_BUILD && !UNITY_EDITOR` compilou no build Windows.
+- No **mesmo build G3**, fixture sintética: chat na sala `playerExit=0`, duas mensagens e marcador de resposta visível; log na sala `playerExit=0`, um resultado, Request ID exato e `[REDACTED]`; demo `playerExit=0`, selo `CONCEITO · DADOS ILUSTRATIVOS`, `CommandPresenter` ausente e botão de comando oculto. [Captura da demo](capturas/issue-35-10-demo-quartel.png); recibos brutos: `Logs/issue-35-continuation-chat-demo-build/`, `Logs/issue-35-continuation-logs-demo-build/` e `Logs/issue-35-continuation-demo-synthetic/`.
 - `node --check` nos três scripts; dry-run sem fonte real; `git diff --check`. Os resultados acima não aprovam G3 operacional.
 
 ## Gates restantes após o laboratório
 
-1. G2: executar demo sem comando, foco/gestos humanos e negativos de mensagem longa/capacidade ausente no build candidato, registrando falha e captura se ocorrer. O teste PlayMode de demo não substitui inspeção do Player.
+1. G2: demo sem comando passou de modo sintético no Player candidato; foco/gestos humanos e negativos de mensagem longa/capacidade ausente ainda requerem inspeção no mesmo build, registrando falha e captura se ocorrer.
 2. G3: preencher matriz por provedor com eventos nativos realmente observados. Se skill Claude não virar `skill.observed` no adaptador, registrar separadamente execução da skill e ausência do evento na UI; não declarar G3 completo. Tarefa/skill Codex sem suporte requer decisão explícita do PI se forem obrigatórias.
 3. G4: repetir desempenho/matriz no **mesmo hash** do build candidato; PI revisa arte, fluxo e limites e registra aceite explícito. Até lá, PR #45 permanece rascunho, #28/#35 abertas e nenhuma sala adicional é replicada.
 

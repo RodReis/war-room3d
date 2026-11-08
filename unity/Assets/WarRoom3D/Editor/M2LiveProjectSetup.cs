@@ -118,7 +118,7 @@ namespace WarRoom3D.Editor
             CreateScene();
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
-                scenes = new[] { ScenePath },
+                scenes = new[] { ScenePath, "Assets/WarRoom3D/Scenes/QuartelM0.unity" },
                 locationPathName = "Builds/WarRoom3D-M5-G3/WarRoom3D.exe",
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.Development

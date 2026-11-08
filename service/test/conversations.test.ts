@@ -117,7 +117,8 @@ test('exclusão de conteúdo exige credencial de comando, projeto e confirmaçã
   const target=`${url}/v1/conversations?projectId=project-a&sessionKey=${session[0].sessionKey}`;
   assert.equal((await fetch(target,{method:'DELETE',headers:{Authorization:`Bearer ${readToken}`,'X-WR3D-Delete-Confirm':session[0].sessionKey!}})).status,403);
   assert.equal((await fetch(target,{method:'DELETE',headers:{Authorization:`Bearer ${commandToken}`}})).status,403);
-  const removed=await fetch(target,{method:'DELETE',headers:{Authorization:`Bearer ${commandToken}`,'X-WR3D-Delete-Confirm':session[0].sessionKey!}});
+  const removed=await fetch(target,{method:'DELETE',headers:{Authorization:`Bearer ${commandToken}`,
+    'X-WR3D-Delete-Confirm':session[0].sessionKey!,'Content-Length':'0'}});
   assert.equal(removed.status,200);
   assert.equal((await removed.json() as {removed:number}).removed,1);
   assert.equal(store.conversations.page('project-a',session[0].sessionKey!,null,20)?.items.length,0);

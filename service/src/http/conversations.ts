@@ -13,7 +13,8 @@ export function handleConversations(request:IncomingMessage,response:ServerRespo
     (request.headers['sec-fetch-site']!==undefined && request.headers['sec-fetch-site']!=='same-origin')) {
     send(response,403,{code:'origin_forbidden'});return;
   }
-  if (!['GET','DELETE'].includes(request.method??'') || request.headers['content-length'] || request.headers['transfer-encoding']) {
+  if (!['GET','DELETE'].includes(request.method??'') ||
+    (request.headers['content-length']!==undefined && request.headers['content-length']!=='0') || request.headers['transfer-encoding']) {
     send(response,405,{code:'method_forbidden'});return;
   }
   const url = new URL(request.url??'',`http://${authority}`);

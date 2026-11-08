@@ -1,6 +1,6 @@
 ---
 proplan: v1
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 <!-- gerado pelo ProPlan a partir das Issues — não edite à mão -->
 # Status
@@ -9,11 +9,13 @@ updated: 2026-11-07
 
 ### Sem épico
 
-- M5 — Logs, rede e segurança operacional (#6)
+- M2 — validação operacional restante em laboratório (#16)
 
 ## A Fazer
 
-_(vazio)_
+### Sem épico
+
+- M5 — Logs, rede e segurança operacional (#6)
 
 ## Em Andamento
 

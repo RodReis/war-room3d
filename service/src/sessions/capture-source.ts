@@ -8,7 +8,8 @@ type RecordValue = Record<string,unknown>;
 const object = (value: unknown): RecordValue | null => value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
 const string = (value: unknown): string | null => typeof value === 'string' && value.length > 0 && value.length <= 160 ? value : null;
 
-export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown): RecordValue | null {
+const contentText = (value:unknown):string|null => typeof value === 'string' && value.trim() ? value.slice(0,8000) : null;
+export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, includeConversationContent=false): RecordValue | null {
   const input = object(raw);
   if (!input) return null;
   if (provider === 'claude') {
@@ -26,6 +27,10 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown): 
       ...(string(input.tool_use_id) ? {tool_use_id:string(input.tool_use_id)} : {}),
       ...(string(input.tool_name) ? {tool_name:string(input.tool_name)} : {}),
       ...(string(input.task_id) ? {task_id:string(input.task_id)} : {}),
+      ...(includeConversationContent && hook === 'UserPromptSubmit' && contentText(input.prompt) ? {prompt:contentText(input.prompt)} : {}),
+      ...(includeConversationContent && hook === 'Stop' && contentText(input.last_assistant_message) ? {last_assistant_message:contentText(input.last_assistant_message)} : {}),
+      ...(includeConversationContent && ((hook === 'UserPromptSubmit' && typeof input.prompt === 'string' && input.prompt.length > 8000) ||
+        (hook === 'Stop' && typeof input.last_assistant_message === 'string' && input.last_assistant_message.length > 8000)) ? {contentTruncated:true} : {}),
       ...(string(object(input.tool_input)?.skill) ? {tool_input:{skill:string(object(input.tool_input)?.skill)}} : {})};
   }
   const method = string(input.method);
@@ -44,6 +49,12 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown): 
     ...(string(thread?.id) ? {thread:{id:string(thread?.id),
       ...(typeof thread?.cwd === 'string' ? {cwdHash:createHash('sha256').update(normalizeProjectPath(thread.cwd)).digest('hex')} : {})}} : {}),
     ...(item && string(item.type) && string(item.id) ? {item:{type:string(item.type),id:string(item.id),
+      ...(includeConversationContent && ['userMessage','agentMessage'].includes(String(item.type)) ? {
+        ...(contentText(item.text) ? {text:contentText(item.text)} : {}),
+        ...(Array.isArray(item.content) ? {content:item.content.map(value=>contentText(object(value)?.text)).filter(Boolean).slice(0,16).map(text=>({text}))} : {}),
+        ...(typeof item.text === 'string' && item.text.length > 8000 ||
+          Array.isArray(item.content) && item.content.some(value=>typeof object(value)?.text === 'string' && (object(value)!.text as string).length>8000) ? {contentTruncated:true} : {})
+      } : {}),
       ...(string(item.status) ? {status:string(item.status)} : {}),
       ...(string(item.senderThreadId) ? {senderThreadId:string(item.senderThreadId)} : {}),
       ...(item.type === 'subAgentActivity' && string(item.agentThreadId) ? {agentThreadId:string(item.agentThreadId)} : {}),
@@ -54,12 +65,15 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown): 
 }
 
 async function capture(): Promise<void> {
-  const [provider,filename,mode] = process.argv.slice(2);
+  const [provider,filename,mode,contentMode] = process.argv.slice(2);
   if ((provider !== 'claude' && provider !== 'codex') || !filename || !path.isAbsolute(filename)) throw new Error('Provedor e arquivo absoluto obrigatórios');
+  if (contentMode !== undefined && contentMode !== '--content') throw new Error('Modo de conteúdo inválido');
+  if (provider === 'claude' && mode !== undefined && mode !== '--content') throw new Error('Modo de captura inválido');
+  const includeConversationContent=mode === '--content' || contentMode === '--content';
   const persist = (raw: Buffer): void => {
     if (raw.length > 64*1024) throw new Error('Evento de fonte excede limite');
     const input = JSON.parse(raw.toString('utf8')) as unknown;
-    const safe = sanitizeSourceRecord(provider,input);
+    const safe = sanitizeSourceRecord(provider,input,includeConversationContent);
     if (safe) appendFileSync(filename,`${JSON.stringify({...safe,capturedAt:safe.capturedAt ?? new Date().toISOString()})}\n`,{encoding:'utf8',flag:'a',mode:0o600});
   };
   if (mode === '--stream' && provider === 'codex') {
@@ -78,7 +92,7 @@ async function capture(): Promise<void> {
     if (pending.length) persist(pending);
     return;
   }
-  if (mode !== undefined) throw new Error('Modo de captura inválido');
+  if (provider === 'codex' && mode !== undefined) throw new Error('Modo de captura inválido');
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of process.stdin) {

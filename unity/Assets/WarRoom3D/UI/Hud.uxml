@@ -41,8 +41,19 @@
                 <ui:Label name="activity" text="Atividade indisponível" class="activity" />
                 <ui:Label name="agent-tree" text="" class="activity" />
                 <ui:Button name="evidence-open" text="Ver detalhe da evidência" class="secondary-button" />
+                <ui:Button name="chat-open-agent" text="Abrir chat desta sessão" class="secondary-button" />
               </ui:VisualElement>
-              <ui:VisualElement name="page-chat"><ui:Label text="○ Histórico de chat indisponível nesta fatia. Use Interação assistida quando houver capacidade comprovada." class="activity" /></ui:VisualElement>
+              <ui:VisualElement name="page-chat">
+                <ui:Label name="chat-title" text="CHAT · SESSÃO SELECIONADA" class="eyebrow section-space" />
+                <ui:Label name="chat-scope" text="Selecione um agente observado." class="hint" />
+                <ui:Label name="chat-status" text="Histórico ainda não consultado." class="activity" />
+                <ui:VisualElement name="chat-messages" class="chat-messages" />
+                <ui:Button name="chat-more" text="Carregar mensagens anteriores" class="secondary-button" />
+                <ui:Button name="chat-refresh" text="Atualizar histórico" class="secondary-button" />
+                <ui:Button name="chat-interact" text="Escrever / revisar intenção" class="primary-button" />
+                <ui:Button name="chat-delete" text="Excluir histórico desta sessão" class="secondary-button" />
+                <ui:Label text="Histórico observado e comando são trilhas distintas. Recibo de envio não comprova resposta do agente." class="hint" />
+              </ui:VisualElement>
               <ui:VisualElement name="page-logs">
                 <ui:Label name="feed-heading" text="FEED · EVENTOS OBSERVADOS" class="eyebrow section-space" />
                 <ui:Label name="feed" text="Sem eventos" class="activity" />

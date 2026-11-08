@@ -12,6 +12,7 @@ import { CommandAudit } from '../commands/audit.ts';
 import { OperationsStore } from '../operations/operations-store.ts';
 import { createHash } from 'node:crypto';
 import type { SessionSource } from '../sessions/adapters.ts';
+import { ConversationStore, type ObservedMessage } from '../sessions/conversation-store.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -65,6 +66,7 @@ export class EventStore {
   readonly history: HistoryStore;
   readonly commands: CommandAudit;
   readonly operations: OperationsStore;
+  readonly conversations: ConversationStore;
 
   constructor(databasePath: string) {
     if (!databasePath) throw new Error('Caminho do banco obrigatório');
@@ -74,7 +76,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 19) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 20) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -133,10 +135,14 @@ export class EventStore {
       if (!columns.some(column => column.name === 'last_evidence_at')) this.db.exec('ALTER TABLE sources ADD COLUMN last_evidence_at TEXT');
       this.db.exec(readFileSync(new URL('./migrations/0019_session_source_evidence.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 20) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0020_conversations.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
     this.commands = new CommandAudit(this.db);
     this.operations = new OperationsStore(this.db);
+    this.conversations = new ConversationStore(this.db);
   }
 
   close(): void { this.db.close(); }
@@ -178,6 +184,7 @@ export class EventStore {
       }
       for (const source of configured) this.db.prepare(`INSERT INTO session_source_bindings(source_id,source_version,project_id,provider,account_ref) VALUES(?,?,?,?,?)
         ON CONFLICT(source_id) DO UPDATE SET source_version=excluded.source_version`).run(source.sourceId,source.sourceVersion,source.projectId,source.provider,source.accountRef);
+      this.conversations.retainAuthorizedSources(configured);
     })();
   }
 
@@ -274,6 +281,14 @@ export class EventStore {
       if (result.reason && result.reason !== 'duplicate') throw new Error('Lote de fonte inválido');
       return result;
     }))();
+  }
+
+  applyCapturedRecord(events: readonly NormalizedEvent[], cursor: Cursor, message: ObservedMessage | null): ApplyResult[] {
+    return this.db.transaction(() => {
+      const result = this.applyBatch(events,cursor);
+      if (message) this.conversations.record(message);
+      return result;
+    })();
   }
 
   apply(input: unknown, cursor: Cursor): ApplyResult {

@@ -76,7 +76,8 @@ namespace WarRoom3D
                 pages[i].style.display = i == index ? DisplayStyle.Flex : DisplayStyle.None;
             }
             expandToggle.style.display = insideRoom && (index == 1 || index == 2) ? DisplayStyle.Flex : DisplayStyle.None;
-            SetExpanded(false);
+            panel.EnableInClassList("chat-active", index == 1);
+            SetExpanded(index == 1);
             CloseEvidence();
         }
 

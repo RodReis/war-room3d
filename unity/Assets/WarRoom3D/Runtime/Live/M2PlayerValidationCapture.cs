@@ -65,6 +65,8 @@ namespace WarRoom3D
             public int vSyncCount;
             public int targetFrameRate;
             public bool runInBackground;
+            public int chatMessageCount;
+            public string chatSessionKey;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -87,7 +89,7 @@ namespace WarRoom3D
             var requestedView = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VIEW");
             capture.captureView = requestedView == "project" || requestedView == "project-bottom" ||
                 requestedView == "room" || requestedView == "room-opposite" || requestedView == "room-reduced" ||
-                requestedView == "agent" || requestedView == "agent-focus" ? requestedView : "center";
+                requestedView == "agent" || requestedView == "agent-focus" || requestedView == "chat" ? requestedView : "center";
             var requestedVSync = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VSYNC_COUNT");
             if (!string.IsNullOrEmpty(requestedVSync))
             {
@@ -166,7 +168,7 @@ namespace WarRoom3D
             }
             if (captureView == "center") presenter.SendMessage("ShowDataCenter");
             if (captureView == "room" || captureView == "room-opposite" || captureView == "room-reduced" ||
-                captureView == "agent" || captureView == "agent-focus")
+                captureView == "agent" || captureView == "agent-focus" || captureView == "chat")
             {
                 var projectId = Environment.GetEnvironmentVariable("WR3D_VALIDATION_PROJECT_ID");
                 if (!string.IsNullOrEmpty(projectId)) presenter.SendMessage("SelectProjectForValidation", projectId);
@@ -177,12 +179,27 @@ namespace WarRoom3D
                     FindAnyObjectByType<ReferenceRoomView>()?.SetReduced(true);
                     FindAnyObjectByType<EffectDirector>()?.SetReduced(true);
                 }
-                if (captureView == "agent" || captureView == "agent-focus")
+                if (captureView == "agent" || captureView == "agent-focus" || captureView == "chat")
                 {
                     var key = Environment.GetEnvironmentVariable("WR3D_VALIDATION_AGENT_KEY");
                     if (!string.IsNullOrEmpty(key)) presenter.SendMessage("SelectAgentForValidation", key);
                     if (captureView == "agent") presenter.SendMessage("OpenEvidenceForValidation");
+                    if (captureView == "chat") presenter.SendMessage("OpenChatForValidation");
                 }
+            }
+            if (captureView == "chat")
+            {
+                var chat = GetComponent<ChatPresenter>();
+                var until = Time.realtimeSinceStartup + 10f;
+                while (chat != null && !chat.LoadedPage && Time.realtimeSinceStartup < until) yield return null;
+                if (chat == null || !chat.LoadedPage)
+                {
+                    Debug.LogError("M2 Player: histórico de chat não chegou antes do limite");
+                    Application.Quit(12);
+                    yield break;
+                }
+                var roomScroll = GetComponent<UIDocument>()?.rootVisualElement.Q<ScrollView>("room-content");
+                if (roomScroll != null) roomScroll.scrollOffset = new Vector2(0, 90);
             }
             yield return new WaitForEndOfFrame();
             if (captureView == "project-bottom")
@@ -293,6 +310,9 @@ namespace WarRoom3D
             report.vSyncCount = QualitySettings.vSyncCount;
             report.targetFrameRate = Application.targetFrameRate;
             report.runInBackground = Application.runInBackground;
+            var chatPresenter = GetComponent<ChatPresenter>();
+            report.chatMessageCount = chatPresenter != null ? chatPresenter.VisibleMessageCount : 0;
+            report.chatSessionKey = chatPresenter != null ? chatPresenter.CurrentSessionKey : null;
             try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".json"), JsonUtility.ToJson(report, true)); }
             catch (Exception error)
             {

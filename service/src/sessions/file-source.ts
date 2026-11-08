@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { openSync, closeSync, fstatSync, readSync } from 'node:fs';
 import path from 'node:path';
 import type { EventStore, Cursor, NormalizedEvent } from '../store/event-store.ts';
-import { adaptSessionRecord, type SessionSource } from './adapters.ts';
+import { adaptSessionRecord, adaptConversationRecord, type SessionSource } from './adapters.ts';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
 import { sessionKey } from '../domain/identity.ts';
 
@@ -34,11 +34,19 @@ export function parseSessionSources(input: unknown): {projects:ProjectRecord[];s
   const sources = root.sources.map(value => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Fonte de sessão inválida');
     const source = value as Record<string,unknown>;
-    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs'].includes(key)) ||
+    const content = source.conversationContent;
+    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs','conversationContent'].includes(key)) ||
       !['claude','codex'].includes(String(source.provider)) ||
       !['sourceId','sourceVersion','projectId','accountRef'].every(key => typeof source[key] === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(source[key] as string)) ||
       typeof source.filePath !== 'string' || !path.isAbsolute(source.filePath) ||
-      (source.staleAfterMs !== undefined && (!Number.isSafeInteger(source.staleAfterMs) || (source.staleAfterMs as number) < 1000 || (source.staleAfterMs as number) > 86400000))) throw new Error('Fonte de sessão precisa de escopo e caminho absolutos');
+      (source.staleAfterMs !== undefined && (!Number.isSafeInteger(source.staleAfterMs) || (source.staleAfterMs as number) < 1000 || (source.staleAfterMs as number) > 86400000)) ||
+      (content !== undefined && (!content || typeof content !== 'object' || Array.isArray(content) ||
+        Object.keys(content).some(key => !['consentRef','retentionDays'].includes(key)) ||
+        typeof (content as {consentRef?:unknown}).consentRef !== 'string' ||
+        !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test((content as {consentRef:string}).consentRef) ||
+        !Number.isSafeInteger((content as {retentionDays?:unknown}).retentionDays) ||
+        (content as {retentionDays:number}).retentionDays < 1 || (content as {retentionDays:number}).retentionDays > 30)))
+      throw new Error('Fonte de sessão precisa de escopo e caminho absolutos');
     const parsed = source as unknown as SessionSource;
     const filename = path.resolve(parsed.filePath).toLowerCase();
     if (ids.has(parsed.sourceId) || files.has(filename)) throw new Error('Fonte de sessão duplicada');
@@ -151,8 +159,10 @@ export class SessionFileCollector {
               }
             }
             const recordId = `${fileKey}:${generation}:${cursor.offset}`;
-            const events = adaptSessionRecord(source,record,recordId,this.nextTimestamp(source.sourceId));
-            this.store.applyBatch(events,cursor);
+            const receivedAt=this.nextTimestamp(source.sourceId);
+            const events = adaptSessionRecord(source,record,recordId,receivedAt);
+            const message = adaptConversationRecord(source,record,recordId,receivedAt);
+            this.store.applyCapturedRecord(events,cursor,message);
             if (events.length) receivedEvidence = true;
           } catch (error) {
             if (error instanceof SyntaxError) { this.store.acknowledgeCursor(cursor); this.markUnavailable(source,'malformed_json'); receivedEvidence = false; }

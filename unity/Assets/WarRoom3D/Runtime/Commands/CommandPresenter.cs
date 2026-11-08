@@ -26,10 +26,12 @@ namespace WarRoom3D
         private readonly string[] actionIds = { "send_message", "answer_question", "decide_permission" };
         private bool busy, replay, rebuilding;
         private int generation;
+        private readonly Dictionary<string, string> drafts = new Dictionary<string, string>();
+        private string draftKey, preferredSessionKey;
         private float refreshAt;
         public bool HasPendingConfirmation => preview != null;
 
-        private bool HasCredential => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN")) && Encoding.UTF8.GetByteCount(Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN")) >= 32 &&
+        public bool HasCredential => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN")) && Encoding.UTF8.GetByteCount(Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN")) >= 32 &&
             Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN") != Environment.GetEnvironmentVariable("WR3D_SERVICE_TOKEN");
 
         public void Configure(VisualElement root, LiveStateClient liveClient, HistoryHudPresenter historyPresenter)
@@ -56,10 +58,10 @@ namespace WarRoom3D
             inspect = new Button(() => StartCoroutine(Inspect())) { name = "command-inspect", text = "Consultar último comando" }; footer.Add(inspect); inspect.SetEnabled(false);
             footer.Add(new Button(Close) { name = "command-close", text = "Fechar" });
             var open = root.Q<Button>("command-button"); open.style.display = DisplayStyle.Flex; open.clicked += Open;
-            sessions.RegisterValueChangedCallback(_ => { if (!rebuilding) { Invalidate(); RebuildRequests(); Refresh(); } });
-            actions.RegisterValueChangedCallback(_ => { Invalidate(); RebuildRequests(); Refresh(); });
+            sessions.RegisterValueChangedCallback(_ => { if (!rebuilding) { SwitchDraft(); Invalidate(); RebuildRequests(); Refresh(); } });
+            actions.RegisterValueChangedCallback(_ => { SwitchDraft(); Invalidate(); RebuildRequests(); Refresh(); });
             requests.RegisterValueChangedCallback(_ => { if (!rebuilding) { Invalidate(); Refresh(); } });
-            message.RegisterValueChangedCallback(_ => { Invalidate(); Refresh(); });
+            message.RegisterValueChangedCallback(_ => { if (draftKey != null) drafts[draftKey] = message.value; Invalidate(); Refresh(); });
             decision.RegisterValueChangedCallback(_ => { Invalidate(); Refresh(); });
             client.ConnectionChanged += ConnectionChanged;
             client.SnapshotChanged += SnapshotChanged;
@@ -67,6 +69,21 @@ namespace WarRoom3D
             Refresh();
         }
         public void SelectProject(string value) { if (value == projectId) return; projectId = value; Invalidate(); Rebuild(); }
+        public void OpenForSession(string project, string session)
+        {
+            if (string.IsNullOrEmpty(project) || string.IsNullOrEmpty(session)) return;
+            preferredSessionKey = session;
+            SelectProject(project);
+            if (actions.index != 0) actions.index = 0;
+            Rebuild(); Open();
+        }
+        private void SwitchDraft()
+        {
+            if (draftKey != null) drafts[draftKey] = message.value;
+            draftKey = string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(sessions.value) ? null :
+                projectId + "|" + sessions.value + "|" + ActionId;
+            message.SetValueWithoutNotify(draftKey != null && drafts.TryGetValue(draftKey, out var saved) ? saved : "");
+        }
         private void Invalidate() { generation++; pending = null; preview = null; actionError = null; if (context != null) context.text = ""; if (confirm != null) confirm.SetEnabled(false); }
         private void Open() { panel.style.display = mask.style.display = DisplayStyle.Flex; panel.Q<Button>("command-close").Focus(); StartCoroutine(LoadCapabilities()); }
         private void Close() { Invalidate(); panel.style.display = mask.style.display = DisplayStyle.None; }
@@ -94,8 +111,11 @@ namespace WarRoom3D
             rebuilding = true;
             var choices = new List<string>();
             if (capabilities?.sessions != null) foreach (var session in capabilities.sessions) if (session.projectId == projectId) choices.Add(session.sessionKey);
-            var prior = sessions.value; sessions.choices = choices; sessions.SetValueWithoutNotify(choices.Contains(prior) ? prior : choices.Count > 0 ? choices[0] : "");
-            rebuilding = false; RebuildRequests(); Refresh();
+            var prior = sessions.value; sessions.choices = choices;
+            var preferred = !string.IsNullOrEmpty(preferredSessionKey) && choices.Contains(preferredSessionKey) ? preferredSessionKey : null;
+            sessions.SetValueWithoutNotify(preferred ?? (choices.Contains(prior) ? prior : choices.Count > 0 ? choices[0] : ""));
+            if (preferred != null) preferredSessionKey = null;
+            rebuilding = false; SwitchDraft(); RebuildRequests(); Refresh();
         }
         private void RebuildRequests()
         {

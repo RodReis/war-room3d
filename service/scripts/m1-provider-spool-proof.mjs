@@ -16,6 +16,17 @@ const claude=JSON.parse(readFileSync(claudePath,'utf8'));
 const codex=JSON.parse(readFileSync(codexPath,'utf8'));
 if(claude.provider!=='claude'||codex.provider!=='codex'||!claude.project||!codex.project||
   !existsSync(claude.spool)||!existsSync(codex.spool))throw new Error('Spool real autorizado não encontrado');
+const codexRecords=readFileSync(codex.spool,'utf8').split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+const activities=codexRecords.filter(record=>record.params?.item?.type==='subAgentActivity');
+const childIds=new Set(activities.map(record=>record.params?.item?.agentThreadId).filter(Boolean));
+const childThreadId=[...childIds][0];
+const childTurnObserved=codexRecords.some(record=>record.method==='turn/started'&&record.params?.threadId===childThreadId);
+if(expectChild){
+  assert.equal(childIds.size,1);
+  assert.ok(activities.some(record=>record.params?.item?.kind==='started'));
+  assert.ok(activities.some(record=>record.params?.item?.kind==='completed'));
+  assert.equal(childTurnObserved,true);
+}
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const output=path.join(root,'Logs',`issue-31-spool-proof-${randomUUID()}`);
 mkdirSync(output,{recursive:true});
@@ -60,6 +71,7 @@ try{
   assert.match(first,/event: event\.changed/);
   await reader.cancel().catch(()=>{});
   const summary={output,providers:['claude','codex'],projectNames:snapshot.projects.map(project=>project.name),
+    uniqueChildCount:childIds.size,childTurnObserved,
     sessionCount:snapshot.sessions.length,agentCount:snapshot.agents.length,linkedChildCount:children.filter(agent=>agent.parentStatus==='vinculado').length,
     endedChildCount:children.filter(agent=>agent.presence==='encerrada').length,taskCount:snapshot.tasks.length,
     invocationCount:snapshot.invocations.length,sourceStatus:snapshot.sources.map(source=>({sourceId:source.sourceId,

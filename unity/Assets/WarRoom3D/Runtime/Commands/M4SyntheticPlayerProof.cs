@@ -33,6 +33,10 @@ namespace WarRoom3D
             { Fail("lab_identity_missing"); yield break; }
             var presenter = GetComponent<CommandPresenter>();
             var root = GetComponent<UIDocument>().rootVisualElement;
+            var scaleText = Environment.GetEnvironmentVariable("WR3D_30_SCALE");
+            if (!string.IsNullOrEmpty(scaleText) && float.TryParse(scaleText, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var scale) && (scale == 1f || scale == 1.25f || scale == 1.5f))
+                GetComponent<UIDocument>().panelSettings.scale = scale;
             presenter.SendMessage("Open");
             limit = Time.realtimeSinceStartup + 15;
             while (root.Q<DropdownField>("command-session").value != "session-m4-synthetic" && Time.realtimeSinceStartup < limit) yield return null;
@@ -65,7 +69,7 @@ namespace WarRoom3D
         }
         private IEnumerator Capture(VisualElement root, string name, bool bottom)
         {
-            var scroll = root.Q<ScrollView>("command-panel"); scroll.scrollOffset = bottom ? new Vector2(0, 100000) : Vector2.zero;
+            var scroll = root.Q<ScrollView>("command-body"); scroll.scrollOffset = bottom ? new Vector2(0, 100000) : Vector2.zero;
             yield return new WaitForEndOfFrame();
             var texture = ScreenCapture.CaptureScreenshotAsTexture();
             try { File.WriteAllBytes(Path.Combine(directory, name + ".png"), texture.EncodeToPNG()); }

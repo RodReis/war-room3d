@@ -1,34 +1,66 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement name="surface" class="surface" picking-mode="Ignore">
         <ui:VisualElement name="header" class="header">
-            <ui:Label name="stage-eyebrow" text="WAR-ROOM3D / M2 · DEMONSTRAÇÃO" class="eyebrow" />
-            <ui:Label text="Quartel-general" class="heading" />
+            <ui:Label name="stage-eyebrow" text="WAR-ROOM3D · DEMONSTRAÇÃO" class="eyebrow" />
+            <ui:Label name="breadcrumb" text="Quartel / Setor 01" class="heading" />
             <ui:Label name="demo-seal" text="CONCEITO · DADOS ILUSTRATIVOS" class="seal" />
         </ui:VisualElement>
         <ui:Label name="effect-banner" text="" class="effect-banner" />
+        <ui:Label name="room-label" text="SELECIONE UMA SALA" class="room-label" />
+        <ui:Button name="summary-toggle" text="Recolher resumo" class="summary-toggle" />
         <ui:VisualElement name="project-panel" class="project-panel">
-          <ui:ScrollView name="project-content" class="project-content">
-            <ui:Label name="breadcrumb" text="Quartel-general / Setor 01" class="eyebrow" />
-            <ui:Label name="view-title" text="Seis salas e núcleo central" class="section-title" />
-            <ui:Label name="project-list-heading" text="PROJETOS DO SETOR" class="eyebrow section-space" />
-            <ui:ScrollView name="project-list" class="project-list" />
-            <ui:Label text="SALA SELECIONADA" class="eyebrow section-space" />
-            <ui:Label name="project-name" text="API Core" class="project-name" />
-            <ui:Label name="status" text="Trabalhando · exemplo" class="status" />
-            <ui:VisualElement class="detail-row"><ui:Label text="Provedor" /><ui:Label name="provider" text="Ambos" /></ui:VisualElement>
-            <ui:VisualElement class="detail-row"><ui:Label text="Agentes" /><ui:Label name="agents" text="4 agentes ilustrativos" /></ui:VisualElement>
-            <ui:Label name="activity-heading" text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />
-            <ui:Label name="activity" text="Implementar autenticação de exemplo" class="activity" />
-            <ui:Label name="agents-heading" text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
-            <ui:Label name="agent-tree" class="activity" />
-            <ui:Label name="feed-heading" text="FEED · HORÁRIOS ILUSTRATIVOS" class="eyebrow section-space" />
-            <ui:Label name="feed" class="activity" />
-            <ui:Label text="INFRAESTRUTURA VINCULADA" class="eyebrow section-space" />
-            <ui:Label name="infrastructure-alert" class="activity" />
-            <ui:Button name="enter-button" text="Entrar na sala" class="primary-button" />
-            <ui:Button name="center-button" text="Abrir data center" class="primary-button" />
+          <ui:VisualElement name="project-content" class="project-content">
+            <ui:Label name="view-title" text="Salas do setor" class="section-title" />
+            <ui:VisualElement name="room-summary">
+              <ui:Label name="project-list-heading" text="PROJETOS DO SETOR" class="eyebrow section-space" />
+              <ui:ScrollView name="project-list" class="project-list" />
+              <ui:Label text="SALA SELECIONADA" class="eyebrow section-space" />
+              <ui:Label name="project-name" text="API Core" class="project-name" />
+              <ui:Label name="status" text="● Trabalhando · exemplo" class="status" />
+              <ui:VisualElement class="detail-row"><ui:Label text="Provedor" /><ui:Label name="provider" text="Ambos" /></ui:VisualElement>
+              <ui:VisualElement class="detail-row"><ui:Label text="Agentes" /><ui:Label name="agents" text="4 agentes ilustrativos" /></ui:VisualElement>
+              <ui:Button name="enter-button" text="Entrar na sala" class="primary-button" />
+              <ui:Button name="center-button" text="Abrir data center" class="secondary-button" />
+            </ui:VisualElement>
+            <ui:VisualElement name="agent-list-section" class="agent-list-section">
+              <ui:Label name="agents-heading" text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
+              <ui:ScrollView name="agent-list" class="agent-list" />
+              <ui:Label name="agent-empty" text="○ Nenhum agente observado nesta sala" class="hint" />
+            </ui:VisualElement>
+            <ui:VisualElement name="room-tabs" class="room-tabs">
+              <ui:Button name="tab-activity" text="● Atividade" />
+              <ui:Button name="tab-chat" text="○ Chat" />
+              <ui:Button name="tab-logs" text="○ Logs" />
+              <ui:Button name="tab-sources" text="○ Fontes" />
+            </ui:VisualElement>
+            <ui:Button name="expand-toggle" text="Ampliar leitura" class="secondary-button" />
+            <ui:ScrollView name="room-content" class="room-content">
+              <ui:VisualElement name="page-activity">
+                <ui:Label name="selected-agent" text="Selecione agente" class="hint" />
+                <ui:Label name="activity-heading" text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />
+                <ui:Label name="activity" text="Atividade indisponível" class="activity" />
+                <ui:Label name="agent-tree" text="" class="activity" />
+                <ui:Button name="evidence-open" text="Ver detalhe da evidência" class="secondary-button" />
+              </ui:VisualElement>
+              <ui:VisualElement name="page-chat"><ui:Label text="○ Histórico de chat indisponível nesta fatia. Use Interação assistida quando houver capacidade comprovada." class="activity" /></ui:VisualElement>
+              <ui:VisualElement name="page-logs">
+                <ui:Label name="feed-heading" text="FEED · EVENTOS OBSERVADOS" class="eyebrow section-space" />
+                <ui:Label name="feed" text="Sem eventos" class="activity" />
+                <ui:Label text="○ Logs de sessão não disponíveis nesta fatia." class="hint" />
+              </ui:VisualElement>
+              <ui:VisualElement name="page-sources">
+                <ui:Label text="FONTES E INFRAESTRUTURA" class="eyebrow section-space" />
+                <ui:Label name="infrastructure-alert" text="Sem dados de infraestrutura" class="activity" />
+                <ui:Label text="○ Estado do hook e cobertura por fonte: indisponíveis nesta fatia." class="hint" />
+              </ui:VisualElement>
+            </ui:ScrollView>
             <ui:Button name="back-button" text="Voltar ao quartel" class="primary-button" />
-          </ui:ScrollView>
+          </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="evidence-detail" class="evidence-detail">
+          <ui:Label text="DETALHE DA EVIDÊNCIA" class="eyebrow" />
+          <ui:ScrollView name="evidence-scroll"><ui:Label name="evidence-body" text="Selecione agente para consultar último sinal." class="activity" /></ui:ScrollView>
+          <ui:Button name="evidence-close" text="Fechar detalhe" class="primary-button" />
         </ui:VisualElement>
         <ui:VisualElement name="resource-panel" class="project-panel resource-panel">
           <ui:ScrollView class="project-content">

@@ -131,6 +131,13 @@ namespace WarRoom3D
             panel.style.display = DisplayStyle.None;
         }
 
+        public bool HandleEscape()
+        {
+            if (panel == null || panel.style.display == DisplayStyle.None) return false;
+            Close();
+            return true;
+        }
+
         private IEnumerator LoadDay()
         {
             if (replaying) yield break;

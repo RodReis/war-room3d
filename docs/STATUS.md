@@ -15,7 +15,7 @@ Atualizado em 08/11/2026 para a prioridade da sala de referência; resultados an
 
 Direção autorizada pelo PI em 08/11/2026: [#28](https://github.com/RodReis/war-room3d/issues/28), [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). #29 arte/luz, #30 layout, #31 hooks/observação, #32 avatares/atividade, #33 chat, #34 logs e #35 Player/aceite. Uma sala acabada e funcional deve passar por revisão visual inicial e aceite final no Player; replicação do acabamento fica bloqueada até decisão explícita do PI.
 
-O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #1–#6 estão fechadas; #16 permanece aberta, com RNF-02 pendente. A nova entrega é planejada, sem implementação ou aceite registrados. PRs #26 (M5) e #27 (validação M2) estão draft na consulta e não são código integrado à base documental b630edd.
+O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #1–#6 estão fechadas; #16 permanece aberta, com RNF-02 pendente. A fatia de HUD #30 tem [implementação e provas locais](validation/sala-referencia/issue-30-hud.md); integração deve ser confirmada na PR remota, e o aceite visual/funcional do PI permanece pendente. As demais fatias seguem o plano próprio. PRs #26 (M5) e #27 (validação M2) permanecem draft na consulta e não integram esta fatia.
 
 ## Índice fatia ↔ SPEC
 

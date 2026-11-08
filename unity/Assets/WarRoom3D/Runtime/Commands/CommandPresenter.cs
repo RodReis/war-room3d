@@ -35,22 +35,26 @@ namespace WarRoom3D
         public void Configure(VisualElement root, LiveStateClient liveClient, HistoryHudPresenter historyPresenter)
         {
             client = liveClient; history = historyPresenter;
-            panel = new ScrollView { name = "command-panel" }; panel.AddToClassList("command-panel");
+            panel = new VisualElement { name = "command-panel" }; panel.AddToClassList("command-panel");
             mask = new VisualElement { name = "command-mask" }; mask.AddToClassList("command-mask");
             root.Add(mask); root.Add(panel); panel.style.display = mask.style.display = DisplayStyle.None;
-            var title = new Label("Interação assistida"); title.AddToClassList("history-title"); panel.Add(title);
-            status = new Label("Aguardando capacidades comprovadas.") { name = "command-status", enableRichText = false }; status.AddToClassList("activity"); panel.Add(status);
-            resultStatus = new Label { name = "command-result", enableRichText = false }; resultStatus.AddToClassList("activity"); panel.Add(resultStatus);
-            sessions = new DropdownField("Sessão") { name = "command-session" }; panel.Add(sessions);
-            actions = new DropdownField("Ação", new List<string> { "Enviar mensagem", "Responder pergunta", "Decidir permissão" }, 0) { name = "command-action" }; panel.Add(actions);
-            requests = new DropdownField("Pedido original") { name = "command-request" }; panel.Add(requests);
-            message = new TextField("Mensagem / resposta") { name = "command-message", multiline = true, maxLength = 8000 }; panel.Add(message);
-            var decision = new DropdownField("Decisão", new List<string> { "Recusar", "Permitir" }, 0) { name = "command-decision" }; panel.Add(decision);
-            context = new Label { name = "command-context", enableRichText = false }; context.AddToClassList("activity"); panel.Add(context);
-            review = new Button(() => StartCoroutine(Review(decision.index == 1 ? "allow" : "deny"))) { name = "command-review", text = "Revisar intenção" }; panel.Add(review);
-            confirm = new Button(Confirm) { name = "command-confirm", text = "Confirmar envio" }; panel.Add(confirm);
-            inspect = new Button(() => StartCoroutine(Inspect())) { name = "command-inspect", text = "Consultar último comando" }; panel.Add(inspect); inspect.SetEnabled(false);
-            panel.Add(new Button(Close) { name = "command-close", text = "Fechar" });
+            var header = new VisualElement { name = "command-header" }; panel.Add(header);
+            var title = new Label("Interação assistida") { name = "command-title" }; title.AddToClassList("history-title"); header.Add(title);
+            var target = new Label("Alvo: selecione projeto e sessão") { name = "command-target" }; header.Add(target);
+            var body = new ScrollView { name = "command-body" }; panel.Add(body);
+            status = new Label("Aguardando capacidades comprovadas.") { name = "command-status", enableRichText = false }; status.AddToClassList("activity"); body.Add(status);
+            resultStatus = new Label { name = "command-result", enableRichText = false }; resultStatus.AddToClassList("activity"); body.Add(resultStatus);
+            sessions = new DropdownField("Sessão") { name = "command-session" }; body.Add(sessions);
+            actions = new DropdownField("Ação", new List<string> { "Enviar mensagem", "Responder pergunta", "Decidir permissão" }, 0) { name = "command-action" }; body.Add(actions);
+            requests = new DropdownField("Pedido original") { name = "command-request" }; body.Add(requests);
+            message = new TextField("Mensagem / resposta") { name = "command-message", multiline = true, maxLength = 8000 }; body.Add(message);
+            var decision = new DropdownField("Decisão", new List<string> { "Recusar", "Permitir" }, 0) { name = "command-decision" }; body.Add(decision);
+            context = new Label { name = "command-context", enableRichText = false }; context.AddToClassList("activity"); body.Add(context);
+            var footer = new VisualElement { name = "command-footer" }; panel.Add(footer);
+            review = new Button(() => StartCoroutine(Review(decision.index == 1 ? "allow" : "deny"))) { name = "command-review", text = "Revisar intenção" }; footer.Add(review);
+            confirm = new Button(Confirm) { name = "command-confirm", text = "Confirmar envio" }; footer.Add(confirm);
+            inspect = new Button(() => StartCoroutine(Inspect())) { name = "command-inspect", text = "Consultar último comando" }; footer.Add(inspect); inspect.SetEnabled(false);
+            footer.Add(new Button(Close) { name = "command-close", text = "Fechar" });
             var open = root.Q<Button>("command-button"); open.style.display = DisplayStyle.Flex; open.clicked += Open;
             sessions.RegisterValueChangedCallback(_ => { if (!rebuilding) { Invalidate(); RebuildRequests(); Refresh(); } });
             actions.RegisterValueChangedCallback(_ => { Invalidate(); RebuildRequests(); Refresh(); });
@@ -64,8 +68,9 @@ namespace WarRoom3D
         }
         public void SelectProject(string value) { if (value == projectId) return; projectId = value; Invalidate(); Rebuild(); }
         private void Invalidate() { generation++; pending = null; preview = null; actionError = null; if (context != null) context.text = ""; if (confirm != null) confirm.SetEnabled(false); }
-        private void Open() { panel.style.display = mask.style.display = DisplayStyle.Flex; StartCoroutine(LoadCapabilities()); }
+        private void Open() { panel.style.display = mask.style.display = DisplayStyle.Flex; panel.Q<Button>("command-close").Focus(); StartCoroutine(LoadCapabilities()); }
         private void Close() { Invalidate(); panel.style.display = mask.style.display = DisplayStyle.None; }
+        public bool HandleEscape() { if (panel == null || panel.style.display == DisplayStyle.None) return false; Close(); return true; }
         private void ConnectionChanged(bool connected, string reason) { if (!connected) { Invalidate(); capabilities = null; } Refresh(); }
         private void SnapshotChanged(LiveSnapshot snapshot)
         {
@@ -104,6 +109,8 @@ namespace WarRoom3D
             if (review == null) return;
             var available = CommandPolicy.CanOffer(SelectedSession(), ActionId, client.Connected, replay, HasCredential, DateTime.UtcNow);
             var request = SelectedRequest();
+            var projectName = Array.Find(client.Snapshot?.projects ?? Array.Empty<LiveProject>(), item => item.projectId == projectId)?.name ?? "Projeto indisponível";
+            panel.Q<Label>("command-target").text = "Alvo: " + projectName + (SelectedSession() == null ? " · sem sessão com capacidade" : " · " + SelectedSession().provider);
             requests.style.display = ActionId == "send_message" ? DisplayStyle.None : DisplayStyle.Flex;
             message.style.display = ActionId == "decide_permission" ? DisplayStyle.None : DisplayStyle.Flex;
             panel.Q<DropdownField>("command-decision").style.display = ActionId == "decide_permission" ? DisplayStyle.Flex : DisplayStyle.None;

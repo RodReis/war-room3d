@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 
 namespace WarRoom3D
@@ -17,6 +18,7 @@ namespace WarRoom3D
         private bool insideRoom;
         private bool insideDataCenter;
         private bool projectResourceFilter;
+        private ReferenceRoomNavigation navigation;
 
         private void Start()
         {
@@ -32,6 +34,7 @@ namespace WarRoom3D
             root.Q<Button>("resource-back-button").clicked += ReturnToSector;
             root.Q<Button>("resource-all-button").clicked += () => SetResourceFilter(false);
             root.Q<Button>("resource-project-button").clicked += () => SetResourceFilter(true);
+            navigation = new ReferenceRoomNavigation(root, ReturnToSector);
             if (loader.Snapshot == null)
             {
                 root.Q<Label>("project-name").text = "Falha ao carregar demonstração";
@@ -43,7 +46,7 @@ namespace WarRoom3D
             foreach (var project in loader.Snapshot.projects)
             {
                 var entry = project;
-                var button = new Button(() => Select(entry)) { text = project.name };
+                var button = new Button(() => Select(entry)) { text = project.name, tooltip = project.name, userData = project.projectId };
                 button.AddToClassList("project-button");
                 list.Add(button);
             }
@@ -55,6 +58,7 @@ namespace WarRoom3D
         private void Select(DemoProject project)
         {
             selected = project;
+            navigation.SetSelectedProject(project.projectId);
             root.Q<Label>("project-name").text = project.name;
             root.Q<Label>("provider").text = project.provider;
             root.Q<Label>("agents").text = $"{project.activeAgents} agentes ilustrativos";
@@ -65,6 +69,7 @@ namespace WarRoom3D
             statusLabel.EnableInClassList("status-waiting", project.status == "aguardando");
             root.Q<Label>("activity").text = project.activity;
             root.Q<Label>("agent-tree").text = AgentTree(project.activeAgents);
+            navigation.SetAgents(ReferenceRoomDemoAgents.ForProject(project));
             root.Q<Label>("feed").text = $"09:41 · {project.activity}\n09:37 · {StatusText(project.status)}";
             bool incident = false;
             var infrastructure = infrastructureLoader != null ? infrastructureLoader.Snapshot : null;
@@ -74,6 +79,7 @@ namespace WarRoom3D
             root.Q<Label>("infrastructure-alert").text = incident ? "Impacto potencial de infraestrutura · exemplo" : "Sem incidente vinculado neste exemplo";
             root.Q<Label>("infrastructure-alert").EnableInClassList("status-attention", incident);
             root.Q<Label>("breadcrumb").text = insideRoom ? $"Quartel-general / {project.name}" : "Quartel-general / Setor 01";
+            navigation.SetView(insideRoom, project.name);
             if (insideRoom) orbit.FocusRoom(sector.Rooms[project.slotId]);
         }
 
@@ -87,19 +93,21 @@ namespace WarRoom3D
             root.Q<Button>("back-button").style.display = DisplayStyle.Flex;
             root.Q<Button>("enter-button").style.display = DisplayStyle.None;
             root.Q<Label>("view-title").text = "Interior da sala";
+            navigation.SetView(true, selected.name);
         }
 
         private void ReturnToSector()
         {
             insideRoom = false;
             insideDataCenter = false;
-            root.Q<VisualElement>("project-panel").style.display = DisplayStyle.Flex;
+            navigation.SetSummaryCollapsed(false);
             root.Q<VisualElement>("resource-panel").style.display = DisplayStyle.None;
             orbit.ResetView();
             root.Q<Label>("breadcrumb").text = "Quartel-general / Setor 01";
             root.Q<Button>("back-button").style.display = DisplayStyle.None;
             root.Q<Button>("enter-button").style.display = DisplayStyle.Flex;
             root.Q<Label>("view-title").text = "Seis salas e núcleo central";
+            navigation.SetView(false, selected?.name);
         }
 
         private void ShowDataCenter()
@@ -109,6 +117,7 @@ namespace WarRoom3D
             orbit.FocusCore();
             root.Q<VisualElement>("project-panel").style.display = DisplayStyle.None;
             root.Q<VisualElement>("resource-panel").style.display = DisplayStyle.Flex;
+            navigation.SetView(false, selected?.name);
             SetResourceFilter(selected != null);
         }
 
@@ -183,7 +192,19 @@ namespace WarRoom3D
         {
             if (root == null || root.panel == null) return false;
             Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
-            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point);
+            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
+                Contains("summary-toggle", point) || Contains("evidence-detail", point) || Contains("history-panel", point) || Contains("history-mask", point);
+        }
+
+        private void Update()
+        {
+            if (root == null) return;
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame &&
+                root.Q<VisualElement>("history-panel").resolvedStyle.display == DisplayStyle.None) navigation.HandleEscape();
+            if (insideRoom || insideDataCenter || loader.Snapshot == null) return;
+            if (!RoomSceneSelection.TryPickSlot(Camera.main, sector, this, out var slotId)) return;
+            foreach (var project in loader.Snapshot.projects)
+                if (project.slotId == slotId) { Select(project); break; }
         }
 
         private bool Contains(string name, Vector2 point)
@@ -196,10 +217,10 @@ namespace WarRoom3D
         {
             switch (status)
             {
-                case "trabalhando": return "Trabalhando · exemplo";
-                case "aguardando": return "Aguardando · exemplo";
-                case "atencao": return "Atenção · exemplo";
-                default: return "Inativo · exemplo";
+                case "trabalhando": return "● Trabalhando · exemplo";
+                case "aguardando": return "○ Aguardando · exemplo";
+                case "atencao": return "! Atenção · exemplo";
+                default: return "◇ Sem dados · exemplo";
             }
         }
 

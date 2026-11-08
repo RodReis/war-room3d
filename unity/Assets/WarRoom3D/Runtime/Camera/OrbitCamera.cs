@@ -72,6 +72,7 @@ namespace WarRoom3D
             if (mouse == null) return;
             if (mouse.rightButton.wasPressedThisFrame) dragging = hud == null || !hud.IsPointerOverHud(mouse.position.ReadValue());
             if (mouse.rightButton.wasReleasedThisFrame) dragging = false;
+            if (dragging && mouse.rightButton.isPressed && hud != null && hud.IsPointerOverHud(mouse.position.ReadValue())) dragging = false;
             if (dragging && mouse.rightButton.isPressed)
             {
                 Vector2 delta = mouse.delta.ReadValue();

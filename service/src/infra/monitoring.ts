@@ -5,7 +5,7 @@ import { parseInventory, type Inventory } from './inventory.ts';
 import type { EventStore } from '../store/event-store.ts';
 import type { ProjectRecord } from '../domain/identity.ts';
 import { normalizeProjectPath } from '../domain/identity.ts';
-import { createHttpNetworkSink } from '../operations/operation-collector.ts';
+import { createDockerLogsCollector, createHttpNetworkSink, type DockerLogsProxyAuth } from '../operations/operation-collector.ts';
 import type { OperationRule } from '../operations/operations-store.ts';
 
 interface MonitoringConfig {
@@ -18,6 +18,7 @@ interface MonitoringConfig {
   m5NetworkSignals: boolean;
   m5NetworkRetentionDays: number | undefined;
   m5Rules: OperationRule[];
+  m5DockerLogs: { enabled: boolean; composeProject: string; composeWorkingDir: string; service: 'api'; environmentId: string; resourceId: string; retentionDays: number; initialLookbackMinutes: number; intervalMs: number } | undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -33,7 +34,12 @@ function parseConfig(input: unknown): MonitoringConfig {
       (input.m5NetworkRetentionDays !== undefined && (typeof input.m5NetworkRetentionDays!=='number'||!Number.isSafeInteger(input.m5NetworkRetentionDays)||input.m5NetworkRetentionDays<1||input.m5NetworkRetentionDays>3650)) ||
       (input.m5NetworkSignals===true && input.m5NetworkRetentionDays===undefined) ||
       (input.m5Rules !== undefined && !Array.isArray(input.m5Rules)) ||
-      Object.keys(input).some(key => !['schemaVersion', 'projects', 'inventory', 'probes', 'intervalMs', 'timeoutMs', 'm5NetworkSignals', 'm5NetworkRetentionDays', 'm5Rules'].includes(key)))
+      (input.m5DockerLogs !== undefined && (!isRecord(input.m5DockerLogs) || typeof input.m5DockerLogs.enabled !== 'boolean' ||
+        typeof input.m5DockerLogs.composeProject !== 'string' || typeof input.m5DockerLogs.composeWorkingDir !== 'string' || input.m5DockerLogs.service !== 'api' ||
+        typeof input.m5DockerLogs.environmentId !== 'string' || typeof input.m5DockerLogs.resourceId !== 'string' ||
+        !Number.isSafeInteger(input.m5DockerLogs.retentionDays) || !Number.isSafeInteger(input.m5DockerLogs.initialLookbackMinutes) || !Number.isSafeInteger(input.m5DockerLogs.intervalMs) ||
+        Object.keys(input.m5DockerLogs).some(key => !['enabled','composeProject','composeWorkingDir','service','environmentId','resourceId','retentionDays','initialLookbackMinutes','intervalMs'].includes(key)))) ||
+      Object.keys(input).some(key => !['schemaVersion', 'projects', 'inventory', 'probes', 'intervalMs', 'timeoutMs', 'm5NetworkSignals', 'm5NetworkRetentionDays', 'm5Rules', 'm5DockerLogs'].includes(key)))
     throw new Error('Configuração de monitoração inválida');
   const projects: ProjectRecord[] = [];
   const projectIds = new Set<string>();
@@ -83,12 +89,26 @@ function parseConfig(input: unknown): MonitoringConfig {
     const key=`${value.ruleId}:${value.version}`; if(ruleKeys.has(key)) throw new Error('Regra M5 duplicada'); ruleKeys.add(key);
     m5Rules.push(value as unknown as OperationRule);
   }
+  let m5DockerLogs:MonitoringConfig['m5DockerLogs'];
+  if(input.m5DockerLogs!==undefined){
+    const value=input.m5DockerLogs as Record<string,unknown>;
+    const resource=inventory.resources.find(item=>item.resourceId===value.resourceId);
+    if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(String(value.environmentId))||!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(String(value.resourceId))||
+        !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(String(value.composeProject))||String(value.composeWorkingDir).length<3||String(value.composeWorkingDir).length>1024||
+        !Number.isSafeInteger(value.retentionDays)||Number(value.retentionDays)<1||Number(value.retentionDays)>3650||
+        !Number.isSafeInteger(value.initialLookbackMinutes)||Number(value.initialLookbackMinutes)<1||Number(value.initialLookbackMinutes)>10080||
+        !Number.isSafeInteger(value.intervalMs)||Number(value.intervalMs)<1000||Number(value.intervalMs)>3600000||
+        !resource||resource.environmentId!==value.environmentId||!['api','docker'].includes(resource.kind)) throw new Error('Fonte M5 Docker logs inválida');
+    m5DockerLogs={enabled:value.enabled as boolean,composeProject:value.composeProject as string,composeWorkingDir:value.composeWorkingDir as string,service:'api',
+      environmentId:value.environmentId as string,resourceId:value.resourceId as string,retentionDays:value.retentionDays as number,
+      initialLookbackMinutes:value.initialLookbackMinutes as number,intervalMs:value.intervalMs as number};
+  }
   return { schemaVersion: '1.0', projects, inventory, probes,
     intervalMs: input.intervalMs as number, timeoutMs: input.timeoutMs as number, m5NetworkSignals: input.m5NetworkSignals === true,
-    m5NetworkRetentionDays: input.m5NetworkRetentionDays as number|undefined, m5Rules };
+    m5NetworkRetentionDays: input.m5NetworkRetentionDays as number|undefined, m5Rules, m5DockerLogs };
 }
 
-export function configureMonitoring(store: EventStore, input: unknown): { runner: CollectorRunner; intervalMs: number } {
+export function configureMonitoring(store: EventStore, input: unknown, dockerLogsProxy?:DockerLogsProxyAuth): { runner: CollectorRunner; intervalMs: number; dockerLogs?:ReturnType<typeof createDockerLogsCollector> } {
   const config = parseConfig(input);
   const resources = new Map(config.inventory.resources.map(resource => [resource.resourceId, resource]));
   const probes: Probe[] = config.probes.map(item => {
@@ -115,5 +135,10 @@ export function configureMonitoring(store: EventStore, input: unknown): { runner
   const apiResources=new Map(config.probes.filter((probe):probe is {kind:'api';resourceId:string;url:string}=>probe.kind==='api')
     .map(probe=>[probe.resourceId,{environmentId:resources.get(probe.resourceId)!.environmentId}]));
   const sink=config.m5NetworkSignals?createHttpNetworkSink(store.operations,apiResources,config.intervalMs,config.m5NetworkRetentionDays!):undefined;
-  return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs, undefined, sink), intervalMs: config.intervalMs };
+  let dockerLogs:ReturnType<typeof createDockerLogsCollector>|undefined;
+  if(config.m5DockerLogs?.enabled){
+    if(!dockerLogsProxy) throw new Error('Fonte de logs M5 habilitada sem proxy Docker e token');
+    dockerLogs=createDockerLogsCollector(store.operations,config.m5DockerLogs,dockerLogsProxy);
+  }
+  return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs, undefined, sink), intervalMs: config.intervalMs, dockerLogs };
 }

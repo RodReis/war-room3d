@@ -21,13 +21,19 @@ try {
   }, 86400000);
   retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
-  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
+  const dockerLogsProxyUrl=process.env.WR3D_DOCKER_LOGS_PROXY_URL;
+  const dockerLogsProxyToken=process.env.WR3D_DOCKER_LOGS_PROXY_TOKEN;
+  const dockerLogsProxy=dockerLogsProxyUrl&&dockerLogsProxyToken?{url:dockerLogsProxyUrl,token:dockerLogsProxyToken}:undefined;
+  const monitoringInput=configPath?JSON.parse(readFileSync(configPath,'utf8')) as unknown:null;
+  const monitoring = configPath ? configureMonitoring(store,monitoringInput,dockerLogsProxy) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const commandToken=process.env.WR3D_COMMAND_TOKEN;
   const commandProjects=process.env.WR3D_COMMAND_PROJECT_IDS?.split(',').map(value=>value.trim()).filter(Boolean)??[];
   const { server, url } = await startReadOnlyServer(store, token, port, {token:commandToken,actor:{actorId:'operador-local',projectIds:commandProjects}});
   monitoring?.runner.start(monitoring.intervalMs);
+  const dockerLogInterval=(monitoringInput as {m5DockerLogs?:{intervalMs?:number}}|null)?.m5DockerLogs?.intervalMs;
+  if(monitoring?.dockerLogs&&dockerLogInterval)monitoring.dockerLogs.start(dockerLogInterval);
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
@@ -54,6 +60,7 @@ try {
     clearInterval(retentionTimer);
     if (githubTimer) clearInterval(githubTimer);
     await monitoring?.runner.stop();
+    await monitoring?.dockerLogs?.stop();
     server.closeAllConnections();
     server.close(() => store.close());
   });

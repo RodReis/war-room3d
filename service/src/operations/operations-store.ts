@@ -24,7 +24,12 @@ function redactString(value: string): string {
     .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
     .replace(/(["']?(?:secret|password|passwd|token|api[_-]?key|authorization|cookie|connection[_-]?string|credential)["']?\s*[:=]\s*["']?)(?!Bearer\b|\[REDACTED\])[^"'&\s,;]+/gi, '$1[REDACTED]')
     .replace(/((?:token|api[_-]?key|password|secret|authorization|cookie)=)[^&\s;]+/gi, '$1[REDACTED]')
-    .replace(/(https?:\/\/)[^/@\s]+:[^/@\s]+@/gi, '$1[REDACTED]@');
+    .replace(/(https?:\/\/)[^/@\s]+:[^/@\s]+@/gi, '$1[REDACTED]@')
+    .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[CPF REDIGIDO]')
+    .replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, '[CNPJ REDIGIDO]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[EMAIL REDIGIDO]')
+    .replace(/\b(tenantId|empresaId|usuarioId|companyId|userId)\s*[=:]\s*["']?[^\s,"'};]+/gi, '$1=[REDACTED]')
+    .replace(/(https?:\/\/[^\s?#]+)\?[^\s#]*/gi, '$1?[REDACTED]');
 }
 
 function safeReference(value: string): string {

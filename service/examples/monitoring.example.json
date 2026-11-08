@@ -20,12 +20,26 @@
         "name": "Host local",
         "sourceId": "probe-host-example",
         "staleAfterMs": 30000
+      },
+      {
+        "resourceId": "api-example",
+        "environmentId": "local-example",
+        "kind": "api",
+        "name": "API Docker (exemplo)",
+        "sourceId": "probe-api-example",
+        "staleAfterMs": 120000
       }
     ],
     "projectResources": [
       {
         "projectId": "project-example",
         "resourceId": "host-example",
+        "origin": "configured",
+        "confidence": "unverified"
+      },
+      {
+        "projectId": "project-example",
+        "resourceId": "api-example",
         "origin": "configured",
         "confidence": "unverified"
       }
@@ -38,5 +52,16 @@
   "intervalMs": 5000,
   "timeoutMs": 1000,
   "m5NetworkSignals": false,
+  "m5DockerLogs": {
+    "enabled": false,
+    "composeProject": "compose-example",
+    "composeWorkingDir": "C:\\Projects\\example\\infra\\docker",
+    "service": "api",
+    "environmentId": "local-example",
+    "resourceId": "api-example",
+    "retentionDays": 1,
+    "initialLookbackMinutes": 60,
+    "intervalMs": 60000
+  },
   "m5Rules": []
 }

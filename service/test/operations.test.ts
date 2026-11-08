@@ -6,7 +6,7 @@ import { test, type TestContext } from 'node:test';
 import { randomBytes } from 'node:crypto';
 import { EventStore } from '../src/store/event-store.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
-import { createHttpNetworkSink } from '../src/operations/operation-collector.ts';
+import { createDockerLogsCollector, createHttpNetworkSink } from '../src/operations/operation-collector.ts';
 import type { Observation, OperationSource } from '../src/operations/operations-store.ts';
 
 function setup(t:TestContext) {
@@ -140,4 +140,19 @@ test('sonda HTTP M2 alimenta apenas sinais de rede M5 autorizados e perda preser
   sink.unavailable('api-a');
   assert.equal(store.operations.coverage('env-a','network'),'unavailable');
   assert.equal(store.operations.incidents('env-a')[0]?.status,'open');
+});
+
+test('coletor Docker persiste API redigida, correlaciona ID explícito e marca contêiner parado indisponível',async t=>{
+  const {store}=setup(t);
+  const collector=createDockerLogsCollector(store.operations,{composeProject:'contaia',composeWorkingDir:'C:\\Desenv\\Projetos\\rrb-contaia\\infra\\docker',environmentId:'env-a',resourceId:'api-a',retentionDays:1,initialLookbackMinutes:4320},
+    {url:'http://127.0.0.1:34567/v1/logs',token:'t'.repeat(64)},async()=>new Response(JSON.stringify({version:1,observedAt:'2026-11-08T12:00:00.000Z',service:'api',containerName:'contaia-api',containerState:'exited',entries:[
+      {observedAt:'2026-11-06T19:41:58.676Z',stream:'stdout',message:'falha CPF 123.456.789-09 email cliente@example.com tenantId=tenant-42 [corr-abc]',requestId:'corr-abc'}
+    ]}),{status:200,headers:{'Content-Type':'application/json'}}),()=>new Date('2026-11-08T12:00:00.000Z'));
+  const result=await collector.collectOnce();
+  assert.deepEqual(result,{recorded:1,state:'unavailable',truncated:false});
+  const logs=store.operations.query({environmentId:'env-a',category:'log'}).items;
+  assert.equal(logs.length,1);
+  assert.equal(logs[0]?.correlation?.requestId,'corr-abc');
+  assert.equal(logs[0]?.fields.message,'falha CPF [CPF REDIGIDO] email [EMAIL REDIGIDO] tenantId=[REDACTED] [corr-abc]');
+  assert.equal(store.operations.coverage('env-a','log'),'unavailable');
 });

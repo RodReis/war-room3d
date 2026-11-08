@@ -51,8 +51,8 @@ namespace WarRoom3D.Tests
             var hud = Object.FindAnyObjectByType<HudPresenter>();
             Assert.That(camera, Is.Not.Null);
             Assert.That(hud, Is.Not.Null);
-            var point = new Vector2(40f, Screen.height * 0.5f);
-            Assert.That(hud.IsPointerOverHud(point), Is.True, "Painel esquerdo não encontrado na posição de teste");
+            var point = new Vector2(Screen.width - 40f, Screen.height * 0.5f);
+            Assert.That(hud.IsPointerOverHud(point), Is.True, "Resumo direito não encontrado na posição de teste");
 
             camera.ResetView();
             Move(mouse.position, point, Vector2.zero);
@@ -60,7 +60,7 @@ namespace WarRoom3D.Tests
             Press(mouse.rightButton);
             InputSystem.Update();
             camera.SendMessage("Update");
-            Move(mouse.position, point + new Vector2(90f, 0f), new Vector2(90f, 0f));
+            Move(mouse.position, point + new Vector2(-90f, 0f), new Vector2(-90f, 0f));
             InputSystem.Update();
             camera.SendMessage("Update");
             Assert.That(camera.Yaw, Is.EqualTo(45f));
@@ -69,6 +69,19 @@ namespace WarRoom3D.Tests
             InputSystem.Update();
             camera.SendMessage("Update");
             Assert.That(camera.Distance, Is.EqualTo(54f));
+
+            camera.ResetView();
+            Release(mouse.rightButton);
+            InputSystem.Update();
+            Move(mouse.position, new Vector2(Screen.width * 0.5f, Screen.height * 0.5f), Vector2.zero);
+            InputSystem.Update();
+            Press(mouse.rightButton);
+            InputSystem.Update();
+            camera.SendMessage("Update");
+            Move(mouse.position, point, new Vector2(90f, 0f));
+            InputSystem.Update();
+            camera.SendMessage("Update");
+            Assert.That(camera.Yaw, Is.EqualTo(45f), "Arraste iniciado na cena deve parar ao entrar na UI");
         }
     }
 }

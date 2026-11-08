@@ -31,7 +31,8 @@ for(const action of ['send_message','answer_question','decide_permission'])regis
   adapterVersion:'synthetic-adapter-1',evidenceRef:'synthetic:windows-lab',provenAt:new Date(now-1000).toISOString(),validUntil:new Date(now+durationMs).toISOString()
 });
 for(const action of ['answer_question','decide_permission'])registry.observeRequest({requestId:`synthetic-${action}`,projectId:target.projectId,sessionKey:target.sessionKey,action,
-  originalContext:action==='answer_question'?'Qual opção de teste usar?':'Ferramenta fictícia solicita acesso a um arquivo sintético.',
+  originalContext:action==='answer_question'?'Qual opção de teste usar?':
+    'Ferramenta fictícia solicita acesso a um arquivo sintético. Pedido de laboratório sem arquivo ou conta real. '.repeat(28),
   consequence:'Somente registrar a resposta no adaptador falso. Nenhum efeito externo.',sourceRef:'synthetic:request',deadlineAt:new Date(now+durationMs).toISOString()});
 let sends=0;
 const adapter={provider:'codex',version:'synthetic-adapter-1',actions:['send_message','answer_question','decide_permission'],async send(input){
@@ -63,7 +64,9 @@ const heartbeat=interactive?setInterval(()=>{
 let player=null;
 const playerPath=process.env.WR3D_M4_LAB_PLAYER;
 const proofDirectory=process.env.WR3D_M4_PROOF_DIR;
-if(playerPath)player=spawn(playerPath,['-screen-width','1280','-screen-height','720','-screen-fullscreen','0','-logFile',path.join(directory,'player.log')],{
+const proofWidth=Number(process.env.WR3D_30_WIDTH??1280),proofHeight=Number(process.env.WR3D_30_HEIGHT??720);
+if(![1280,1366,1440,1920].includes(proofWidth)||![720,768,900,1080].includes(proofHeight))throw new Error('Resolução sintética inválida');
+if(playerPath)player=spawn(playerPath,['-screen-width',String(proofWidth),'-screen-height',String(proofHeight),'-screen-fullscreen','0','-logFile',path.join(directory,'player.log')],{
   env:{...process.env,WR3D_SERVICE_URL:url,WR3D_SERVICE_TOKEN:token,WR3D_COMMAND_TOKEN:commandToken,WR3D_VALIDATION_CAPTURE_DIR:''},windowsHide:false,stdio:'ignore'
 });
 let stopping=false;

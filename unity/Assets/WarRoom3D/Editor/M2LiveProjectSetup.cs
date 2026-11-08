@@ -95,5 +95,20 @@ namespace WarRoom3D.Editor
                 throw new System.Exception("Build Windows M4 falhou: " + report.summary.result);
             Debug.Log("Build Windows M4 concluído: " + report.summary.totalSize + " bytes");
         }
+
+        public static void BuildWindowsM5Operations()
+        {
+            CreateScene();
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = "Builds/WarRoom3D-M5/WarRoom3D.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new System.Exception("Build Windows M5 falhou: " + report.summary.result);
+            Debug.Log("Build Windows M5 concluído: " + report.summary.totalSize + " bytes");
+        }
     }
 }

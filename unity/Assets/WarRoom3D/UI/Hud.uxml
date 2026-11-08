@@ -43,7 +43,7 @@
             <ui:Label name="resource-name" text="Selecione um recurso" class="project-name" />
             <ui:Label name="resource-status" text="Sem dados · exemplo" class="status" />
             <ui:Label name="resource-detail" text="" class="activity" />
-            <ui:Button name="operations-open-button" text="Logs, rede e segurança" class="primary-button" />
+            <ui:Button name="operations-open-button" text="Logs, rede e segurança" class="primary-button operations-open-button" />
             <ui:Button name="resource-back-button" text="Voltar ao quartel" class="primary-button" />
           </ui:ScrollView>
         </ui:VisualElement>
@@ -102,6 +102,7 @@
                 <ui:Button name="operations-query" text="Consultar sinais" />
                 <ui:Button name="operations-incidents" text="Incidentes" />
             </ui:VisualElement>
+            <ui:Button name="operations-next" text="Próxima página" />
             <ui:Label name="operations-status" text="Selecione ambiente e consulte cobertura." class="hint" />
             <ui:ScrollView name="operations-results" class="operations-results" />
             <ui:Button name="operations-close" text="Fechar" />

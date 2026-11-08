@@ -44,6 +44,7 @@
 .operations-actions { flex-direction: row; margin-top: 6px; }
 .operations-actions Button { flex-grow: 1; margin-right: 5px; min-height: 32px; background-color: rgb(22, 67, 79); color: rgb(226, 243, 247); }
 .operations-results { flex-grow: 1; margin-top: 8px; margin-bottom: 8px; border-top-width: 1px; border-top-color: rgb(33, 96, 108); }
+.operations-open-button { display: none; }
 .operations-results Label { white-space: normal; margin-top: 7px; font-size: 12px; -unity-text-align: upper-left; }
 .effects-toggle { display: none; }
 .effect-banner { display: none; position: absolute; top: 111px; left: 360px; right: 275px; min-height: 44px; padding: 10px 14px; background-color: rgba(8, 49, 58, 0.95); border-left-width: 3px; border-left-color: rgb(54, 198, 213); color: rgb(225, 241, 245); -unity-font-style: bold; white-space: normal; }

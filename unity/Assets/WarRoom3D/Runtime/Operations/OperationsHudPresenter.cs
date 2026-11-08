@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,6 +11,9 @@ namespace WarRoom3D
         private VisualElement root;
         private LiveStateClient client;
         private bool replayMode;
+        private string signalPath;
+        private string nextCursor;
+        private int requestVersion;
 
         public void Configure(VisualElement visualRoot, LiveStateClient stateClient)
         {
@@ -21,11 +25,15 @@ namespace WarRoom3D
             var severity = root.Q<DropdownField>("operations-severity");
             severity.choices = new List<string> { "Todas", "info", "low", "medium", "high", "critical" };
             severity.value = "Todas";
-            root.Q<Button>("operations-open-button").clicked += Open;
+            var open = root.Q<Button>("operations-open-button");
+            open.style.display = DisplayStyle.Flex;
+            open.clicked += Open;
             root.Q<Button>("operations-close").clicked += Close;
             root.Q<Button>("operations-sources").clicked += LoadCoverage;
             root.Q<Button>("operations-query").clicked += QuerySignals;
             root.Q<Button>("operations-incidents").clicked += LoadIncidents;
+            root.Q<Button>("operations-next").clicked += NextPage;
+            root.Q<Button>("operations-next").SetEnabled(false);
             Close();
         }
 
@@ -55,6 +63,8 @@ namespace WarRoom3D
         private void Close()
         {
             if (root == null) return;
+            requestVersion++;
+            ResetPage();
             root.Q<VisualElement>("operations-mask").style.display = DisplayStyle.None;
             root.Q<VisualElement>("operations-panel").style.display = DisplayStyle.None;
         }
@@ -66,6 +76,7 @@ namespace WarRoom3D
         private void LoadCoverage()
         {
             if (!Ready()) return;
+            ResetPage();
             Request("/v1/operations/sources?environmentId=" + Escape(EnvironmentId), "Consultando cobertura…");
         }
 
@@ -89,12 +100,25 @@ namespace WarRoom3D
                 query.Add((correlation.Length == 16 || correlation.Length == 32) && IsHex(correlation) ? "traceId=" : "requestId=" + Escape(correlation));
                 if (query[query.Count - 1].EndsWith("=")) query[query.Count - 1] += Escape(correlation);
             }
-            Request(route + "?" + string.Join("&", query), "Consultando sinais…");
+            signalPath = route + "?" + string.Join("&", query);
+            nextCursor = null;
+            root.Q<Button>("operations-next").SetEnabled(false);
+            Request(signalPath, "Consultando sinais…", true);
+        }
+
+        private void NextPage()
+        {
+            if (!Ready() || string.IsNullOrEmpty(signalPath) || string.IsNullOrEmpty(nextCursor)) return;
+            string cursor = nextCursor;
+            nextCursor = null;
+            root.Q<Button>("operations-next").SetEnabled(false);
+            Request(signalPath + "&cursor=" + Escape(cursor), "Consultando próxima página…", true);
         }
 
         private void LoadIncidents()
         {
             if (!Ready()) return;
+            ResetPage();
             string severity = root.Q<DropdownField>("operations-severity").value;
             string path = "/v1/operations/incidents?environmentId=" + Escape(EnvironmentId);
             if (!string.IsNullOrEmpty(ProjectId)) path += "&projectId=" + Escape(ProjectId);
@@ -109,13 +133,27 @@ namespace WarRoom3D
             return true;
         }
 
-        private void Request(string path, string status)
+        private void ResetPage()
         {
+            signalPath = null;
+            nextCursor = null;
+            root.Q<Button>("operations-next").SetEnabled(false);
+        }
+
+        private void Request(string path, string status, bool signalPage = false)
+        {
+            int version = ++requestVersion;
             SetStatus(status);
             root.Q<ScrollView>("operations-results").Clear();
             client.GetOperations(path, (code, body) =>
             {
-                if (root == null) return;
+                if (root == null || version != requestVersion) return;
+                if (signalPage && code == 200)
+                {
+                    var match = Regex.Match(body ?? string.Empty, "\"nextCursor\"\\s*:\\s*(\\d+)");
+                    nextCursor = match.Success ? match.Groups[1].Value : null;
+                    root.Q<Button>("operations-next").SetEnabled(!string.IsNullOrEmpty(nextCursor));
+                }
                 SetStatus(code == 200 ? "Resposta da API local · conteúdo redigido pelo serviço." : "Consulta sem resultado operacional · HTTP " + code);
                 var label = new Label(FormatJson(body));
                 label.AddToClassList("activity");

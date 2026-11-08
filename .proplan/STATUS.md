@@ -9,12 +9,13 @@ updated: 2026-11-08
 
 ### Sem épico
 
-- Sala de referência — experiência completa no Unity Player antes da replicação (#28)
 - Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35)
 
 ## A Fazer
 
-_(vazio)_
+### Sem épico
+
+- Sala de referência — experiência completa no Unity Player antes da replicação (#28)
 
 ## Em Andamento
 
@@ -22,14 +23,13 @@ _(vazio)_
 
 ## Feito
 
-### Sem épico
-
-- Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34)
+_(vazio)_
 
 ## Finalizado
 
 ### Sem épico
 
+- Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34, finalizado em: 2026-11-08)
 - Sala de referência — chat por sessão, histórico e interação assistida (#33, finalizado em: 2026-11-08)
 - Sala de referência — avatares, estações e atividade vinculados à observação (#32, finalizado em: 2026-11-08)
 - Sala de referência — hooks e observação real de sessões, agentes e skills (#31, finalizado em: 2026-11-08)

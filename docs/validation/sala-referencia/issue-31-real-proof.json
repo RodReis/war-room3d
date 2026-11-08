@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "date": "2026-11-08",
+  "providers": [
+    "Claude 2.1.319",
+    "Codex 0.166.0"
+  ],
+  "mainSessionCount": 2,
+  "uniqueChildCount": 1,
+  "childTurnObserved": true,
+  "childStartedObserved": true,
+  "childCompletedObserved": true,
+  "snapshot": {
+    "sessionCount": 3,
+    "agentCount": 3,
+    "linkedChildCount": 1,
+    "endedChildCount": 1,
+    "sourceStatus": [
+      {
+        "provider": "claude",
+        "status": "indisponivel",
+        "errorCode": "stale"
+      },
+      {
+        "provider": "codex",
+        "status": "atual",
+        "errorCode": null
+      }
+    ]
+  },
+  "transport": {
+    "httpStatus": 200,
+    "sseEvent": true
+  },
+  "player": {
+    "connected": true,
+    "sessionCount": 3,
+    "agentCount": 3,
+    "linkedChildCount": 1,
+    "exitCode": 0,
+    "imageWidth": 1280,
+    "imageHeight": 720,
+    "view": "project"
+  }
+}

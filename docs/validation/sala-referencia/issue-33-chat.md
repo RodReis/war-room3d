@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação técnica em andamento. O laboratório expressamente autorizado comprovou **ida e volta real com conteúdo sintético** por Claude Code 2.1.319 e Codex CLI 0.166.0, do provedor ao coletor, SQLite e API local. Pedido real de pergunta/permissão segue **indisponível** nos adaptadores e exige aceite explícito desse limite pelo PI; aceite funcional também não foi dado. Um recibo M4 confirma apenas o nível de entrega disponível no adaptador, não a resposta do modelo. Esta página não declara G3 concluído nem operação contínua.
+O laboratório expressamente autorizado comprovou **ida e volta real com conteúdo sintético** por Claude Code 2.1.319 e Codex CLI 0.166.0, do provedor ao coletor, SQLite e API local. Pedido real de pergunta/permissão segue **indisponível** nos adaptadores. O PI aceitou explicitamente esse limite em 08/11/2026, com retorno ao fluxo nativo, exportação pela API paginada e exclusão no SQLite enquanto o arquivo bruto segue a política da fonte. Esse aceite delimita a entrega técnica da #33; não é aceite funcional geral. Um recibo M4 confirma apenas o nível de entrega disponível no adaptador, não a resposta do modelo. Esta página não declara G3 concluído nem operação contínua.
 
 ## Conteúdo e privacidade
 
@@ -18,8 +18,8 @@ A aba Chat mostra histórico do `sessionKey` do agente selecionado na árvore ou
 
 | Provedor | Histórico opt-in | Envio M4 | Ida e volta real nesta fatia | Pergunta/permissão |
 |---|---|---|---|---|
-| Claude Code 2.1.319 | `UserPromptSubmit` e `Stop` com texto observados em sessão nova | Adaptador de mensagem requer sessão própria e prova atual | **pass pontual**: 1 prompt, 1 resposta, HTTP 200 no escopo da sessão; custo CLI US$ 0,0064 de teto US$ 0,10 | Adaptador indisponível; fluxo nativo; limite aguarda aceite do PI |
-| Codex CLI 0.166.0 | `item/completed` `userMessage`/`agentMessage` observados em thread nova | Adaptador de mensagem requer thread própria e prova atual | **pass pontual**: recibo `confirmed`, turno concluído, 1 prompt, 1 resposta, HTTP 200 no escopo da sessão; custo monetário sem medição | Adaptador indisponível; fluxo nativo; limite aguarda aceite do PI |
+| Claude Code 2.1.319 | `UserPromptSubmit` e `Stop` com texto observados em sessão nova | Adaptador de mensagem requer sessão própria e prova atual | **pass pontual**: 1 prompt, 1 resposta, HTTP 200 no escopo da sessão; custo CLI US$ 0,0064 de teto US$ 0,10 | Adaptador indisponível; fluxo nativo; limite aceito pelo PI |
+| Codex CLI 0.166.0 | `item/completed` `userMessage`/`agentMessage` observados em thread nova | Adaptador de mensagem requer thread própria e prova atual | **pass pontual**: recibo `confirmed`, turno concluído, 1 prompt, 1 resposta, HTTP 200 no escopo da sessão; custo monetário sem medição | Adaptador indisponível; fluxo nativo; limite aceito pelo PI |
 
 ## Validação
 
@@ -36,4 +36,4 @@ A aba Chat mostra histórico do `sessionKey` do agente selecionado na árvore ou
 
 ## Limites
 
-Nenhuma conversa pessoal foi acessada. As autorizações da #31 não foram reutilizadas; a autorização nova da #33 cobriu uma sessão por provedor, agora consumida. O hook Claude ficou apenas no projeto temporário e foi removido. O arquivo bruto da fonte com conteúdo opt-in exige política própria de retenção/exclusão; a rota DELETE não o apaga. Não há botão de exportação na UI; a API permite exportação percorrendo páginas. A resposta real do modelo foi comprovada apenas para texto sintético nessa execução. Pergunta/permissão real segue sem adaptador; a especificação exige aceite explícito do limite pelo PI antes de encerrar a #33. G3 completo continua pendente.
+Nenhuma conversa pessoal foi acessada. As autorizações da #31 não foram reutilizadas; a autorização nova da #33 cobriu uma sessão por provedor, agora consumida. O hook Claude ficou apenas no projeto temporário e foi removido. O arquivo bruto da fonte com conteúdo opt-in exige política própria de retenção/exclusão; a rota DELETE não o apaga. Não há botão de exportação na UI; a API permite exportação percorrendo páginas. A resposta real do modelo foi comprovada apenas para texto sintético nessa execução. O PI aceitou expressamente esses limites e pergunta/permissão no fluxo nativo em 08/11/2026. G3 completo e aceite funcional geral continuam pendentes.

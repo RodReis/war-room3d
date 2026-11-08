@@ -13,15 +13,13 @@ updated: 2026-11-08
 
 ## A Fazer
 
-### Sem épico
-
-- M5 — Logs, rede e segurança operacional (#6)
+_(vazio)_
 
 ## Em Andamento
 
 ### Sem épico
 
-- M4 — Mensagens e permissões assistidas (#5)
+- M5 — Logs, rede e segurança operacional (#6)
 
 ## Feito
 
@@ -31,6 +29,7 @@ _(vazio)_
 
 ### Sem épico
 
+- M4 — Mensagens e permissões assistidas (#5, finalizado em: 2026-11-08)
 - M3 — Meu dia, replay e GitHub (#4, finalizado em: 2026-11-07)
 - M2 — Data center e infraestrutura essencial (#3, finalizado em: 2026-11-06)
 - M1 — Quartel vivo e observação de agentes (#2, finalizado em: 2026-11-06)

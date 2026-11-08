@@ -74,7 +74,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 18) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 19) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -127,6 +127,11 @@ export class EventStore {
     })();
     if (schemaVersion < 18) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0018_operations.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 19) this.db.transaction(() => {
+      const columns = this.db.pragma('table_info(sources)') as {name:string}[];
+      if (!columns.some(column => column.name === 'last_evidence_at')) this.db.exec('ALTER TABLE sources ADD COLUMN last_evidence_at TEXT');
+      this.db.exec(readFileSync(new URL('./migrations/0019_session_source_evidence.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -300,18 +305,22 @@ export class EventStore {
       this.db.prepare('INSERT INTO events(event_id, source_id, dedupe_key, stream_sequence, event_json) VALUES (?, ?, ?, ?, ?)')
         .run(event.eventId, event.sourceId, dedupeKey, sequence, JSON.stringify(event));
       this.applyState(event);
-      const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at, last_error_code FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null; last_error_code: string | null } | undefined;
+      const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at, last_error_code, last_evidence_at FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null; last_error_code: string | null; last_evidence_at: string | null } | undefined;
       const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) >= 0;
       const status = statusIsNewer ? (event.type === 'source.unavailable' ? 'indisponivel' : 'atual') : priorSource.status;
       const statusAt = statusIsNewer ? event.observedAt : priorSource.status_at;
       const errorCode = statusIsNewer ? (event.type === 'source.unavailable' ? event.payload.errorCode ?? null : null) : priorSource.last_error_code;
       const lastUnavailableAt = event.type === 'source.unavailable' && (!priorSource?.last_unavailable_at || compareTimestamp(event.observedAt, priorSource.last_unavailable_at) > 0)
         ? event.observedAt : priorSource?.last_unavailable_at ?? null;
-      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, status_at, last_unavailable_at, last_received, last_applied, last_error_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      const lastEvidenceAt = event.type.startsWith('source.') ? priorSource?.last_evidence_at ?? null
+        : !priorSource?.last_evidence_at || compareTimestamp(event.observedAt,priorSource.last_evidence_at) > 0
+          ? event.observedAt : priorSource.last_evidence_at;
+      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, status_at, last_unavailable_at, last_received, last_applied, last_error_code, last_evidence_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(source_id) DO UPDATE SET source_version = excluded.source_version,
           status = excluded.status, status_at = excluded.status_at, last_unavailable_at = excluded.last_unavailable_at,
-          last_received = excluded.last_received, last_applied = excluded.last_applied, last_error_code = excluded.last_error_code`)
-        .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt, errorCode);
+          last_received = excluded.last_received, last_applied = excluded.last_applied, last_error_code = excluded.last_error_code,
+          last_evidence_at = excluded.last_evidence_at`)
+        .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt, errorCode,lastEvidenceAt);
       this.advanceCursor(cursor);
       return { applied: true, revision: this.next('revision'), streamSequence: sequence };
     });
@@ -346,7 +355,8 @@ export class EventStore {
         this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at)
           VALUES (?, ?, ?, ?, 'desconhecida', 'desconhecido', ?, NULL)`).run(event.sessionKey, event.projectId, event.sourceId, provider, event.observedAt);
       }
-      const known = new Set((this.db.prepare('SELECT agent_key FROM agents WHERE session_key = ?').all(event.sessionKey) as { agent_key: string }[]).map(row => row.agent_key));
+      const known = new Set((this.db.prepare(`SELECT a.agent_key FROM agents a JOIN sessions s ON s.session_key = a.session_key
+        WHERE s.source_id = ? AND s.project_id = ? AND s.provider = ?`).all(event.sourceId,event.projectId,event.provider) as { agent_key: string }[]).map(row => row.agent_key));
       const presence = event.type.replace('agent.', '') === 'ended' ? 'encerrada' : event.type.replace('agent.', '') === 'working' ? 'trabalhando' : event.type.replace('agent.', '') === 'waiting' ? 'aguardando' : 'observada';
       const previous = this.db.prepare('SELECT session_key, parent_agent_key, parent_status, presence, last_seen FROM agents WHERE agent_key = ?').get(event.agentKey) as { session_key: string; parent_agent_key: string | null; parent_status: string; presence: Presence; last_seen: string } | undefined;
       if (previous && previous.session_key !== event.sessionKey) throw new Error('Agente aponta para outra sessão');
@@ -357,8 +367,9 @@ export class EventStore {
         ON CONFLICT(agent_key) DO UPDATE SET parent_agent_key = excluded.parent_agent_key, presence = excluded.presence,
           parent_status = excluded.parent_status, last_seen = excluded.last_seen`)
         .run(event.agentKey, event.sessionKey, parent, presence, status, event.observedAt);
-      this.db.prepare("UPDATE agents SET parent_status = 'vinculado' WHERE session_key = ? AND parent_agent_key = ? AND parent_status = 'vinculo_pendente'")
-        .run(event.sessionKey, event.agentKey);
+      this.db.prepare(`UPDATE agents SET parent_status = 'vinculado' WHERE parent_agent_key = ? AND parent_status = 'vinculo_pendente'
+        AND session_key IN (SELECT session_key FROM sessions WHERE source_id = ? AND project_id = ? AND provider = ?)`)
+        .run(event.agentKey,event.sourceId,event.projectId,event.provider);
     } else if (event.type.startsWith('task.') || event.type.startsWith('tool.') || event.type.startsWith('skill.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const session = this.db.prepare('SELECT project_id, source_id, provider, presence FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: Presence } | undefined;
@@ -466,7 +477,7 @@ export class EventStore {
     const agents = (this.db.prepare('SELECT * FROM agents ORDER BY agent_key').all() as Row[]).map(row => ({ agentKey: row.agent_key, sessionKey: row.session_key, ...(row.parent_agent_key ? { parentAgentKey: row.parent_agent_key } : {}), presence: row.presence, parentStatus: row.parent_status }));
     const tasks = (this.db.prepare('SELECT * FROM session_tasks ORDER BY task_id').all() as Row[]).map(row => ({ taskId: row.task_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), title: row.title, status: row.status, provenance: row.provenance }));
     const invocations = (this.db.prepare('SELECT * FROM session_invocations ORDER BY invocation_id').all() as Row[]).map(row => ({ invocationId: row.invocation_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), kind: row.kind, name: row.name, status: row.status }));
-    const sources = (this.db.prepare('SELECT * FROM sources ORDER BY source_id').all() as Row[]).map(row => ({ sourceId: row.source_id, sourceVersion: row.source_version, status: row.status, ...(row.last_error_code ? {errorCode:row.last_error_code} : {}), lastReceived: row.last_received, lastApplied: row.last_applied }));
+    const sources = (this.db.prepare('SELECT * FROM sources ORDER BY source_id').all() as Row[]).map(row => ({ sourceId: row.source_id, sourceVersion: row.source_version, status: row.status, ...(row.last_error_code ? {errorCode:row.last_error_code} : {}), lastReceived: row.last_received, lastApplied: row.last_applied, lastEvidenceAt:row.last_evidence_at }));
     const feed = (this.db.prepare('SELECT event_json, stream_sequence FROM events ORDER BY stream_sequence DESC LIMIT 100').all() as { event_json: string; stream_sequence: number }[]).reverse().map(row => {
       const event = JSON.parse(row.event_json) as NormalizedEvent;
       return { eventId: event.eventId, streamSequence: row.stream_sequence, type: event.type, observedAt: event.observedAt, ...(event.projectId ? { projectId: event.projectId } : {}), ...(event.sessionKey ? { sessionKey: event.sessionKey } : {}), ...(event.agentKey ? { agentKey: event.agentKey } : {}), provenance: event.provenance };

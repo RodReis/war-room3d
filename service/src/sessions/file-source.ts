@@ -75,9 +75,9 @@ export class SessionFileCollector {
     for (const source of this.sources) {
       try {
         this.pollSource(source);
-        const row = (this.store.snapshot().sources as {sourceId:string;status:string;lastApplied:string|null}[]).find(item => item.sourceId === source.sourceId);
+        const row = (this.store.snapshot().sources as {sourceId:string;status:string;lastEvidenceAt:string|null}[]).find(item => item.sourceId === source.sourceId);
         if (!row) this.markUnavailable(source,'stale');
-        else if (source.staleAfterMs && row.status === 'atual' && row.lastApplied && now - Date.parse(row.lastApplied) > source.staleAfterMs)
+        else if (source.staleAfterMs && row.status === 'atual' && (!row.lastEvidenceAt || now - Date.parse(row.lastEvidenceAt) > source.staleAfterMs))
           this.markUnavailable(source,'stale');
       }
       catch (error) {
@@ -88,21 +88,21 @@ export class SessionFileCollector {
     }
   }
 
-  private statusEvent(source: SessionSource, type: 'source.unavailable'|'source.recovered', errorCode?: SourceErrorCode): void {
+  private statusEvent(source: SessionSource, errorCode: SourceErrorCode): void {
     const previous = this.store.getCursor(source.sourceId, 'source-status');
     const offset = (previous?.offset ?? 0) + 1;
     const now = this.nextTimestamp(source.sourceId);
     const event: NormalizedEvent = {
       schemaVersion:'1.0',eventId:`e-${hash(`${source.sourceId}:status:${offset}`)}`,sourceId:source.sourceId,
-      sourceEventId:`status-${offset}`,sourceVersion:source.sourceVersion,type,observedAt:now,receivedAt:now,
-      provenance:'observed',ingestionMode:'live',payload:{reason:type==='source.unavailable'?'source_lost':'source_recovered',...(errorCode?{errorCode}:{})},evidenceRefs:[]
+      sourceEventId:`status-${offset}`,sourceVersion:source.sourceVersion,type:'source.unavailable',observedAt:now,receivedAt:now,
+      provenance:'observed',ingestionMode:'live',payload:{reason:'source_lost',errorCode},evidenceRefs:[]
     };
     this.store.apply(event,{sourceId:source.sourceId,fileKey:'source-status',generation:0,offset});
   }
 
   private markUnavailable(source: SessionSource, code: SourceErrorCode): void {
     if (this.unavailable.get(source.sourceId) === code) return;
-    this.statusEvent(source,'source.unavailable',code);
+    this.statusEvent(source,code);
     this.unavailable.set(source.sourceId,code);
   }
 
@@ -155,13 +155,14 @@ export class SessionFileCollector {
             this.store.applyBatch(events,cursor);
             if (events.length) receivedEvidence = true;
           } catch (error) {
-            if (error instanceof SyntaxError) { this.store.acknowledgeCursor(cursor); this.markUnavailable(source,'malformed_json'); }
+            if (error instanceof SyntaxError) { this.store.acknowledgeCursor(cursor); this.markUnavailable(source,'malformed_json'); receivedEvidence = false; }
             else throw error;
           }
           offset = cursor.offset;
         }
       }
-      if (receivedEvidence && this.unavailable.delete(source.sourceId)) this.statusEvent(source,'source.recovered');
+      if (receivedEvidence && (this.store.snapshot().sources as {sourceId:string;status:string}[])
+        .some(row => row.sourceId === source.sourceId && row.status === 'atual')) this.unavailable.delete(source.sourceId);
     } finally { closeSync(fd); }
   }
 }

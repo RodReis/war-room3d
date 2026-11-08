@@ -50,12 +50,41 @@ test('captura Codex em fluxo não persiste conteúdo nem resposta RPC', t => {
   assert.equal(saved.includes('segredo'),false);
 });
 
+test('captura subAgentActivity v2 guarda thread filha e descarta caminho e texto', () => {
+  const safe=sanitizeSourceRecord('codex',{method:'item/completed',params:{threadId:'parent',
+    item:{type:'subAgentActivity',id:'activity-1',kind:'started',agentThreadId:'child',agentPath:'privado/agente',prompt:'segredo'}}});
+  assert.deepEqual(safe,{method:'item/completed',params:{threadId:'parent',
+    item:{type:'subAgentActivity',id:'activity-1',agentThreadId:'child',kind:'started'}}});
+});
+
 test('backfill preserva horário da fonte distinto do recebimento', () => {
   const source = {sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',filePath:'C:\\lab\\events.jsonl'};
   const raw = {...sanitizeSourceRecord('claude',{hook_event_name:'SessionStart',session_id:'s',cwd:'C:\\repo\\p'}),capturedAt:'2026-11-08T10:00:00.000Z'};
   const events = adaptSessionRecord(source,raw,'file:100','2026-11-08T11:00:00.000Z');
   assert.equal(events[0].observedAt,'2026-11-08T10:00:00.000Z');
   assert.equal(events[0].receivedAt,'2026-11-08T11:00:00.000Z');
+});
+
+test('subAgentActivity v2 vincula filho antes do turn/started sem thread/started própria', t => {
+  const directory=mkdtempSync(path.join(tmpdir(),'wr3d-codex-v2-'));
+  const store=new EventStore(path.join(directory,'events.db'));
+  t.after(()=>{store.close();rmSync(directory,{recursive:true,force:true});});
+  store.registerProject({projectId:'p',name:'Projeto',canonicalPath:'C:\\repo\\p'});
+  const filePath=path.join(directory,'codex.jsonl');
+  const collector=new SessionFileCollector(store,[{sourceId:'lab',sourceVersion:'0.166.0',provider:'codex',projectId:'p',accountRef:'lab',filePath}]);
+  const line=(value:unknown)=>`${JSON.stringify(sanitizeSourceRecord('codex',value))}\n`;
+  writeFileSync(filePath,line({method:'thread/started',params:{thread:{id:'parent',cwd:'C:\\repo\\p'}}})+
+    line({method:'item/started',params:{threadId:'parent',item:{type:'subAgentActivity',id:'spawn',kind:'started',agentThreadId:'child',agentPath:'privado'}}})+
+    line({method:'item/completed',params:{threadId:'parent',item:{type:'subAgentActivity',id:'spawn',kind:'started',agentThreadId:'child',agentPath:'privado'}}})+
+    line({method:'turn/started',params:{threadId:'child',turn:{id:'turn-child'}}}));
+  collector.poll();
+  assert.equal((store.snapshot().sources as {status:string}[])[0].status,'atual');
+  assert.equal((store.snapshot().sessions as unknown[]).length,2);
+  const agents=store.snapshot().agents as {agentKey:string;sessionKey:string;parentAgentKey?:string;parentStatus:string}[];
+  assert.equal(agents.length,2);
+  const child=agents.find(agent=>agent.parentStatus==='vinculado')!;
+  assert.ok(agents.some(agent=>agent.agentKey===child.parentAgentKey&&agent.sessionKey!==child.sessionKey));
+  assert.equal((store.snapshot().sessions as {sessionKey:string;presence:string}[]).find(session=>session.sessionKey===child.sessionKey)?.presence,'trabalhando');
 });
 
 test('duas fontes, filho, linha parcial, reinício, rotação e perda mantêm identidades', t => {
@@ -88,9 +117,17 @@ test('duas fontes, filho, linha parcial, reinício, rotação e perda mantêm id
   assert.equal((store.snapshot().agents as unknown[]).length,2);
   appendFileSync(codexFile,'\n');
   collector.poll();
-  const agents = store.snapshot().agents as {parentStatus:string}[];
+  const agents = store.snapshot().agents as {agentKey:string;sessionKey:string;parentAgentKey?:string;parentStatus:string}[];
   assert.equal(agents.length,3);
   assert.equal(agents.filter(agent => agent.parentStatus==='vinculado').length,1);
+  const child = agents.find(agent => agent.parentStatus==='vinculado')!;
+  assert.ok(agents.some(agent => agent.agentKey === child.parentAgentKey && agent.sessionKey !== child.sessionKey));
+  appendFileSync(codexFile,line(sanitizeSourceRecord('codex',{method:'thread/started',params:{thread:{id:'child-1',cwd:'D:\\repo\\api'}}})!));
+  appendFileSync(codexFile,line(sanitizeSourceRecord('codex',{method:'item/started',params:{threadId:'child-1',item:{type:'commandExecution',id:'child-tool'}}})!));
+  collector.poll();
+  assert.equal((store.snapshot().agents as unknown[]).length,3);
+  assert.equal((store.snapshot().sessions as unknown[]).length,3);
+  assert.equal((store.snapshot().invocations as {agentKey:string}[])[0].agentKey,child.agentKey);
   const beforeDuplicateChild = store.snapshot().streamSequence;
   appendFileSync(codexFile,line({method:'item/completed',params:{threadId:'codex-1',item:{type:'collabAgentToolCall',id:'spawn-1',receiverThreadIds:['child-1']}}}));
   collector.poll();
@@ -108,7 +145,7 @@ test('duas fontes, filho, linha parcial, reinício, rotação e perda mantêm id
   writeFileSync(codexFile,line({method:'turn/started',params:{threadId:'codex-1'}}));
   resumed.poll();
   assert.equal((store.snapshot().sources as {sourceId:string;status:string}[]).find(x=>x.sourceId==='codex-lab')?.status,'atual');
-  assert.equal((store.snapshot().sessions as {projectId:string;presence:string}[]).find(x=>x.projectId==='p-codex')?.presence,'trabalhando');
+  assert.ok((store.snapshot().sessions as {projectId:string;presence:string}[]).some(x=>x.projectId==='p-codex' && x.presence==='trabalhando'));
   store.reconcileSessionSourceBindings(config.sources);
   store.reconcileSessionSourceBindings([config.sources[0]]);
   assert.equal((store.snapshot().sources as {sourceId:string;status:string;errorCode?:string}[]).find(x=>x.sourceId==='codex-lab')?.errorCode,'revoked');
@@ -167,6 +204,43 @@ test('janela de frescor expirada sinaliza incerteza até novo evento', t => {
   collector.poll();
   assert.equal((store.snapshot().sessions as {presence:string}[])[0].presence,'trabalhando');
   assert.equal((store.snapshot().sources as {status:string}[])[0].status,'atual');
+});
+
+test('backfill antigo não renova o frescor pela hora de recebimento', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-backfill-stale-'));
+  const store = new EventStore(path.join(directory,'events.db'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  store.registerProject({projectId:'p',name:'Projeto',canonicalPath:'C:\\repo\\p'});
+  const filePath = path.join(directory,'events.jsonl');
+  const collector = new SessionFileCollector(store,[{sourceId:'lab',sourceVersion:'2.1.319',provider:'claude',projectId:'p',accountRef:'lab',filePath,staleAfterMs:1000}]);
+  const old = new Date(Date.now()-120000).toISOString();
+  writeFileSync(filePath,`${JSON.stringify({...sanitizeSourceRecord('claude',{hook_event_name:'UserPromptSubmit',session_id:'s',cwd:'C:\\repo\\p'}),capturedAt:old})}\n`);
+  collector.poll();
+  const source = (store.snapshot().sources as {lastEvidenceAt:string;lastReceived:string;status:string;errorCode:string}[])[0];
+  assert.equal(source.lastEvidenceAt,old);
+  assert.ok(Date.parse(source.lastReceived)>Date.parse(old));
+  assert.equal(source.status,'indisponivel');
+  assert.equal(source.errorCode,'stale');
+  assert.equal((store.snapshot().sessions as {presence:string}[])[0].presence,'desconhecida');
+});
+
+test('linha malformada após evidência válida mantém erro até evidência posterior', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-malformed-recovery-'));
+  const store = new EventStore(path.join(directory,'events.db'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  store.registerProject({projectId:'p',name:'Projeto',canonicalPath:'C:\\repo\\p'});
+  const filePath = path.join(directory,'events.jsonl');
+  const collector = new SessionFileCollector(store,[{sourceId:'lab',sourceVersion:'2.1.319',provider:'claude',projectId:'p',accountRef:'lab',filePath}]);
+  const line = (hook:string) => `${JSON.stringify(sanitizeSourceRecord('claude',{hook_event_name:hook,session_id:'s',cwd:'C:\\repo\\p'}))}\n`;
+  writeFileSync(filePath,line('SessionStart')+'{inválido}\n');
+  collector.poll();
+  assert.equal((store.snapshot().sources as {status:string;errorCode:string}[])[0].errorCode,'malformed_json');
+  collector.poll();
+  assert.equal((store.snapshot().sources as {status:string;errorCode:string}[])[0].status,'indisponivel');
+  appendFileSync(filePath,line('UserPromptSubmit'));
+  collector.poll();
+  assert.equal((store.snapshot().sources as {status:string;errorCode?:string}[])[0].status,'atual');
+  assert.equal((store.snapshot().sources as {status:string;errorCode?:string}[])[0].errorCode,undefined);
 });
 
 test('hook de projeto homônimo diferente não entra no projeto configurado', t => {

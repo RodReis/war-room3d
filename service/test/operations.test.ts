@@ -29,7 +29,7 @@ function observation(overrides:Partial<Observation>={}):Observation {
     category:'log',classification:'application',confidence:'observed',evidenceRef:'file://logs/app.log?token=secret-value',coverage:'covered',fields:{message:'Authorization: Bearer sample-secret {"password":"json-secret"}',api_token:'leak',status:500},...overrides};
 }
 
-test('migração 17 para 18 preserva dados M1 e adiciona tabelas M5', t => {
+test('migração 17 para 19 preserva dados M1 e adiciona tabelas M5', t => {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'wr3d-migrate-17-'));
   const databasePath = path.join(directory, 'state.sqlite');
   t.after(() => rmSync(directory, { recursive: true, force: true }));
@@ -47,7 +47,7 @@ test('migração 17 para 18 preserva dados M1 e adiciona tabelas M5', t => {
   assert.equal(store.operations.coverage('env-a', 'log'), 'absent');
   store.close();
   const upgraded = new Database(databasePath, { readonly: true });
-  assert.equal((upgraded.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as {value:number}).value, 18);
+  assert.equal((upgraded.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as {value:number}).value, 19);
   upgraded.close();
 });
 

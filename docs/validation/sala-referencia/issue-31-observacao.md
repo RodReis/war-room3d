@@ -36,7 +36,7 @@ Teste de configuração: iniciar serviço, confirmar fonte/IDs e `lastApplied` e
 
 ## Validação
 
-Ambiente: Windows, Node 24.15.0, Unity 6000.3.27f1. Testes automatizados usam arquivos e sessões sintéticos temporários. Base integrada: contratos **13/13**, serviço **143/143** e Unity EditMode **15/15**. Continuação: contratos **14/14**, serviço **162/162**, typecheck e build Windows M2 Live **pass** (174.981.572 bytes). Testes cobrem projeto homônimo, filho Codex v1/v2 com pai, linha parcial, duplicata, rotação, reinício/cursor, perda, expiração, backfill antigo, JSON malformado, captura redigida e SQLite → HTTP/SSE. O resultado da CI da continuação depende do novo SHA.
+Ambiente: Windows, Node 24.15.0, Unity 6000.3.27f1. Testes automatizados usam arquivos e sessões sintéticos temporários. Base integrada: contratos **13/13**, serviço **143/143** e Unity EditMode **15/15**. Continuação: contratos **14/14**, serviço **162/162**, typecheck e build Windows M2 Live **pass** (174.981.572 bytes). Testes cobrem projeto homônimo, filho Codex v1/v2 com pai, linha parcial, duplicata, rotação, reinício/cursor, perda, expiração, backfill antigo, JSON malformado, captura redigida e SQLite → HTTP/SSE. CI da PR #40 no SHA `5e6eecb`: [Contratos e Serviço](https://github.com/RodReis/war-room3d/actions/runs/42510905381), ambos **pass**.
 
 ## Laboratório real autorizado — 08/11/2026
 

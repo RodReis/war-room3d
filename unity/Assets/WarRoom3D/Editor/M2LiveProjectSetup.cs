@@ -14,6 +14,7 @@ namespace WarRoom3D.Editor
         [MenuItem("War-Room3D/Criar cena M2 live")]
         public static void CreateScene()
         {
+            AgentAssetBuilder.EnsurePrefabs();
             M0ProjectSetup.CreateScene();
             var scene = SceneManager.GetActiveScene();
             Object.DestroyImmediate(GameObject.Find("Demonstração"));

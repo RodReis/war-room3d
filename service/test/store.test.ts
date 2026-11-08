@@ -51,8 +51,9 @@ test('duas sessões de provedores distintos permanecem em projetos corretos', t 
   store.apply(fixture, cursor(100));
   store.apply({ ...fixture, eventId: 'evento-claude', sourceId: 'laboratorio-claude', sourceEventId: 'claude-1', provider: 'claude', projectId: 'projeto-b', sessionKey: 'sessao-b' },
     { sourceId: 'laboratorio-claude', fileKey: 'session.jsonl', generation: 1, offset: 100 });
-  const sessions = store.snapshot().sessions as { projectId: string; provider: string }[];
+  const sessions = store.snapshot().sessions as { projectId: string; provider: string; sourceId: string }[];
   assert.deepEqual(sessions.map(session => [session.projectId, session.provider]), [['projeto-a', 'codex'], ['projeto-b', 'claude']]);
+  assert.deepEqual(sessions.map(session => session.sourceId), [fixture.sourceId, 'laboratorio-claude']);
 });
 
 test('duplicata avança cursor sem alterar revisão, feed ou agente', t => {

@@ -23,6 +23,15 @@ namespace WarRoom3D
         private string activeType;
         private GameObject beacon;
         private Material beaconMaterial;
+        public bool Reduced => reduced;
+
+        public void SetReduced(bool value)
+        {
+            reduced = value;
+            if (toggle != null) toggle.text = reduced ? "Reduzir efeitos: sim" : "Reduzir efeitos: não";
+            if (reduced && banner != null && banner.style.display.value == DisplayStyle.Flex)
+                hideAt = Time.realtimeSinceStartup + 1f;
+        }
 
         public void Configure(VisualElement root, LiveStateClient liveClient, HistoryHudPresenter historyPresenter, SectorBuilder sectorBuilder)
         {
@@ -46,9 +55,7 @@ namespace WarRoom3D
 
         private void ToggleReduced()
         {
-            reduced = !reduced;
-            toggle.text = reduced ? "Reduzir efeitos: sim" : "Reduzir efeitos: não";
-            if (reduced && banner.style.display.value == DisplayStyle.Flex) hideAt = Time.realtimeSinceStartup + 1f;
+            SetReduced(!reduced);
         }
 
         private void OnConnection(bool connected, string _)

@@ -24,6 +24,7 @@ namespace WarRoom3D
         private bool expanded;
 
         public string SelectedAgentKey => selectedAgentKey;
+        public event Action<string> AgentSelected;
         public bool DetailOpen => detail.style.display == DisplayStyle.Flex;
 
         public ReferenceRoomNavigation(VisualElement rootElement, Action onReturnToSector)
@@ -111,6 +112,7 @@ namespace WarRoom3D
             selectedAgentKey = key;
             RefreshAgentSelection();
             SelectTab(0);
+            AgentSelected?.Invoke(key);
             return true;
         }
 

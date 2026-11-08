@@ -25,7 +25,7 @@ Ao alterar testes ou geradores, verificar que uma falha deliberada é detectada 
 
 ## Sala de referência — #28 e #35
 
-Aplicar a [especificação](specs/2026-11-08-sala-referencia-design.md) e o [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). Resultados ainda não executados. Guardar manifesto, roteiro, matriz por provedor e resultado em docs/validation/sala-referencia/ na implementação.
+Aplicar a [especificação](specs/2026-11-08-sala-referencia-design.md) e o [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). As provas parciais de [arte](validation/sala-referencia/arte.md), [HUD](validation/sala-referencia/issue-30-hud.md), [observação](validation/sala-referencia/issue-31-observacao.md) e [avatares](validation/sala-referencia/issue-32-avatares.md) estão registradas; G1–G4 completos seguem pendentes. Guardar manifesto, roteiro, matriz por provedor e resultado em docs/validation/sala-referencia/ na implementação.
 
 - G1: arte no Player, quartel/interior/ângulo oposto da mesma instância, comparação ao conceito e revisão do PI.
 - G2: jornada controlada identificada, seleção/atividade/chat/pedido/log/evidência/retorno e negativos.

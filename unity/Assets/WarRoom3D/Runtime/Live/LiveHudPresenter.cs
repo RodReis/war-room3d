@@ -13,6 +13,8 @@ namespace WarRoom3D
         [SerializeField] private LiveStateClient client;
         [SerializeField] private SectorBuilder sector;
         [SerializeField] private OrbitCamera orbit;
+        [SerializeField] private GameObject seatedAgentPrefab;
+        [SerializeField] private GameObject standingAgentPrefab;
         private VisualElement root;
         private LiveSnapshot snapshot;
         private string selectedProjectId;
@@ -27,6 +29,7 @@ namespace WarRoom3D
         private DataCenterBuilder dataCenter;
         private OperationsHudPresenter operations;
         private ReferenceRoomNavigation navigation;
+        private AgentPresenter agentPresenter;
 
         private void Start()
         {
@@ -50,6 +53,10 @@ namespace WarRoom3D
             root.Q<Button>("angle-button").clicked += () => orbit.Orbit(180f, 0);
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
             navigation = new ReferenceRoomNavigation(root, ReturnToSector);
+            navigation.AgentSelected += OnAgentSelected;
+            agentPresenter = gameObject.AddComponent<AgentPresenter>();
+            agentPresenter.Configure(seatedAgentPrefab != null ? seatedAgentPrefab : Resources.Load<GameObject>("Agents/AgentSeated"),
+                standingAgentPrefab != null ? standingAgentPrefab : Resources.Load<GameObject>("Agents/AgentStanding"));
             var history = gameObject.AddComponent<HistoryHudPresenter>();
             history.Configure(root, client);
             operations = gameObject.AddComponent<OperationsHudPresenter>();
@@ -74,6 +81,7 @@ namespace WarRoom3D
             if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (replayActiveMaterial != null) Destroy(replayActiveMaterial);
             if (replayUnknownMaterial != null) Destroy(replayUnknownMaterial);
+            if (navigation != null) navigation.AgentSelected -= OnAgentSelected;
             if (client == null) return;
             client.SnapshotChanged -= Render;
             client.ConnectionChanged -= OnConnection;
@@ -88,6 +96,7 @@ namespace WarRoom3D
             root.Q<Label>("activity").text = "O serviço local ainda não forneceu um snapshot válido.";
             root.Q<Label>("agent-tree").text = "Sem dados";
             navigation.SetAgents(Array.Empty<AgentEntry>());
+            if (agentPresenter != null) agentPresenter.Show(null, null, null);
             root.Q<Label>("feed").text = "Sem eventos";
             root.Q<Label>("infrastructure-alert").text = "Sem dados de infraestrutura";
             ShowNoResource("O serviço local ainda não forneceu um snapshot válido.");
@@ -243,27 +252,25 @@ namespace WarRoom3D
             int workingAgents = 0;
             int uncertainAgents = 0;
             var agentEntries = new List<AgentEntry>();
-            foreach (var agent in snapshot.agents)
+            var projection = AgentProjection.ForProject(snapshot, project.projectId, replayMode || client.Connected);
+            foreach (var agent in projection)
             {
-                if (!sessionKeys.Contains(agent.sessionKey) || agent.presence == "encerrada") continue;
-                var session = sessions.Find(item => item.sessionKey == agent.sessionKey);
-                bool sourceCurrent = (replayMode || client.Connected) && session != null && session.freshness == "atual" && session.presence != "desconhecida" && session.presence != "encerrada";
-                if (!sourceCurrent || agent.presence == "desconhecida") uncertainAgents++;
-                else if (agent.presence == "observada" || agent.presence == "trabalhando" || agent.presence == "aguardando")
+                if (agent.Ended) continue;
+                if (agent.Uncertain) uncertainAgents++;
+                else if (agent.Presence == "observada" || agent.Presence == "trabalhando" || agent.Presence == "aguardando")
                 {
                     presentAgents++;
-                    if (agent.presence == "trabalhando") workingAgents++;
+                    if (agent.Presence == "trabalhando") workingAgents++;
                 }
-                var role = string.IsNullOrEmpty(agent.parentAgentKey) ? "Principal" : "Subagente";
-                var providerName = session?.provider == "codex" ? "Codex" : session?.provider == "claude" ? "Claude" : "Fonte desconhecida";
-                var state = !sourceCurrent || agent.presence == "desconhecida" ? "Desatualizado" : agent.presence == "trabalhando" ? "Trabalhando" : agent.presence == "aguardando" ? "Aguardando" : "Presente";
-                var detail = "Agente: " + agent.agentKey + "\nSessão: " + agent.sessionKey + "\nFonte: " + providerName +
-                    "\nÚltimo sinal: " + (string.IsNullOrEmpty(session?.lastSeen) ? "não observado" : session.lastSeen) +
-                    "\nEstado: " + state + " · frescor: " + (session?.freshness ?? "desconhecido") +
-                    "\nTarefa, ferramenta e skill: indisponíveis nesta projeção. Nenhum evento foi vinculado por coincidência temporal.";
-                agentEntries.Add(new AgentEntry(agent.agentKey, role + " · " + providerName + " · " + state, detail));
+                agentEntries.Add(new AgentEntry(agent.AgentKey, agent.Label, agent.Detail));
             }
             navigation.SetAgents(agentEntries);
+            var placement = PlacementFor(project.projectId);
+            var reference = placement != null && sector.Rooms.TryGetValue(placement.slotId, out var target) && target != null &&
+                target.GetComponentInChildren<ReferenceRoomView>() != null ? target : null;
+            agentPresenter.Show(reference, projection, navigation.SelectedAgentKey);
+            if (agentPresenter.OverflowCount > 0)
+                root.Q<Label>("agent-tree").text = "+" + agentPresenter.OverflowCount + " agentes agrupados · lista completa abaixo";
             string status = !replayMode && !client.Connected ? "Sem dados · conexão perdida" : SessionStatus(sessions);
             var statusLabel = root.Q<Label>("status");
             statusLabel.text = (status == "Trabalhando" ? "● " : status == "Aguardando" ? "○ " : "◇ ") + status;
@@ -273,9 +280,19 @@ namespace WarRoom3D
             root.Q<Label>("provider").text = providers.Count == 0 ? "Sem sessão" : providers.Count > 1 ? "Ambos" : providers.Contains("codex") ? "Codex" : "Claude";
             root.Q<Label>("agents").text = $"{presentAgents} agentes presentes · {workingAgents} trabalhando" +
                 (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
-            root.Q<Label>("activity").text = replayMode ? "Estado histórico de sessões; tarefas não disponíveis nesta fatia." : client.Connected ? "Estado de sessões observado; tarefas não disponíveis nesta fatia." : "Conexão perdida. O último snapshot não confirma atividade atual.";
-            root.Q<Label>("agent-tree").text = presentAgents == 0 && uncertainAgents == 0 ? "Nenhum agente presente observado" :
-                $"{presentAgents} agentes presentes" + (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
+            bool hasActivity = false;
+            if (snapshot.tasks != null) foreach (var task in snapshot.tasks)
+                if (task != null && sessionKeys.Contains(task.sessionKey)) { hasActivity = true; break; }
+            if (!hasActivity && snapshot.invocations != null) foreach (var invocation in snapshot.invocations)
+                if (invocation != null && sessionKeys.Contains(invocation.sessionKey)) { hasActivity = true; break; }
+            root.Q<Label>("activity").text = !replayMode && !client.Connected
+                ? "Conexão perdida. O último snapshot não confirma atividade atual."
+                : hasActivity
+                    ? "Sessões e atividade observadas. Selecione um agente para ver tarefa, ferramenta e skill vinculadas."
+                    : "Sessões observadas. Tarefa, ferramenta e skill sem evidência vinculada.";
+            if (agentPresenter.OverflowCount == 0)
+                root.Q<Label>("agent-tree").text = presentAgents == 0 && uncertainAgents == 0 ? "Nenhum agente presente observado" :
+                    $"{presentAgents} agentes presentes" + (uncertainAgents > 0 ? $" · {uncertainAgents} incertos" : "");
             var lines = new List<string>();
             for (int i = snapshot.feed.Length - 1; i >= 0 && lines.Count < 3; i--)
                 if (snapshot.feed[i].projectId == project.projectId) lines.Add($"{snapshot.feed[i].observedAt} · {snapshot.feed[i].type}");
@@ -302,7 +319,8 @@ namespace WarRoom3D
 
         private LiveRoomPlacement PlacementFor(string projectId)
         {
-            return Array.Find(snapshot.roomPlacements, item => item.projectId == projectId && item.sectorId == "setor-01" && sector.Rooms.ContainsKey(item.slotId));
+            return Array.Find(snapshot.roomPlacements, item => item.projectId == projectId && item.sectorId == "setor-01" &&
+                sector.Rooms.TryGetValue(item.slotId, out var room) && room != null);
         }
 
         private void FocusSelectedRoom()
@@ -456,10 +474,40 @@ namespace WarRoom3D
                 if (operations?.HandleEscape() == true) return;
                 if (navigation.HandleEscape()) return;
             }
+            if (insideRoom && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame &&
+                !IsPointerOverHud(Mouse.current.position.ReadValue()) &&
+                agentPresenter.TryPick(Camera.main, Mouse.current.position.ReadValue(), out var picked))
+            { navigation.SelectAgent(picked); return; }
             if (insideRoom || insideDataCenter || snapshot == null) return;
             if (!RoomSceneSelection.TryPickSlot(Camera.main, sector, this, out var slotId)) return;
             foreach (var placement in snapshot.roomPlacements)
                 if (placement.slotId == slotId && placement.sectorId == "setor-01") { SelectProject(placement.projectId); break; }
+        }
+
+        private void OnAgentSelected(string key)
+        {
+            if (agentPresenter == null) return;
+            agentPresenter.Show(AgentPresenterRoom(), AgentProjection.ForProject(snapshot, selectedProjectId, replayMode || client.Connected), key);
+            if (insideRoom)
+            {
+                var target = agentPresenter.FindAgent(key);
+                if (target != null) orbit.FocusAgent(target);
+            }
+        }
+
+#if DEVELOPMENT_BUILD && !UNITY_EDITOR
+        public string SelectedAgentKeyForValidation => navigation?.SelectedAgentKey;
+        private void SelectProjectForValidation(string projectId) => SelectProject(projectId);
+        private void SelectAgentForValidation(string key) => navigation?.SelectAgent(key);
+        private void OpenEvidenceForValidation() => navigation?.OpenEvidence();
+#endif
+
+        private Transform AgentPresenterRoom()
+        {
+            if (snapshot == null || selectedProjectId == null) return null;
+            var placement = PlacementFor(selectedProjectId);
+            return placement != null && sector.Rooms.TryGetValue(placement.slotId, out var target) && target != null &&
+                target.GetComponentInChildren<ReferenceRoomView>() != null ? target : null;
         }
 
         private bool Contains(string name, Vector2 point)

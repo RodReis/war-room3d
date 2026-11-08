@@ -68,7 +68,7 @@ namespace WarRoom3D
 
     [Serializable] public sealed class LiveProject { public string projectId; public string name; }
     [Serializable] public sealed class LiveRoomPlacement { public string projectId; public string sectorId; public string slotId; }
-    [Serializable] public sealed class LiveSession { public string sessionKey; public string projectId; public string provider; public string presence; public string freshness; public string lastSeen; }
+    [Serializable] public sealed class LiveSession { public string sessionKey; public string projectId; public string provider; public string sourceId; public string presence; public string freshness; public string lastSeen; }
     [Serializable] public sealed class LiveAgent { public string agentKey; public string sessionKey; public string parentAgentKey; public string presence; public string parentStatus; }
     [Serializable] public sealed class LiveTask { public string taskId; public string sessionKey; public string agentKey; public string title; public string status; public string provenance; }
     [Serializable] public sealed class LiveInvocation { public string invocationId; public string sessionKey; public string agentKey; public string kind; public string name; public string status; }

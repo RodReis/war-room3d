@@ -40,6 +40,10 @@ namespace WarRoom3D
             public int sessionCount;
             public int agentCount;
             public int linkedChildCount;
+            public int avatarCount;
+            public int groupedAgentCount;
+            public bool parentLinkVisible;
+            public string selectedAgentKey;
             public int incidentCount;
             public string health;
             public string coverage;
@@ -81,7 +85,9 @@ namespace WarRoom3D
             capture.captureDirectory = directory;
             capture.captureName = name;
             var requestedView = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VIEW");
-            capture.captureView = requestedView == "project" || requestedView == "project-bottom" ? requestedView : "center";
+            capture.captureView = requestedView == "project" || requestedView == "project-bottom" ||
+                requestedView == "room" || requestedView == "room-opposite" || requestedView == "room-reduced" ||
+                requestedView == "agent" || requestedView == "agent-focus" ? requestedView : "center";
             var requestedVSync = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VSYNC_COUNT");
             if (!string.IsNullOrEmpty(requestedVSync))
             {
@@ -159,6 +165,25 @@ namespace WarRoom3D
                 yield break;
             }
             if (captureView == "center") presenter.SendMessage("ShowDataCenter");
+            if (captureView == "room" || captureView == "room-opposite" || captureView == "room-reduced" ||
+                captureView == "agent" || captureView == "agent-focus")
+            {
+                var projectId = Environment.GetEnvironmentVariable("WR3D_VALIDATION_PROJECT_ID");
+                if (!string.IsNullOrEmpty(projectId)) presenter.SendMessage("SelectProjectForValidation", projectId);
+                presenter.SendMessage("EnterRoom");
+                if (captureView == "room-opposite") FindAnyObjectByType<OrbitCamera>()?.Orbit(180f, 0);
+                if (captureView == "room-reduced")
+                {
+                    FindAnyObjectByType<ReferenceRoomView>()?.SetReduced(true);
+                    FindAnyObjectByType<EffectDirector>()?.SetReduced(true);
+                }
+                if (captureView == "agent" || captureView == "agent-focus")
+                {
+                    var key = Environment.GetEnvironmentVariable("WR3D_VALIDATION_AGENT_KEY");
+                    if (!string.IsNullOrEmpty(key)) presenter.SendMessage("SelectAgentForValidation", key);
+                    if (captureView == "agent") presenter.SendMessage("OpenEvidenceForValidation");
+                }
+            }
             yield return new WaitForEndOfFrame();
             if (captureView == "project-bottom")
             {
@@ -243,6 +268,11 @@ namespace WarRoom3D
             report.resourceCount = snapshot.resources.Length;
             report.sessionCount = snapshot.sessions.Length;
             report.agentCount = snapshot.agents.Length;
+            var avatarPresenter = GetComponent<AgentPresenter>();
+            report.avatarCount = avatarPresenter != null ? avatarPresenter.VisibleCount : 0;
+            report.groupedAgentCount = avatarPresenter != null ? avatarPresenter.OverflowCount : 0;
+            report.parentLinkVisible = avatarPresenter != null && avatarPresenter.ParentLinkVisible;
+            report.selectedAgentKey = presenter.SelectedAgentKeyForValidation;
             foreach (var agent in snapshot.agents)
                 if (agent.parentStatus == "vinculado") report.linkedChildCount++;
             report.incidentCount = snapshot.incidents.Length;

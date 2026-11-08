@@ -43,6 +43,16 @@ namespace WarRoom3D
             ApplyPose();
         }
 
+        public void FocusAgent(Transform agent)
+        {
+            if (agent == null) return;
+            var reference = agent.GetComponentInParent<ReferenceRoomView>();
+            var target = agent.position + Vector3.up * .75f;
+            focus = reference != null ? Vector3.Lerp(reference.transform.position + Vector3.up, target, .28f) : target;
+            distance = reference != null ? 9f : Mathf.Clamp(distance, 8f, 12f);
+            ApplyPose();
+        }
+
         public void ResetView()
         {
             focus = new Vector3(0, 0.7f, 0);

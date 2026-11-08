@@ -22,7 +22,8 @@ try {
   }, 86400000);
   retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
-  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
+  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown,
+    { dockerToken: process.env.WR3D_DOCKER_PROXY_TOKEN }) : null;
   const sessionConfigPath = process.env.WR3D_SESSIONS_CONFIG_PATH;
   const sessionConfig = sessionConfigPath ? parseSessionSources(JSON.parse(readFileSync(sessionConfigPath,'utf8')) as unknown) : null;
   store.configureSessionSources(sessionConfig?.projects ?? [],sessionConfig?.sources ?? []);

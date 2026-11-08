@@ -1,5 +1,6 @@
 import { httpProbe } from './connectors/http.ts';
 import { localHostProbe } from './connectors/host.ts';
+import { dockerContainerProbe } from './connectors/docker.ts';
 import { CollectorRunner, type Probe } from './connectors/probe.ts';
 import { parseInventory, type Inventory } from './inventory.ts';
 import type { EventStore } from '../store/event-store.ts';
@@ -10,7 +11,8 @@ interface MonitoringConfig {
   schemaVersion: '1.0';
   projects: ProjectRecord[];
   inventory: Inventory;
-  probes: ({ kind: 'host'; resourceId: string } | { kind: 'api'; resourceId: string; url: string })[];
+  probes: ({ kind: 'host'; resourceId: string } | { kind: 'api'; resourceId: string; url: string } |
+    { kind: 'docker'; resourceId: string; containerName: string; proxyUrl: string })[];
   intervalMs: number;
   timeoutMs: number;
 }
@@ -51,31 +53,37 @@ function parseConfig(input: unknown): MonitoringConfig {
   const probeIds = new Set<string>();
   for (const value of input.probes) {
     if (!isRecord(value) || typeof value.resourceId !== 'string' ||
-        (value.kind !== 'host' && value.kind !== 'api') ||
-        Object.keys(value).some(key => !['kind', 'resourceId', 'url'].includes(key)) ||
-        (value.kind === 'host' && 'url' in value) ||
-        (value.kind === 'api' && typeof value.url !== 'string'))
+        (value.kind !== 'host' && value.kind !== 'api' && value.kind !== 'docker') ||
+        Object.keys(value).some(key => !['kind', 'resourceId', 'url', 'containerName', 'proxyUrl'].includes(key)) ||
+        (value.kind === 'host' && Object.keys(value).some(key => !['kind', 'resourceId'].includes(key))) ||
+        (value.kind === 'api' && (typeof value.url !== 'string' || Object.keys(value).some(key => !['kind', 'resourceId', 'url'].includes(key)))) ||
+        (value.kind === 'docker' && (typeof value.containerName !== 'string' || typeof value.proxyUrl !== 'string' ||
+          Object.keys(value).some(key => !['kind', 'resourceId', 'containerName', 'proxyUrl'].includes(key)))))
       throw new Error('Sonda não autorizada pela configuração');
     const resource = resources.get(value.resourceId);
     if (!resource || resource.kind !== value.kind || probeIds.has(value.resourceId))
       throw new Error('Sonda sem recurso correspondente ou duplicada');
     probeIds.add(value.resourceId);
     if (value.kind === 'host') probes.push({ kind: 'host', resourceId: value.resourceId });
-    else probes.push({ kind: 'api', resourceId: value.resourceId, url: value.url as string });
+    else if (value.kind === 'api') probes.push({ kind: 'api', resourceId: value.resourceId, url: value.url as string });
+    else probes.push({ kind: 'docker', resourceId: value.resourceId,
+      containerName: value.containerName as string, proxyUrl: value.proxyUrl as string });
   }
   if (probes.length === 0) throw new Error('Nenhuma sonda configurada');
   return { schemaVersion: '1.0', projects, inventory, probes,
     intervalMs: input.intervalMs as number, timeoutMs: input.timeoutMs as number };
 }
 
-export function configureMonitoring(store: EventStore, input: unknown): { runner: CollectorRunner; intervalMs: number } {
+export function configureMonitoring(store: EventStore, input: unknown, options: { dockerToken?: string } = {}):
+  { runner: CollectorRunner; intervalMs: number } {
   const config = parseConfig(input);
   const resources = new Map(config.inventory.resources.map(resource => [resource.resourceId, resource]));
   const probes: Probe[] = config.probes.map(item => {
     const resource = resources.get(item.resourceId)!;
-    return item.kind === 'host'
-      ? localHostProbe(resource.resourceId, resource.sourceId)
-      : httpProbe(resource.resourceId, resource.sourceId, item.url);
+    if (item.kind === 'host') return localHostProbe(resource.resourceId, resource.sourceId);
+    if (item.kind === 'api') return httpProbe(resource.resourceId, resource.sourceId, item.url);
+    return dockerContainerProbe(resource.resourceId, resource.sourceId, item.containerName, item.proxyUrl,
+      options.dockerToken ?? '');
   });
   const existing = new Map((store.snapshot().projects as { projectId: string; name: string }[]).map(project => [project.projectId, project.name]));
   for (const project of config.projects) {

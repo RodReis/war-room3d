@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
@@ -9,7 +9,10 @@ const readJsonl = name => gunzipSync(readFileSync(path.join(directory, name)))
   .toString('utf8').trim().split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 const accepted = readJsonl('accepted-600s.jsonl.gz');
 const trace = readJsonl('trace-600s.jsonl.gz');
-const expected = JSON.parse(readFileSync(path.join(directory, 'metrics-600s.json'), 'utf8'));
+const compressedMetrics = path.join(directory, 'metrics-600s.json.gz');
+const expected = JSON.parse(existsSync(compressedMetrics)
+  ? gunzipSync(readFileSync(compressedMetrics)).toString('utf8')
+  : readFileSync(path.join(directory, 'metrics-600s.json'), 'utf8'));
 assert.equal(accepted.length, expected.acceptedEvents);
 assert.equal(trace.length, expected.renderTraceCount);
 for (const items of [accepted, trace])

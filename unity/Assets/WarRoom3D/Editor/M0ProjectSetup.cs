@@ -13,6 +13,7 @@ namespace WarRoom3D.Editor
         [MenuItem("War-Room3D/Criar cena M0/M2 demo")]
         public static void CreateScene()
         {
+            var referenceRoom = ReferenceRoomAssetBuilder.EnsurePrefab();
             PlayerSettings.companyName = "RodReis";
             PlayerSettings.productName = "War-Room3D M2 Demo";
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -25,6 +26,7 @@ namespace WarRoom3D.Editor
             sectorObject.FindProperty("cyanMaterial").objectReferenceValue = Palette("Cyan", new Color(0.06f, 0.72f, 0.83f), true);
             sectorObject.FindProperty("glassMaterial").objectReferenceValue = Palette("Glass", new Color(0.12f, 0.30f, 0.38f));
             sectorObject.FindProperty("goldMaterial").objectReferenceValue = Palette("Gold", new Color(0.88f, 0.58f, 0.18f), true);
+            sectorObject.FindProperty("referenceRoomPrefab").objectReferenceValue = referenceRoom;
             sectorObject.ApplyModifiedPropertiesWithoutUndo();
             var loader = new GameObject("Demonstração").AddComponent<DemoLoader>();
             var fixture = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/WarRoom3D/Demo/m0-demo.v1.json");
@@ -97,6 +99,7 @@ namespace WarRoom3D.Editor
         [MenuItem("War-Room3D/Build Windows M0")]
         public static void BuildWindows()
         {
+            CreateScene();
             var options = new BuildPlayerOptions
             {
                 scenes = new[] { ScenePath },

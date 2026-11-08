@@ -27,9 +27,10 @@ namespace WarRoom3D
         {
             if (room == null) return;
             focus = room.position + Vector3.up;
-            yaw = 35f;
-            pitch = 37f;
-            distance = 11f;
+            bool reference = room.GetComponentInChildren<ReferenceRoomView>() != null;
+            yaw = reference ? 30f : 35f;
+            pitch = reference ? 44f : 37f;
+            distance = reference ? 9f : 11f;
             ApplyPose();
         }
 

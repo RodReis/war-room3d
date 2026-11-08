@@ -42,6 +42,6 @@ Os cinco scripts locais usados no ensaio não contêm credenciais e não entram 
 
 - **PostgreSQL:** consulta real da sonda com papel temporário restrito, transação `READ ONLY` e referência DPAPI: `pass` pontual. Papel e segredo removidos ao fim; monitoração SQL contínua permanece `not_run`.
 - **Docker:** coleta ContaIA de dez minutos com proxy e leitor sob contas separadas: `pass` no laboratório temporário. Nenhuma identidade, token ou processo ficou instalado para operação permanente.
-- **RNF-02:** a prova anterior com VSync 1 registrou p95 interno de 16,725 ms, acima do limite 16,67 ms. FPS apresentado, GPU e modo reduzido seguem `not_run`; nenhuma nova medição do Player foi feita nesta fatia.
+- **RNF-02:** o [ensaio complementar de FPS apresentado](issue-16-fps.md) mediu o Player em 1080p com VSync 1 por dez minutos. Com a janela visível, o p95 externo de exibição foi **24,663 ms** e o p95 interno **16,745 ms**, ambos acima de 16,67 ms; o p95 de tempo de GPU foi **5,172 ms**. O modo reduzido segue `not_run`.
 
 Issue #16 e aceite operacional da #3 permanecem abertos. Consulta SQL pontual e coleta Docker de dez minutos não atestam operação permanente nem RNF-02.

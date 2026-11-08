@@ -27,9 +27,10 @@ namespace WarRoom3D
         {
             if (room == null) return;
             focus = room.position + Vector3.up;
-            yaw = 35f;
-            pitch = 37f;
-            distance = 11f;
+            bool reference = room.GetComponentInChildren<ReferenceRoomView>() != null;
+            yaw = reference ? 30f : 35f;
+            pitch = reference ? 44f : 37f;
+            distance = reference ? 9f : 11f;
             ApplyPose();
         }
 
@@ -71,6 +72,7 @@ namespace WarRoom3D
             if (mouse == null) return;
             if (mouse.rightButton.wasPressedThisFrame) dragging = hud == null || !hud.IsPointerOverHud(mouse.position.ReadValue());
             if (mouse.rightButton.wasReleasedThisFrame) dragging = false;
+            if (dragging && mouse.rightButton.isPressed && hud != null && hud.IsPointerOverHud(mouse.position.ReadValue())) dragging = false;
             if (dragging && mouse.rightButton.isPressed)
             {
                 Vector2 delta = mouse.delta.ReadValue();

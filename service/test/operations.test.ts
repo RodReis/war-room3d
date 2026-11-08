@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test, type TestContext } from 'node:test';
 import { randomBytes } from 'node:crypto';
+import Database from 'better-sqlite3';
 import { EventStore } from '../src/store/event-store.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
 import { createDockerLogsCollector, createHttpNetworkSink } from '../src/operations/operation-collector.ts';
@@ -27,6 +28,28 @@ function observation(overrides:Partial<Observation>={}):Observation {
   return {schemaVersion:'1.0',observationId:'obs-1',sourceId:'logs-lab',sourceVersion:'1.0',environmentId:'env-a',resourceId:'api-a',observedAt:now,receivedAt:now,
     category:'log',classification:'application',confidence:'observed',evidenceRef:'file://logs/app.log?token=secret-value',coverage:'covered',fields:{message:'Authorization: Bearer sample-secret {"password":"json-secret"}',api_token:'leak',status:500},...overrides};
 }
+
+test('migração 17 para 18 preserva dados M1 e adiciona tabelas M5', t => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'wr3d-migrate-17-'));
+  const databasePath = path.join(directory, 'state.sqlite');
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  let store = new EventStore(databasePath);
+  store.registerProject({ projectId: 'project-a', name: 'Projeto existente', canonicalPath: 'C:\\Projetos\\existente' });
+  store.close();
+  const db = new Database(databasePath);
+  db.pragma('foreign_keys = OFF');
+  for (const table of ['operation_incident_events', 'operation_incidents', 'operation_rules', 'operation_observations', 'operation_source_category_status', 'operation_sources'])
+    db.exec(`DROP TABLE ${table}`);
+  db.prepare("UPDATE meta SET value = 17 WHERE key = 'schema_version'").run();
+  db.close();
+  store = new EventStore(databasePath);
+  assert.equal((store.snapshot().projects as {projectId:string}[])[0]?.projectId, 'project-a');
+  assert.equal(store.operations.coverage('env-a', 'log'), 'absent');
+  store.close();
+  const upgraded = new Database(databasePath, { readonly: true });
+  assert.equal((upgraded.prepare("SELECT value FROM meta WHERE key = 'schema_version'").get() as {value:number}).value, 18);
+  upgraded.close();
+});
 
 test('cobertura distingue fonte ausente, sem dados, sem permissão, desligada, indisponível e desatualizada',t=>{
   const {store,source}=setup(t);

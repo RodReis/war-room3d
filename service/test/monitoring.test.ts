@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { EventStore } from '../src/store/event-store.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
 import { configureMonitoring } from '../src/infra/monitoring.ts';
+import { startDockerSnapshotProxy, type DockerEngineReader } from '../src/infra/connectors/docker-proxy.ts';
 
 const inventory = JSON.parse(readFileSync(new URL('../../contracts/fixtures/m2/shared-infrastructure.v1.json', import.meta.url), 'utf8'));
 const projects = [1, 2, 3].map(number => ({ projectId: `p${number}`, name: `Projeto ${number}`, canonicalPath: `C:\\Projects\\p${number}` }));
@@ -92,12 +93,62 @@ test('fonte Docker M5 exige proxy local válido antes de alterar inventário',t=
     m5DockerLogs:{enabled:true,composeProject:'contaia',composeWorkingDir:'C:\\Desenv\\Projetos\\rrb-contaia\\infra\\docker',service:'api',
       environmentId:'lab',resourceId:'api-lab',retentionDays:1,initialLookbackMinutes:10,intervalMs:60000}};
   assert.throws(()=>configureMonitoring(store,config),/sem proxy Docker/);
-  assert.throws(()=>configureMonitoring(store,config,{url:'http://example.invalid/v1/logs',token:'x'.repeat(64)}),/loopback/);
+  assert.throws(()=>configureMonitoring(store,config,{dockerLogsProxy:{url:'http://example.invalid/v1/logs',token:'x'.repeat(64)}}),/loopback/);
   assert.deepEqual(store.snapshot().projects,[]);
   assert.deepEqual(store.snapshot().resources,[]);
-  const configured=configureMonitoring(store,config,{url:'http://127.0.0.1:12345/v1/logs',token:'x'.repeat(64)});
+  const configured=configureMonitoring(store,config,{dockerLogsProxy:{url:'http://127.0.0.1:12345/v1/logs',token:'x'.repeat(64)}});
   assert.ok(configured.dockerLogs);
   assert.equal(store.operations.sources('lab').find(source=>source.sourceId===configured.dockerLogs!.sourceId)?.coverage.log,'no_data');
+});
+
+test('monitoração Docker coleta estados sucessivos pelo proxy sintético sem sessões', async t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'war-room3d-monitoring-docker-'));
+  const store = new EventStore(path.join(directory, 'state.db'));
+  const scope = { composeProject: 'laboratorio', composeWorkingDir: 'C:\\Projetos\\laboratorio' };
+  let state = 'running';
+  let health = 'healthy';
+  const engine: DockerEngineReader = { async get() { return [{
+    Names: ['/api-lab'], State: state, Health: { Status: health },
+    Labels: { 'com.docker.compose.project': scope.composeProject,
+      'com.docker.compose.project.working_dir': scope.composeWorkingDir }
+  }]; } };
+  const { server, url } = await startDockerSnapshotProxy(engine, scope, token);
+  t.after(async () => {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    store.close();
+    rmSync(directory, { recursive: true, force: true });
+  });
+  const dockerInventory = { ...inventory, resources: [...inventory.resources, {
+    resourceId: 'docker-lab', environmentId: 'lab', kind: 'docker', name: 'Contêiner sintético',
+    sourceId: 'docker-proxy', staleAfterMs: 60000
+  }] };
+  const config = { schemaVersion: '1.0', projects, inventory: dockerInventory, intervalMs: 1000, timeoutMs: 1000,
+    probes: [{ kind: 'docker', resourceId: 'docker-lab', containerName: 'api-lab', proxyUrl: url }] };
+  assert.throws(() => configureMonitoring(store, config), /Configuração do conector Docker inválida/);
+  assert.deepEqual(store.snapshot().projects, []);
+  assert.throws(() => configureMonitoring(store, { ...config, probes: [{ ...config.probes[0], token }] },
+    { dockerToken: token }), /Sonda não autorizada/);
+  assert.deepEqual(store.snapshot().projects, []);
+  assert.throws(() => configureMonitoring(store, { ...config, probes: [{ ...config.probes[0],
+    proxyUrl: 'http://example.invalid/v1/snapshot' }] }, { dockerToken: token }), /Configuração do conector Docker inválida/);
+  assert.deepEqual(store.snapshot().projects, []);
+  const { runner } = configureMonitoring(store, config, { dockerToken: token });
+  const dockerState = () => (store.snapshot().resourceStates as MonitorSnapshot['resourceStates'])
+    .filter(item => item.resourceId === 'docker-lab');
+  assert.deepEqual(await runner.collectOnce(), { collected: ['docker-lab'], failed: [] });
+  assert.deepEqual(store.snapshot().sessions, []);
+  assert.deepEqual(dockerState().map(item => [item.health, item.coverage]), [['saudavel', 'atual']]);
+  state = 'exited'; health = 'none';
+  runner.start(1000);
+  const deadline = Date.now() + 3000;
+  while (Date.now() < deadline && dockerState()[0]?.health !== 'indisponivel')
+    await new Promise(resolve => setTimeout(resolve, 25));
+  await runner.stop();
+  assert.deepEqual(dockerState().map(item => [item.health, item.coverage]), [['indisponivel', 'atual']]);
+  assert.deepEqual(store.snapshot().sessions, []);
+  server.close();
+  assert.deepEqual(await runner.collectOnce(), { collected: [], failed: ['docker-lab'] });
+  assert.deepEqual(dockerState().map(item => item.coverage), ['perdida']);
 });
 
 test('caminho novo em projeto existente falha antes de cadastrar outros projetos', t => {

@@ -10,6 +10,8 @@ import { HistoryStore, retentionCutoffs } from '../history/history.ts';
 import type { RepositoryLink } from '../history/history.ts';
 import { CommandAudit } from '../commands/audit.ts';
 import { OperationsStore } from '../operations/operations-store.ts';
+import { createHash } from 'node:crypto';
+import type { SessionSource } from '../sessions/adapters.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -36,7 +38,7 @@ export interface NormalizedEvent {
   agentKey?: string;
   provenance: string;
   ingestionMode: string;
-  payload: { parentAgentKey?: string; reason?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
+  payload: { parentAgentKey?: string; parentStatus?: 'vinculo_pendente'; taskId?: string; invocationId?: string; messageId?: string; title?: string; name?: string; reason?: string; errorCode?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
   evidenceRefs: string[];
   [key: string]: unknown;
 }
@@ -72,7 +74,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 17) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 18) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -119,7 +121,12 @@ export class EventStore {
       this.db.exec(readFileSync(new URL('./migrations/0016_commands.sql', import.meta.url), 'utf8'));
     })();
     if (schemaVersion < 17) this.db.transaction(() => {
-      this.db.exec(readFileSync(new URL('./migrations/0017_operations.sql', import.meta.url), 'utf8'));
+      const columns = this.db.pragma('table_info(sources)') as {name:string}[];
+      if (!columns.some(column => column.name === 'last_error_code')) this.db.exec('ALTER TABLE sources ADD COLUMN last_error_code TEXT');
+      this.db.exec(readFileSync(new URL('./migrations/0017_session_activity.sql', import.meta.url), 'utf8'));
+    })();
+    if (schemaVersion < 18) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0018_operations.sql', import.meta.url), 'utf8'));
     })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
@@ -128,6 +135,46 @@ export class EventStore {
   }
 
   close(): void { this.db.close(); }
+
+  configureSessionSources(projects: readonly ProjectRecord[], sources: readonly SessionSource[]): void {
+    this.db.transaction(() => {
+      const existing = new Map((this.snapshot().projects as {projectId:string;name:string}[]).map(project => [project.projectId,project.name]));
+      for (const project of projects) {
+        if (existing.has(project.projectId) && (existing.get(project.projectId) !== project.name || this.resolveProject(project.canonicalPath) !== project.projectId))
+          throw new Error('Projeto de sessões diverge do registro');
+        if (!existing.has(project.projectId)) this.registerProject(project);
+      }
+      this.reconcileSessionSourceBindings(sources);
+    })();
+  }
+
+  reconcileSessionSourceBindings(configured: readonly SessionSource[]): void {
+    this.db.transaction(() => {
+      const current = this.db.prepare('SELECT source_id,source_version,project_id,provider,account_ref FROM session_source_bindings').all() as
+        {source_id:string;source_version:string;project_id:string;provider:string;account_ref:string}[];
+      const next = new Map(configured.map(source => [source.sourceId,source]));
+      for (const row of current) {
+        const source = next.get(row.source_id);
+        if (source && (source.projectId !== row.project_id || source.provider !== row.provider || source.accountRef !== row.account_ref))
+          throw new Error('Fonte de sessão mudou de identidade; use outro sourceId');
+        if (!source) {
+          const status = this.db.prepare('SELECT status,status_at FROM sources WHERE source_id = ?').get(row.source_id) as {status:string;status_at:string}|undefined;
+          if (status?.status !== 'indisponivel') {
+            const previous = this.getCursor(row.source_id,'source-status');
+            const offset = (previous?.offset ?? 0)+1;
+            const now = new Date(Math.max(Date.now(),status ? Date.parse(status.status_at)+1 : 0)).toISOString();
+            this.apply({schemaVersion:'1.0',eventId:`e-${createHash('sha256').update(`${row.source_id}:status:${offset}`).digest('hex')}`,
+              sourceId:row.source_id,sourceEventId:`status-${offset}`,sourceVersion:row.source_version,type:'source.unavailable',
+              observedAt:now,receivedAt:now,provenance:'observed',ingestionMode:'live',payload:{reason:'source_lost',errorCode:'revoked'},evidenceRefs:[]},
+              {sourceId:row.source_id,fileKey:'source-status',generation:0,offset});
+          }
+          this.db.prepare('DELETE FROM session_source_bindings WHERE source_id = ?').run(row.source_id);
+        }
+      }
+      for (const source of configured) this.db.prepare(`INSERT INTO session_source_bindings(source_id,source_version,project_id,provider,account_ref) VALUES(?,?,?,?,?)
+        ON CONFLICT(source_id) DO UPDATE SET source_version=excluded.source_version`).run(source.sourceId,source.sourceVersion,source.projectId,source.provider,source.accountRef);
+    })();
+  }
 
   registerProjectsAndLinkRepositories(projects: readonly ProjectRecord[], repositories: readonly Omit<RepositoryLink, 'linkedAt'>[]): void {
     this.db.transaction(() => {
@@ -183,6 +230,17 @@ export class EventStore {
     return row?.project_id ?? null;
   }
 
+  matchesProjectPathHash(projectId: string, pathHash: string): boolean {
+    if (!/^[a-f0-9]{64}$/.test(pathHash)) return false;
+    const paths = this.db.prepare('SELECT path FROM project_paths WHERE project_id = ?').all(projectId) as {path:string}[];
+    return paths.some(row => createHash('sha256').update(row.path).digest('hex') === pathHash);
+  }
+
+  hasSessionContext(sessionKey: string, sourceId: string, projectId: string, provider: string): boolean {
+    return Boolean(this.db.prepare('SELECT 1 FROM sessions WHERE session_key=? AND source_id=? AND project_id=? AND provider=?')
+      .get(sessionKey,sourceId,projectId,provider));
+  }
+
   getCursor(sourceId: string, fileKey: string): Cursor | null {
     const row = this.db.prepare('SELECT generation, offset FROM source_cursors WHERE source_id = ? AND file_key = ?').get(sourceId, fileKey) as { generation: number; offset: number } | undefined;
     return row ? { sourceId, fileKey, ...row } : null;
@@ -196,6 +254,21 @@ export class EventStore {
     this.db.prepare(`INSERT INTO source_cursors(source_id, file_key, generation, offset) VALUES (?, ?, ?, ?)
       ON CONFLICT(source_id, file_key) DO UPDATE SET generation = excluded.generation, offset = excluded.offset`)
       .run(cursor.sourceId, cursor.fileKey, cursor.generation, cursor.offset);
+  }
+
+  acknowledgeCursor(cursor: Cursor): void {
+    if (!cursor.sourceId || !cursor.fileKey || !Number.isSafeInteger(cursor.generation) || cursor.generation < 0 || !Number.isSafeInteger(cursor.offset) || cursor.offset < 0)
+      throw new Error('Cursor inválido');
+    this.db.transaction(() => this.advanceCursor(cursor))();
+  }
+
+  applyBatch(events: readonly NormalizedEvent[], cursor: Cursor): ApplyResult[] {
+    if (events.length === 0) { this.acknowledgeCursor(cursor); return []; }
+    return this.db.transaction(() => events.map(event => {
+      const result = this.apply(event,cursor);
+      if (result.reason && result.reason !== 'duplicate') throw new Error('Lote de fonte inválido');
+      return result;
+    }))();
   }
 
   apply(input: unknown, cursor: Cursor): ApplyResult {
@@ -227,17 +300,18 @@ export class EventStore {
       this.db.prepare('INSERT INTO events(event_id, source_id, dedupe_key, stream_sequence, event_json) VALUES (?, ?, ?, ?, ?)')
         .run(event.eventId, event.sourceId, dedupeKey, sequence, JSON.stringify(event));
       this.applyState(event);
-      const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null } | undefined;
-      const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) > 0;
+      const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at, last_error_code FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null; last_error_code: string | null } | undefined;
+      const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) >= 0;
       const status = statusIsNewer ? (event.type === 'source.unavailable' ? 'indisponivel' : 'atual') : priorSource.status;
       const statusAt = statusIsNewer ? event.observedAt : priorSource.status_at;
+      const errorCode = statusIsNewer ? (event.type === 'source.unavailable' ? event.payload.errorCode ?? null : null) : priorSource.last_error_code;
       const lastUnavailableAt = event.type === 'source.unavailable' && (!priorSource?.last_unavailable_at || compareTimestamp(event.observedAt, priorSource.last_unavailable_at) > 0)
         ? event.observedAt : priorSource?.last_unavailable_at ?? null;
-      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, status_at, last_unavailable_at, last_received, last_applied) VALUES (?, ?, ?, ?, ?, ?, ?)
+      this.db.prepare(`INSERT INTO sources(source_id, source_version, status, status_at, last_unavailable_at, last_received, last_applied, last_error_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(source_id) DO UPDATE SET source_version = excluded.source_version,
           status = excluded.status, status_at = excluded.status_at, last_unavailable_at = excluded.last_unavailable_at,
-          last_received = excluded.last_received, last_applied = excluded.last_applied`)
-        .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt);
+          last_received = excluded.last_received, last_applied = excluded.last_applied, last_error_code = excluded.last_error_code`)
+        .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt, errorCode);
       this.advanceCursor(cursor);
       return { applied: true, revision: this.next('revision'), streamSequence: sequence };
     });
@@ -252,12 +326,16 @@ export class EventStore {
       const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null } | undefined;
       if (row && (row.project_id !== event.projectId || row.source_id !== event.sourceId || row.provider !== event.provider)) throw new Error('Identidade de sessão colide com outro contexto');
       const current: SessionState | null = row ? { presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen, sourceUnavailableAt: row.source_unavailable_at } : null;
-      const next = reduceSession(current, event.type as SessionSignal, event.observedAt);
+      const next = reduceSession(current, event.type as SessionSignal, event.observedAt, event.payload.reason === 'source_recovered');
       const provider = event.provider!;
       this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(session_key) DO UPDATE SET presence = excluded.presence, freshness = excluded.freshness, last_seen = excluded.last_seen, source_unavailable_at = excluded.source_unavailable_at`)
         .run(event.sessionKey, event.projectId, event.sourceId, provider, next.presence, next.freshness, next.lastSeen, next.sourceUnavailableAt);
-      if (next.presence === 'encerrada') this.db.prepare("UPDATE agents SET presence = 'encerrada' WHERE session_key = ? AND presence != 'encerrada'").run(event.sessionKey);
+      if (next.presence === 'encerrada') {
+        this.db.prepare("UPDATE agents SET presence = 'encerrada' WHERE session_key = ? AND presence != 'encerrada'").run(event.sessionKey);
+        this.db.prepare("UPDATE session_tasks SET status = 'desconhecida' WHERE session_key = ? AND status != 'concluida_declarada'").run(event.sessionKey);
+        this.db.prepare("UPDATE session_invocations SET status = 'desconhecida' WHERE session_key = ? AND status = 'observada'").run(event.sessionKey);
+      }
     } else if (event.type.startsWith('agent.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const session = this.db.prepare('SELECT project_id, source_id, provider, presence FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: Presence } | undefined;
@@ -270,17 +348,42 @@ export class EventStore {
       }
       const known = new Set((this.db.prepare('SELECT agent_key FROM agents WHERE session_key = ?').all(event.sessionKey) as { agent_key: string }[]).map(row => row.agent_key));
       const presence = event.type.replace('agent.', '') === 'ended' ? 'encerrada' : event.type.replace('agent.', '') === 'working' ? 'trabalhando' : event.type.replace('agent.', '') === 'waiting' ? 'aguardando' : 'observada';
-      const previous = this.db.prepare('SELECT session_key, parent_agent_key, presence, last_seen FROM agents WHERE agent_key = ?').get(event.agentKey) as { session_key: string; parent_agent_key: string | null; presence: Presence; last_seen: string } | undefined;
+      const previous = this.db.prepare('SELECT session_key, parent_agent_key, parent_status, presence, last_seen FROM agents WHERE agent_key = ?').get(event.agentKey) as { session_key: string; parent_agent_key: string | null; parent_status: string; presence: Presence; last_seen: string } | undefined;
       if (previous && previous.session_key !== event.sessionKey) throw new Error('Agente aponta para outra sessão');
-      if (previous?.presence === 'encerrada' || (previous && compareTimestamp(event.observedAt, previous.last_seen) < 0)) return;
+      if ((previous?.presence === 'encerrada' && event.payload.reason !== 'source_recovered') || (previous && compareTimestamp(event.observedAt, previous.last_seen) < 0)) return;
       const parent = event.payload.parentAgentKey ?? previous?.parent_agent_key ?? null;
-      const status = parentStatus(event.agentKey!, parent, known);
+      const status = !parent && (event.payload.parentStatus === 'vinculo_pendente' || previous?.parent_status === 'vinculo_pendente') ? 'vinculo_pendente' : parentStatus(event.agentKey!, parent, known);
       this.db.prepare(`INSERT INTO agents(agent_key, session_key, parent_agent_key, presence, parent_status, last_seen) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(agent_key) DO UPDATE SET parent_agent_key = excluded.parent_agent_key, presence = excluded.presence,
           parent_status = excluded.parent_status, last_seen = excluded.last_seen`)
         .run(event.agentKey, event.sessionKey, parent, presence, status, event.observedAt);
       this.db.prepare("UPDATE agents SET parent_status = 'vinculado' WHERE session_key = ? AND parent_agent_key = ? AND parent_status = 'vinculo_pendente'")
         .run(event.sessionKey, event.agentKey);
+    } else if (event.type.startsWith('task.') || event.type.startsWith('tool.') || event.type.startsWith('skill.')) {
+      if (this.isOlderThanSourceLoss(event)) return;
+      const session = this.db.prepare('SELECT project_id, source_id, provider, presence FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: Presence } | undefined;
+      if (!session || session.project_id !== event.projectId || session.source_id !== event.sourceId || session.provider !== event.provider || session.presence === 'encerrada')
+        throw new Error('Atividade sem sessão ativa no mesmo contexto');
+      if (event.agentKey && !this.db.prepare('SELECT 1 FROM agents WHERE agent_key = ? AND session_key = ?').get(event.agentKey, event.sessionKey))
+        throw new Error('Atividade aponta para agente desconhecido');
+      if (event.type.startsWith('task.')) {
+        const previous = this.db.prepare('SELECT session_key, last_seen, status FROM session_tasks WHERE task_id = ?').get(event.payload.taskId) as { session_key: string; last_seen: string; status: string } | undefined;
+        if (previous && previous.session_key !== event.sessionKey) throw new Error('Tarefa aponta para outra sessão');
+        if (previous && (previous.status === 'concluida_declarada' || compareTimestamp(event.observedAt, previous.last_seen) < 0)) return;
+        const status = event.type === 'task.completed' ? 'concluida_declarada' : event.type === 'task.working' ? 'trabalhando' : event.type === 'task.waiting' ? 'aguardando' : 'observada';
+        this.db.prepare(`INSERT INTO session_tasks(task_id,session_key,agent_key,title,status,provenance,last_seen) VALUES(?,?,?,?,?,?,?)
+          ON CONFLICT(task_id) DO UPDATE SET agent_key=excluded.agent_key,title=excluded.title,status=excluded.status,provenance=excluded.provenance,last_seen=excluded.last_seen`)
+          .run(event.payload.taskId,event.sessionKey,event.agentKey??null,event.payload.title,status,event.provenance,event.observedAt);
+      } else {
+        const kind = event.type.startsWith('tool.') ? 'tool' : 'skill';
+        const previous = this.db.prepare('SELECT session_key,kind,last_seen,status FROM session_invocations WHERE invocation_id = ?').get(event.payload.invocationId) as { session_key: string; kind: string; last_seen: string; status: string } | undefined;
+        if (previous && (previous.session_key !== event.sessionKey || previous.kind !== kind)) throw new Error('Invocação aponta para outro contexto');
+        if (previous && (previous.status === 'resultado_observado' || previous.status === 'falha_observada' || compareTimestamp(event.observedAt, previous.last_seen) < 0)) return;
+        const status = event.type === 'tool.result' ? 'resultado_observado' : event.type === 'tool.failed' ? 'falha_observada' : 'observada';
+        this.db.prepare(`INSERT INTO session_invocations(invocation_id,session_key,agent_key,kind,name,status,last_seen) VALUES(?,?,?,?,?,?,?)
+          ON CONFLICT(invocation_id) DO UPDATE SET agent_key=excluded.agent_key,name=excluded.name,status=excluded.status,last_seen=excluded.last_seen`)
+          .run(event.payload.invocationId,event.sessionKey,event.agentKey??null,kind,event.payload.name,status,event.observedAt);
+      }
     } else if (event.type === 'source.unavailable') {
       const rows = this.db.prepare("SELECT session_key, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE source_id = ? AND presence != 'encerrada'").all(event.sourceId) as { session_key: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null }[];
       for (const row of rows) {
@@ -288,6 +391,8 @@ export class EventStore {
         this.db.prepare('UPDATE sessions SET presence = ?, freshness = ?, source_unavailable_at = ? WHERE session_key = ?').run(next.presence, next.freshness, next.sourceUnavailableAt, row.session_key);
         if (next.presence === 'desconhecida' && next.sourceUnavailableAt === event.observedAt) {
           this.db.prepare("UPDATE agents SET presence = 'desconhecida' WHERE session_key = ? AND presence != 'encerrada'").run(row.session_key);
+          this.db.prepare("UPDATE session_tasks SET status = 'desconhecida' WHERE session_key = ? AND status != 'concluida_declarada'").run(row.session_key);
+          this.db.prepare("UPDATE session_invocations SET status = 'desconhecida' WHERE session_key = ? AND status = 'observada'").run(row.session_key);
         }
       }
     }
@@ -349,7 +454,7 @@ export class EventStore {
       const sequences = new Map(historicalEvents.map(row=>[row.event.eventId,row.stream_sequence]));
       const feed = (state.feed as {eventId:string;streamSequence:number}[]).map(event=>({ ...event,streamSequence:sequences.get(event.eventId)??event.streamSequence }));
       return { ...state, ...input.infrastructure, mode:'replay', at, layoutReference:visibleProjects.size===0?'unavailable':placements.size===visibleProjects.size?'recorded':placements.size?'partial':'unavailable', revision:input.revision, streamSequence:input.streamSequence,
-        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents','feed','ci-incidents',...(input.infrastructure.infrastructureReference==='recorded'?['infrastructure']:[])], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
+        feed, ciIncidents:input.ciIncidents, capabilities:['sessions','agents',...(state.capabilities as string[]).filter(value => ['tasks','tools','skills'].includes(value)),'feed','ci-incidents',...(input.infrastructure.infrastructureReference==='recorded'?['infrastructure']:[])], coverage:{status:activeSourceLosses.length?'gap':historicalEvents.length?'unknown':'none',
           reason:'expected_collection_windows_not_recorded',gaps:activeSourceLosses.map(row=>({sourceId:row.source_id,start:row.last_unavailable_at,end:at,reason:'source_unavailable'}))} };
     } finally { projection.close(); }
   }
@@ -359,13 +464,17 @@ export class EventStore {
     const roomPlacements = (this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[]).map(row => ({ projectId: row.project_id, sectorId: row.sector_id, slotId: row.slot_id, layoutVersion: row.layout_version }));
     const sessions = (this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[]).map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));
     const agents = (this.db.prepare('SELECT * FROM agents ORDER BY agent_key').all() as Row[]).map(row => ({ agentKey: row.agent_key, sessionKey: row.session_key, ...(row.parent_agent_key ? { parentAgentKey: row.parent_agent_key } : {}), presence: row.presence, parentStatus: row.parent_status }));
-    const sources = (this.db.prepare('SELECT * FROM sources ORDER BY source_id').all() as Row[]).map(row => ({ sourceId: row.source_id, sourceVersion: row.source_version, status: row.status, lastReceived: row.last_received, lastApplied: row.last_applied }));
+    const tasks = (this.db.prepare('SELECT * FROM session_tasks ORDER BY task_id').all() as Row[]).map(row => ({ taskId: row.task_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), title: row.title, status: row.status, provenance: row.provenance }));
+    const invocations = (this.db.prepare('SELECT * FROM session_invocations ORDER BY invocation_id').all() as Row[]).map(row => ({ invocationId: row.invocation_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), kind: row.kind, name: row.name, status: row.status }));
+    const sources = (this.db.prepare('SELECT * FROM sources ORDER BY source_id').all() as Row[]).map(row => ({ sourceId: row.source_id, sourceVersion: row.source_version, status: row.status, ...(row.last_error_code ? {errorCode:row.last_error_code} : {}), lastReceived: row.last_received, lastApplied: row.last_applied }));
     const feed = (this.db.prepare('SELECT event_json, stream_sequence FROM events ORDER BY stream_sequence DESC LIMIT 100').all() as { event_json: string; stream_sequence: number }[]).reverse().map(row => {
       const event = JSON.parse(row.event_json) as NormalizedEvent;
       return { eventId: event.eventId, streamSequence: row.stream_sequence, type: event.type, observedAt: event.observedAt, ...(event.projectId ? { projectId: event.projectId } : {}), ...(event.sessionKey ? { sessionKey: event.sessionKey } : {}), ...(event.agentKey ? { agentKey: event.agentKey } : {}), provenance: event.provenance };
     });
-    return { schemaVersion: '1.0', mode: 'live', revision: this.number('revision'), streamSequence: this.number('stream_sequence'), projects, roomPlacements, sessions, agents, tasks: [], invocations: [], feed, sources,
-      ...this.infrastructure.snapshot(now), capabilities: ['sessions', 'agents', 'feed', 'infrastructure'] };
+    return { schemaVersion: '1.0', mode: 'live', revision: this.number('revision'), streamSequence: this.number('stream_sequence'), projects, roomPlacements, sessions, agents, tasks, invocations, feed, sources,
+      ...this.infrastructure.snapshot(now), capabilities: ['sessions', 'agents',...(tasks.length ? ['tasks'] : []),
+        ...(invocations.some(item => item.kind === 'tool') ? ['tools'] : []),
+        ...(invocations.some(item => item.kind === 'skill') ? ['skills'] : []),'feed', 'infrastructure'] };
   }
 
   changesSince(cursor: number, limit = 1001): StreamChange[] {

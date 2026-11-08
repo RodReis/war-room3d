@@ -57,7 +57,15 @@ namespace WarRoom3D
             if (replayMode) return;
             root.Q<VisualElement>("operations-mask").style.display = DisplayStyle.Flex;
             root.Q<VisualElement>("operations-panel").style.display = DisplayStyle.Flex;
+            root.Q<Button>("operations-close").Focus();
             LoadCoverage();
+        }
+
+        public bool HandleEscape()
+        {
+            if (root == null || root.Q<VisualElement>("operations-panel").style.display == DisplayStyle.None) return false;
+            Close();
+            return true;
         }
 
         private void Close()

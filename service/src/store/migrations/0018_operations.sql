@@ -74,4 +74,4 @@ CREATE TABLE IF NOT EXISTS operation_incident_events (
   reason TEXT,
   evidence_ref TEXT
 );
-UPDATE meta SET value = 17 WHERE key = 'schema_version';
+UPDATE meta SET value = 18 WHERE key = 'schema_version';

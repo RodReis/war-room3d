@@ -10,6 +10,7 @@ namespace WarRoom3D
         [SerializeField] private Material cyanMaterial;
         [SerializeField] private Material glassMaterial;
         [SerializeField] private Material goldMaterial;
+        [SerializeField] private GameObject referenceRoomPrefab;
         private static readonly Vector3[] Positions = {
             new Vector3(-14, 0, 9), new Vector3(0, 0, 11), new Vector3(14, 0, 9),
             new Vector3(-14, 0, -9), new Vector3(0, 0, -11), new Vector3(14, 0, -9)
@@ -46,6 +47,12 @@ namespace WarRoom3D
                 room.SetParent(roomsRoot, false);
                 room.localPosition = Positions[i];
                 rooms.Add(id, room);
+                if (i == 2 && referenceRoomPrefab != null)
+                {
+                    var reference = Instantiate(referenceRoomPrefab, room);
+                    reference.name = "ReferenceRoom";
+                    continue;
+                }
                 Cube("Piso", room, Vector3.zero, new Vector3(10, 0.2f, 7.6f), floor);
                 Cube("Parede posterior", room, new Vector3(0, 0.9f, 3.7f), new Vector3(10, 1.8f, 0.22f), graphite);
                 Cube("Parede esquerda", room, new Vector3(-4.9f, 0.9f, 0), new Vector3(0.22f, 1.8f, 7.6f), graphite);

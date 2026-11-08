@@ -39,3 +39,12 @@ Este registro distingue decisões de produto aprovadas de hipóteses técnicas a
 ## Pendências técnicas
 
 Versões finais dos pacotes, direitos dos GLBs, driver SQLite, backend de observabilidade real, fonte de segurança e política de empacotamento dependem das provas das respectivas etapas. Registrar cada decisão antes de implementá-la como padrão duradouro.
+
+## ADR-006 — uma sala completa e aceita no Player antes de replicar
+
+- **Estado:** direção de produto autorizada pelo PI em 08/11/2026; implementação planejada na [#28](https://github.com/RodReis/war-room3d/issues/28), sem aceite do resultado.
+- **Contexto:** a cena permaneceu em primitivas e a UI acumula detalhes/formulários; avanço técnico e fechamento de issues não aproximaram a experiência do conceito.
+- **Decisão:** concluir uma sala Unity com design rico, detalhe de qualidade, luz e cores vivas, HUD contextual e jornada hooks/agentes/skills/chats/logs. Revisar arte cedo no Player e validar o mesmo build final antes de replicar o acabamento.
+- **Alternativas:** polir apenas HUD preserva o desvio artístico; reconstruir seis salas de uma vez multiplica retrabalho. A sala de referência reduz essa incerteza sem retirar o escopo do produto.
+- **Consequência:** #29–#35 possuem provas próprias e G1–G4; fixtures não substituem observação/chat/logs reais, obrigatório fail/not_run bloqueia o gate salvo decisão explícita do PI. A #16 conserva RNF-02. Não reabrir issues antigas nem alterar seus aceites por esta decisão.
+- **Referência:** [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). Nenhuma autorização adicional de hooks, contas ou infraestrutura real decorre da publicação.

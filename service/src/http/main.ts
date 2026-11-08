@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { GitHubClient } from '../github/github-client.ts';
 import { pollLinkedRepositories } from '../github/github-poller.ts';
 import { configureGithub } from '../github/github-config.ts';
+import { parseSessionSources, SessionFileCollector } from '../sessions/file-source.ts';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -25,7 +26,12 @@ try {
   const dockerLogsProxyToken=process.env.WR3D_DOCKER_LOGS_PROXY_TOKEN;
   const dockerLogsProxy=dockerLogsProxyUrl&&dockerLogsProxyToken?{url:dockerLogsProxyUrl,token:dockerLogsProxyToken}:undefined;
   const monitoringInput=configPath?JSON.parse(readFileSync(configPath,'utf8')) as unknown:null;
-  const monitoring = configPath ? configureMonitoring(store,monitoringInput,dockerLogsProxy) : null;
+  const monitoring = configPath ? configureMonitoring(store,monitoringInput,
+    { dockerToken: process.env.WR3D_DOCKER_PROXY_TOKEN, dockerLogsProxy }) : null;
+  const sessionConfigPath = process.env.WR3D_SESSIONS_CONFIG_PATH;
+  const sessionConfig = sessionConfigPath ? parseSessionSources(JSON.parse(readFileSync(sessionConfigPath,'utf8')) as unknown) : null;
+  store.configureSessionSources(sessionConfig?.projects ?? [],sessionConfig?.sources ?? []);
+  const sessions = sessionConfig ? new SessionFileCollector(store,sessionConfig.sources) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const commandToken=process.env.WR3D_COMMAND_TOKEN;
@@ -34,6 +40,8 @@ try {
   monitoring?.runner.start(monitoring.intervalMs);
   const dockerLogInterval=(monitoringInput as {m5DockerLogs?:{intervalMs?:number}}|null)?.m5DockerLogs?.intervalMs;
   if(monitoring?.dockerLogs&&dockerLogInterval)monitoring.dockerLogs.start(dockerLogInterval);
+  sessions?.poll();
+  const sessionsTimer = sessions ? setInterval(() => sessions.poll(),1000) : null;
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
@@ -59,6 +67,7 @@ try {
   for (const signal of ['SIGINT', 'SIGTERM'] as const) process.once(signal, async () => {
     clearInterval(retentionTimer);
     if (githubTimer) clearInterval(githubTimer);
+    if (sessionsTimer) clearInterval(sessionsTimer);
     await monitoring?.runner.stop();
     await monitoring?.dockerLogs?.stop();
     server.closeAllConnections();

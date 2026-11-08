@@ -1,5 +1,7 @@
 # War-Room3D M0 — Fundação Visual e Contrato Implementation Plan
 
+> **Prioridade revisada em 08/11/2026:** a [sala completa de referência (#28)](https://github.com/RodReis/war-room3d/issues/28) concentra o acabamento visual e o fluxo de uso antes da replicação. Consultar [especificação](../../specs/2026-11-08-sala-referencia-design.md) e [plano atual](2026-11-08-sala-referencia-player.md). Este plano permanece referência do subsistema; seu fechamento não comprova a nova experiência no Player.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Entregar um executável Windows de demonstração, com setor modular de seis posições, núcleo de comando, uma sala navegável em três ângulos e dados sintéticos explicitamente identificados, sustentados por um contrato versionado.

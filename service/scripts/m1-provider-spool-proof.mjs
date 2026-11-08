@@ -9,7 +9,8 @@ import { EventStore } from '../src/store/event-store.ts';
 import { SessionFileCollector } from '../src/sessions/file-source.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
 
-const [claudePath,codexPath,playerPath] = process.argv.slice(2);
+const expectChild=process.argv.includes('--expect-child');
+const [claudePath,codexPath,playerPath] = process.argv.slice(2).filter(arg=>arg!=='--expect-child');
 if(!claudePath||!codexPath)throw new Error('Informe os dois result.json do laboratório');
 const claude=JSON.parse(readFileSync(claudePath,'utf8'));
 const codex=JSON.parse(readFileSync(codexPath,'utf8'));
@@ -37,8 +38,21 @@ try{
   const response=await fetch(`${started.url}/v1/snapshot`,{headers:{Authorization:`Bearer ${token}`}});
   assert.equal(response.status,200);
   const snapshot=await response.json();
-  assert.equal(snapshot.sessions.length,2);
+  assert.equal(snapshot.sessions.length,expectChild?3:2);
   assert.deepEqual(new Set(snapshot.sessions.map(session=>session.projectId)),new Set(['lab-claude','lab-codex']));
+  const children=snapshot.agents.filter(agent=>agent.parentAgentKey);
+  if(expectChild){
+    assert.equal(snapshot.agents.length,3);
+    assert.equal(children.length,1);
+    const child=children[0];
+    const parent=snapshot.agents.find(agent=>agent.agentKey===child.parentAgentKey);
+    assert.ok(parent);
+    assert.notEqual(parent.sessionKey,child.sessionKey);
+    assert.equal(child.parentStatus,'vinculado');
+    assert.equal(child.presence,'encerrada');
+    assert.equal(snapshot.sessions.find(session=>session.sessionKey===parent.sessionKey)?.projectId,'lab-codex');
+    assert.equal(snapshot.sessions.find(session=>session.sessionKey===child.sessionKey)?.projectId,'lab-codex');
+  }
   const stream=await fetch(`${started.url}/v1/events`,{headers:{Authorization:`Bearer ${token}`,'Last-Event-ID':'0'}});
   assert.equal(stream.status,200);
   const reader=stream.body.getReader();
@@ -46,7 +60,8 @@ try{
   assert.match(first,/event: event\.changed/);
   await reader.cancel().catch(()=>{});
   const summary={output,providers:['claude','codex'],projectNames:snapshot.projects.map(project=>project.name),
-    sessionCount:snapshot.sessions.length,agentCount:snapshot.agents.length,taskCount:snapshot.tasks.length,
+    sessionCount:snapshot.sessions.length,agentCount:snapshot.agents.length,linkedChildCount:children.filter(agent=>agent.parentStatus==='vinculado').length,
+    endedChildCount:children.filter(agent=>agent.presence==='encerrada').length,taskCount:snapshot.tasks.length,
     invocationCount:snapshot.invocations.length,sourceStatus:snapshot.sources.map(source=>({sourceId:source.sourceId,
       status:source.status,errorCode:source.errorCode??null,lastEvidenceAt:source.lastEvidenceAt})),
     streamSequence:snapshot.streamSequence,httpStatus:response.status,sseEvent:true};
@@ -69,7 +84,11 @@ try{
     assert.equal(status.event,'exit');
     assert.equal(status.code,0);
     assert.equal(summary.player.report?.connected,true);
-    assert.equal(summary.player.report?.sessionCount,2);
+    assert.equal(summary.player.report?.sessionCount,expectChild?3:2);
+    if(expectChild){
+      assert.equal(summary.player.report?.agentCount,3);
+      assert.equal(summary.player.report?.linkedChildCount,1);
+    }
     assert.equal(summary.player.imageExists,true);
   }
   writeFileSync(path.join(output,'result.json'),JSON.stringify(summary,null,2));

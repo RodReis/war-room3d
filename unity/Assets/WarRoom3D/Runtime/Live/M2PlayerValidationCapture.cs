@@ -38,6 +38,8 @@ namespace WarRoom3D
             public bool connected;
             public int resourceCount;
             public int sessionCount;
+            public int agentCount;
+            public int linkedChildCount;
             public int incidentCount;
             public string health;
             public string coverage;
@@ -240,6 +242,9 @@ namespace WarRoom3D
             report.connected = client.Connected;
             report.resourceCount = snapshot.resources.Length;
             report.sessionCount = snapshot.sessions.Length;
+            report.agentCount = snapshot.agents.Length;
+            foreach (var agent in snapshot.agents)
+                if (agent.parentStatus == "vinculado") report.linkedChildCount++;
             report.incidentCount = snapshot.incidents.Length;
             report.health = state?.health ?? "sem_dados";
             report.coverage = state?.coverage ?? "sem_dados";

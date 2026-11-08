@@ -10,9 +10,10 @@ import { SessionFileCollector } from '../src/sessions/file-source.ts';
 import { sessionKey } from '../src/domain/identity.ts';
 
 const plan = {provider:'claude',version:'2.1.319',newSession:true,existingSessions:false,
-  syntheticPrompt:'WR3D_35_CLAUDE_PERGUNTA. Invoque exatamente uma vez a skill local wr3d-35-synthetic. Depois responda somente WR3D_35_CLAUDE_RESPOSTA.',
+  syntheticPrompt:'/wr3d-35-synthetic WR3D_35_CLAUDE_PERGUNTA',
   maxBudgetUsd:0.10,timeoutMs:60000,hookScope:'temporary_project_only',
-  tools:['Skill'],mcpServers:[],automaticRetry:false,sendsRealMessage:process.argv[2]==='--run'};
+  tools:['Skill'],mcpServers:[],automaticRetry:false,skillInvocation:'direct-slash',
+  sendsRealMessage:process.argv[2]==='--run'};
 if (process.argv[2]!=='--run') {
   process.stdout.write(JSON.stringify(plan)+'\n');
 } else {
@@ -28,14 +29,16 @@ if (process.argv[2]!=='--run') {
   const skillDir=path.join(settingsDir,'skills','wr3d-35-synthetic');
   const capture=path.join(root,'service','src','sessions','capture-source.ts');
   mkdirSync(output,{recursive:true});mkdirSync(settingsDir,{recursive:true});mkdirSync(skillDir,{recursive:true});writeFileSync(spool,'');
-  writeFileSync(path.join(skillDir,'SKILL.md'),'---\nname: wr3d-35-synthetic\ndescription: Skill de laboratório sintético da issue 35\n---\nResponda WR3D_35_SKILL_ACK. Não leia arquivos nem use ferramentas.\n');
+  const skillMarker=`WR3D_35_SKILL_${randomUUID().replaceAll('-','').toUpperCase()}`;
+  writeFileSync(path.join(skillDir,'SKILL.md'),'---\nname: wr3d-35-synthetic\ndescription: Skill de laboratório sintético da issue 35\n---\nResponda WR3D_35_CLAUDE_RESPOSTA e '+skillMarker+'. Não leia arquivos nem use ferramentas.\n');
   const hookCommand=`node "${capture}" claude "${spool}" --content`;
   writeFileSync(settingsPath,JSON.stringify({hooks:Object.fromEntries(['SessionStart','UserPromptSubmit','PreToolUse','PostToolUse','Stop']
     .map(event=>[event,[{hooks:[{type:'command',command:hookCommand,timeout:5}]}]]))}));
   const nativeSessionId=randomUUID();
   const report={provider:'claude',version:plan.version,project,output,spool,sessionNew:true,hookProjectOnly:true,
     timeoutMs:plan.timeoutMs,budgetUsd:plan.maxBudgetUsd,exitCode:null,timedOut:false,costUsd:null,
-    errorKind:null,outputKinds:{},spoolEvents:{},sourceMessages:0,roles:[],roundTrip:false,skillObserved:false,
+    errorKind:null,outputKinds:{},spoolEvents:{},sourceMessages:0,roles:[],roundTrip:false,
+    skillHookObserved:false,skillBodyObserved:false,skillObserved:false,
     revoked:false,stderrBytes:0};
   const args=['--restricted','--print','--tools','Skill','--strict-mcp-config','--mcp-config','{"mcpServers":{}}',
     '--permission-mode','dontAsk','--permission-prompts','none','--no-session-persistence','--session-id',nativeSessionId,
@@ -78,12 +81,14 @@ if (process.argv[2]!=='--run') {
       report.roles=page?.items.map(item=>item.role)??[];
       report.roundTrip=!!page?.items.some(item=>item.role==='user'&&item.content.includes('WR3D_35_CLAUDE_PERGUNTA')) &&
         !!page?.items.some(item=>item.role==='assistant'&&item.content.includes('WR3D_35_CLAUDE_RESPOSTA'));
+      report.skillBodyObserved=!!page?.items.some(item=>item.role==='assistant'&&item.content.includes(skillMarker));
       for(const line of readFileSync(spool,'utf8').split(/\r?\n/).filter(Boolean)){
         const entry=JSON.parse(line);
         const event=entry.hook_event_name;
         report.spoolEvents[event]=(report.spoolEvents[event]??0)+1;
-        if(event==='PreToolUse'&&entry.tool_name==='Skill')report.skillObserved=true;
+        if(event==='PreToolUse'&&entry.tool_name==='Skill')report.skillHookObserved=true;
       }
+      report.skillObserved=report.skillHookObserved||report.skillBodyObserved;
     }catch(error){report.proofError=error instanceof Error?error.message:'proof_failed';}
     finally{store.close();}
     writeFileSync(path.join(output,'result.json'),JSON.stringify(report,null,2));

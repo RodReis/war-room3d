@@ -67,6 +67,10 @@ namespace WarRoom3D
             public bool runInBackground;
             public int chatMessageCount;
             public string chatSessionKey;
+            public bool chatExpectedMarkerVisible;
+            public int logResultCount;
+            public bool logRequestIdVisible;
+            public bool logRedacted;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -89,7 +93,8 @@ namespace WarRoom3D
             var requestedView = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VIEW");
             capture.captureView = requestedView == "project" || requestedView == "project-bottom" ||
                 requestedView == "room" || requestedView == "room-opposite" || requestedView == "room-reduced" ||
-                requestedView == "agent" || requestedView == "agent-focus" || requestedView == "chat" ? requestedView : "center";
+                requestedView == "agent" || requestedView == "agent-focus" || requestedView == "chat" ||
+                requestedView == "logs" ? requestedView : "center";
             var requestedVSync = Environment.GetEnvironmentVariable("WR3D_VALIDATION_VSYNC_COUNT");
             if (!string.IsNullOrEmpty(requestedVSync))
             {
@@ -168,7 +173,8 @@ namespace WarRoom3D
             }
             if (captureView == "center") presenter.SendMessage("ShowDataCenter");
             if (captureView == "room" || captureView == "room-opposite" || captureView == "room-reduced" ||
-                captureView == "agent" || captureView == "agent-focus" || captureView == "chat")
+                captureView == "agent" || captureView == "agent-focus" || captureView == "chat" ||
+                captureView == "logs")
             {
                 var projectId = Environment.GetEnvironmentVariable("WR3D_VALIDATION_PROJECT_ID");
                 if (!string.IsNullOrEmpty(projectId)) presenter.SendMessage("SelectProjectForValidation", projectId);
@@ -200,6 +206,38 @@ namespace WarRoom3D
                 }
                 var roomScroll = GetComponent<UIDocument>()?.rootVisualElement.Q<ScrollView>("room-content");
                 if (roomScroll != null) roomScroll.scrollOffset = new Vector2(0, 90);
+            }
+            if (captureView == "logs")
+            {
+                presenter.SendMessage("OpenLogsForValidation");
+                yield return new WaitForEndOfFrame();
+                var root = GetComponent<UIDocument>()?.rootVisualElement;
+                var logs = GetComponent<RoomLogPresenter>();
+                var category = root?.Q<DropdownField>("log-category");
+                var request = root?.Q<TextField>("log-request");
+                var expectedRequest = Environment.GetEnvironmentVariable("WR3D_VALIDATION_REQUEST_ID") ?? "";
+                if (logs == null || category == null || request == null || string.IsNullOrWhiteSpace(expectedRequest))
+                {
+                    Debug.LogError("M2 Player: filtro de log indisponível");
+                    Application.Quit(14);
+                    yield break;
+                }
+                category.value = "Logs de aplicação / infraestrutura";
+                request.value = expectedRequest;
+                logs.SendMessage("Query");
+                var until = Time.realtimeSinceStartup + 10f;
+                var results = root.Q<VisualElement>("log-results");
+                while (results.childCount == 0 && Time.realtimeSinceStartup < until) yield return null;
+                if (results.childCount == 0)
+                {
+                    Debug.LogError("M2 Player: log da fonte não chegou antes do limite");
+                    Application.Quit(15);
+                    yield break;
+                }
+                logs.OpenFirstForValidation();
+                until = Time.realtimeSinceStartup + 10f;
+                while (!(root.Q<Label>("evidence-body")?.text?.Contains(expectedRequest) ?? false) &&
+                    Time.realtimeSinceStartup < until) yield return null;
             }
             yield return new WaitForEndOfFrame();
             if (captureView == "project-bottom")
@@ -325,6 +363,23 @@ namespace WarRoom3D
             var chatPresenter = GetComponent<ChatPresenter>();
             report.chatMessageCount = chatPresenter != null ? chatPresenter.VisibleMessageCount : 0;
             report.chatSessionKey = chatPresenter != null ? chatPresenter.CurrentSessionKey : null;
+            if (captureView == "chat")
+            {
+                var marker = Environment.GetEnvironmentVariable("WR3D_VALIDATION_CHAT_MARKER") ?? "";
+                var messages = GetComponent<UIDocument>()?.rootVisualElement.Q<VisualElement>("chat-messages");
+                foreach (var item in messages?.Children() ?? Array.Empty<VisualElement>())
+                    if (item is Label label && marker.Length > 0 && label.ClassListContains("chat-assistant") &&
+                        label.text.Contains(marker)) report.chatExpectedMarkerVisible = true;
+            }
+            if (captureView == "logs")
+            {
+                var root = GetComponent<UIDocument>()?.rootVisualElement;
+                var evidence = root?.Q<Label>("evidence-body")?.text ?? "";
+                var request = Environment.GetEnvironmentVariable("WR3D_VALIDATION_REQUEST_ID") ?? "";
+                report.logResultCount = root?.Q<VisualElement>("log-results")?.childCount ?? 0;
+                report.logRequestIdVisible = request.Length > 0 && evidence.Contains(request);
+                report.logRedacted = evidence.Contains("[REDACTED]") && !evidence.Contains("synthetic-secret");
+            }
             try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".json"), JsonUtility.ToJson(report, true)); }
             catch (Exception error)
             {
@@ -332,6 +387,10 @@ namespace WarRoom3D
                 Application.Quit(5);
                 yield break;
             }
+            if (captureView == "chat" && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WR3D_VALIDATION_CHAT_MARKER")) &&
+                !report.chatExpectedMarkerVisible) { Application.Quit(16); yield break; }
+            if (captureView == "logs" && (!report.logRequestIdVisible || !report.logRedacted))
+            { Application.Quit(17); yield break; }
             Application.Quit(report.connected ? 0 : 6);
         }
     }

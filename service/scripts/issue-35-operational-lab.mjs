@@ -16,7 +16,8 @@ import { startReadOnlyServer } from '../src/http/server.ts';
 const [mode, claudePath, codexPath, playerPath] = process.argv.slice(2);
 if (mode !== '--run') {
   console.log(JSON.stringify({ source: 'two-authorized-new-sessions-and-one-disposable-docker-container',
-    executes: false, network: 'none', volumes: 0, playerControl: 'stop.signal', maxPlayerSeconds: 180 }));
+    executes: false, network: 'none', volumes: 0, playerCaptures: ['claude-chat','codex-chat','claude-room-docker-log'],
+    maxPlayerSeconds: 90 }));
   process.exit(0);
 }
 if (![claudePath, codexPath, playerPath].every(value => value && path.isAbsolute(value) && existsSync(value)))
@@ -24,6 +25,7 @@ if (![claudePath, codexPath, playerPath].every(value => value && path.isAbsolute
 const claude = JSON.parse(readFileSync(claudePath, 'utf8'));
 const codex = JSON.parse(readFileSync(codexPath, 'utf8'));
 if (claude.provider !== 'claude' || codex.provider !== 'codex' || !claude.roundTrip || !codex.roundTrip ||
+    !claude.skillObserved ||
     !claude.project || !codex.project ||
     !existsSync(claude.spool) || !existsSync(codex.spool))
   throw new Error('Sessões autorizadas, chat ou subagente não comprovados');
@@ -44,11 +46,11 @@ const composeFile = path.join(temporary, 'compose.yml');
 const dockerArgs = ['compose', '-p', composeProject, '-f', composeFile];
 const docker = (args, timeout = 20000) => execFileSync('docker', [...dockerArgs, ...args],
   { cwd: temporary, encoding: 'utf8', timeout, windowsHide: true });
-const projectId = 'lab-35-docker', environmentId = 'env-35-docker', resourceId = 'api-35-docker';
+const projectId = 'lab-35-claude', environmentId = 'env-35-docker', resourceId = 'api-35-docker';
 writeFileSync(composeFile, `services:\n  api:\n    image: node:24-alpine\n    network_mode: "none"\n    read_only: true\n    command: ["node", "-e", "console.log('WR3D35_DOCKER_SOURCE requestId=req-35-docker token=synthetic-secret'); setInterval(() => {}, 1000)"]\n`);
 let up = false, store, proxy, api, player;
 const summary = { status: 'fail', syntheticContent: true, providers: ['claude', 'codex'],
-  oneCodexChild: false, sourceToStore: false, chatHttp: {}, docker: {}, player: {} };
+  oneCodexChild: false, sourceToStore: false, chatHttp: {}, docker: {}, player: { captures: {} } };
 try {
   execFileSync('docker', ['image', 'inspect', 'node:24-alpine'], { stdio: 'ignore', timeout: 10000, windowsHide: true });
   up = true;
@@ -82,7 +84,6 @@ try {
   ];
   store.configureSessionSources(projects, sources);
   new SessionFileCollector(store, sources).poll();
-  store.registerProject({ projectId, name: 'LAB #35 · DOCKER', canonicalPath: temporary });
   store.infrastructure.replaceInventory({ schemaVersion: '1.0',
     environments: [{ environmentId, name: 'Docker local descartável' }],
     resources: [{ resourceId, environmentId, kind: 'api', name: 'API de laboratório',
@@ -131,31 +132,57 @@ try {
     assert.equal(page.receiptIsResponse, false);
   }
 
-  const playerExit = new Promise(resolve => {
-    player = spawn(playerPath, ['-screen-width', '1920', '-screen-height', '1080',
-      '-screen-fullscreen', '0', '-logFile', path.join(output, 'player.log')],
-    { env: { ...process.env, WR3D_SERVICE_URL: api.url, WR3D_SERVICE_TOKEN: token,
-      WR3D_COMMAND_TOKEN: '' }, stdio: 'ignore' });
-    player.once('exit', (code, signal) => resolve({ code, signal }));
-    player.once('error', error => resolve({ error: error.code }));
-  });
-  summary.player = { processId: player.pid, build: path.basename(playerPath), manualUiPending: true };
+  const runCapture = async (name, view, selectedProject, agentKey, marker) => {
+    const file = path.join(output, name + '.json');
+    const outcome = await new Promise(resolve => {
+      player = spawn(playerPath, ['-screen-width', '1920', '-screen-height', '1080',
+        '-screen-fullscreen', '0', '-logFile', path.join(output, name + '.log')],
+      { env: { ...process.env, WR3D_SERVICE_URL: api.url, WR3D_SERVICE_TOKEN: token,
+        WR3D_COMMAND_TOKEN: '', WR3D_35_PROOF_DIR: '',
+        WR3D_VALIDATION_CAPTURE_DIR: output, WR3D_VALIDATION_CAPTURE_NAME: name,
+        WR3D_VALIDATION_VIEW: view, WR3D_VALIDATION_PROJECT_ID: selectedProject,
+        WR3D_VALIDATION_AGENT_KEY: agentKey ?? '', WR3D_VALIDATION_CHAT_MARKER: view === 'chat' ? marker : '',
+        WR3D_VALIDATION_REQUEST_ID: view === 'logs' ? marker : '' }, stdio: 'ignore' });
+      const timeout = setTimeout(() => { player?.kill(); resolve({ timeout: true }); }, 30000);
+      player.once('exit', code => { clearTimeout(timeout); resolve({ code }); });
+      player.once('error', error => { clearTimeout(timeout); resolve({ error: error.code }); });
+    });
+    if (player && player.exitCode === null) {
+      player.kill();
+      await Promise.race([new Promise(resolve => player.once('exit', resolve)),
+        new Promise(resolve => setTimeout(resolve, 5000))]);
+      if (player.exitCode === null) throw new Error(`Player ${name} não encerrou`);
+    }
+    player = null;
+    const report = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
+    return { exitCode: outcome.code ?? null, timeout: !!outcome.timeout, error: outcome.error ?? null,
+      view: report?.view ?? null, selectedAgentKey: report?.selectedAgentKey ?? null,
+      chatSessionKey: report?.chatSessionKey ?? null, chatMessageCount: report?.chatMessageCount ?? null,
+      markerVisible: report?.chatExpectedMarkerVisible ?? false,
+      logResultCount: report?.logResultCount ?? null,
+      requestIdVisible: report?.logRequestIdVisible ?? false, redacted: report?.logRedacted ?? false };
+  };
+  summary.player.build = path.basename(playerPath);
+  for (const provider of ['claude', 'codex']) {
+    const session = snapshot.sessions.find(item => item.projectId === `lab-35-${provider}` &&
+      !children.some(child => child.sessionKey === item.sessionKey));
+    const agent = snapshot.agents.find(item => item.projectId === session.projectId &&
+      item.sessionKey === session.sessionKey && !item.parentAgentKey);
+    assert.ok(agent?.agentKey);
+    summary.player.captures[`${provider}Chat`] = await runCapture(`${provider}-chat`, 'chat',
+      session.projectId, agent.agentKey, provider === 'claude' ? 'WR3D_35_CLAUDE_RESPOSTA' : 'WR3D_35_MAIN_ACK');
+  }
+  summary.player.captures.dockerLog = await runCapture('claude-room-docker-log', 'logs', projectId, '', 'req-35-docker');
+  const captures = summary.player.captures;
+  summary.player.passed = captures.claudeChat.exitCode === 0 && captures.claudeChat.markerVisible &&
+    captures.codexChat.exitCode === 0 && captures.codexChat.markerVisible &&
+    captures.dockerLog.exitCode === 0 && captures.dockerLog.requestIdVisible && captures.dockerLog.redacted;
+  summary.status = summary.sourceToStore && summary.oneCodexChild && summary.docker.redacted &&
+    summary.player.passed ? 'pass' : 'fail';
   writeFileSync(path.join(output, 'result.json'), JSON.stringify(summary, null, 2));
-  console.log(JSON.stringify({ output, projectNames: snapshot.projects.map(item => item.name),
-    sessionCount: snapshot.sessions.length, agentCount: snapshot.agents.length,
-    linkedChildCount: children.length, chatHttp: summary.chatHttp, docker: summary.docker,
-    playerPid: player.pid, stopSignal: path.join(output, 'stop.signal') }));
-  const deadline = Date.now() + 180000;
-  while (!existsSync(path.join(output, 'stop.signal')) && Date.now() < deadline && player.exitCode === null)
-    await new Promise(resolve => setTimeout(resolve, 200));
-  summary.player.manualUiPending = false;
-  summary.player.stoppedBy = existsSync(path.join(output, 'stop.signal')) ? 'operator' :
-    Date.now() >= deadline ? 'timeout' : 'player-exit';
-  if (player.exitCode === null) player.kill();
-  summary.player.exit = await Promise.race([playerExit, new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 5000))]);
-  summary.status = summary.sourceToStore && summary.oneCodexChild && summary.docker.redacted ? 'pass-backend' : 'fail';
-  writeFileSync(path.join(output, 'result.json'), JSON.stringify(summary, null, 2));
-  console.log(JSON.stringify({ output, status: summary.status, player: summary.player }));
+  console.log(JSON.stringify({ output, status: summary.status, player: summary.player,
+    sessionCount: snapshot.sessions.length, linkedChildCount: children.length }));
+  if (summary.status !== 'pass') process.exitCode = 1;
 } finally {
   if (player && player.exitCode === null) player.kill();
   if (api) { api.server.closeAllConnections(); await new Promise(resolve => api.server.close(resolve)); }

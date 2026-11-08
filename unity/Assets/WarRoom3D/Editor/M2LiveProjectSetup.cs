@@ -111,5 +111,21 @@ namespace WarRoom3D.Editor
                 throw new System.Exception("Build Windows M5 falhou: " + report.summary.result);
             Debug.Log("Build Windows M5 concluído: " + report.summary.totalSize + " bytes");
         }
+
+        // Candidato isolado para ensaio G3; preserva o build cujo manifesto e métricas já foram publicados.
+        public static void BuildWindowsM5Continuation()
+        {
+            CreateScene();
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = "Builds/WarRoom3D-M5-G3/WarRoom3D.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new System.Exception("Build Windows M5 G3 falhou: " + report.summary.result);
+            Debug.Log("Build Windows M5 G3 concluído: " + report.summary.totalSize + " bytes");
+        }
     }
 }

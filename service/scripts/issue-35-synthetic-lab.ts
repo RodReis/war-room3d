@@ -9,9 +9,13 @@ import type { Observation } from '../src/operations/operations-store.ts';
 
 const player = process.env.WR3D_35_PLAYER;
 const output = process.env.WR3D_35_PROOF_DIR;
+const captureView = process.env.WR3D_35_CAPTURE_VIEW;
+if (captureView && captureView !== 'chat' && captureView !== 'logs')
+  throw new Error('WR3D_35_CAPTURE_VIEW aceita apenas chat ou logs');
 if (!player || !existsSync(player) || !output) throw new Error('Informe WR3D_35_PLAYER e WR3D_35_PROOF_DIR');
 const resolvedOutput = path.resolve(output);
-const reportPath = path.join(resolvedOutput, 'issue-35-result.json');
+const captureName = captureView ? `issue-35-${captureView}` : '';
+const reportPath = path.join(resolvedOutput, captureView ? captureName + '.json' : 'issue-35-result.json');
 if (existsSync(reportPath)) throw new Error('Prova anterior existe; use diretório novo');
 mkdirSync(resolvedOutput, { recursive: true });
 
@@ -93,7 +97,13 @@ try {
     child = spawn(player, ['-screen-width', '1280', '-screen-height', '720', '-screen-fullscreen', '0',
       '-logFile', path.join(resolvedOutput, 'player.log')], {
       env: { ...process.env, WR3D_SERVICE_URL: live.url, WR3D_SERVICE_TOKEN: token,
-        WR3D_35_PROOF_DIR: resolvedOutput, WR3D_COMMAND_TOKEN: '' }, stdio: 'ignore' });
+        WR3D_35_PROOF_DIR: captureView ? '' : resolvedOutput, WR3D_COMMAND_TOKEN: '',
+        WR3D_VALIDATION_CAPTURE_DIR: captureView ? resolvedOutput : '',
+        WR3D_VALIDATION_CAPTURE_NAME: captureName,
+        WR3D_VALIDATION_VIEW: captureView ?? '', WR3D_VALIDATION_PROJECT_ID: projectId,
+        WR3D_VALIDATION_AGENT_KEY: 'agent-child',
+        WR3D_VALIDATION_CHAT_MARKER: captureView === 'chat' ? 'Resposta sintética' : '',
+        WR3D_VALIDATION_REQUEST_ID: captureView === 'logs' ? 'request-35' : '' }, stdio: 'ignore' });
     const timeout = setTimeout(() => { child?.kill(); resolve({ error: 'timeout' }); }, 60000);
     child.once('exit', code => { clearTimeout(timeout); resolve({ code: code ?? -1 }); });
     child.once('error', error => { clearTimeout(timeout); resolve({ error: error.message }); });
@@ -102,7 +112,10 @@ try {
   const result = { playerExit: outcome.code, playerError: outcome.error, report, sourceLost,
     sourceRecovered, output: resolvedOutput };
   console.log(JSON.stringify(result));
-  if (outcome.code !== 0 || report?.status !== 'pass') process.exitCode = 1;
+  if (outcome.code !== 0 || (captureView === 'chat' ?
+    !report?.chatExpectedMarkerVisible || report.chatMessageCount !== 2 : captureView === 'logs' ?
+    !report?.logRequestIdVisible || !report?.logRedacted || report.logResultCount < 1 :
+    report?.status !== 'pass')) process.exitCode = 1;
 } finally {
   if (control) clearInterval(control);
   if (child && child.exitCode === null) child.kill();

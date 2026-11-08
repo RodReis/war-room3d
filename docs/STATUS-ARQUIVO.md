@@ -2,6 +2,13 @@
 
 Este arquivo guarda fatos datados que saem do resumo curto de [STATUS](STATUS.md). Não converter um plano em entrega técnica. Cada registro futuro deve citar issue, PR, SHA remoto, validação executada e aceite do PI, quando houver.
 
+## 07/11/2026 — Aceite funcional M4 com limites e encerramento da issue #5
+
+- O PI respondeu “Aceito com esses limites; pode encerrar a #5”. [Comentário de aceite](https://github.com/RodReis/war-room3d/issues/5#issuecomment-6715930879) e estado remoto `closed/completed`, `closed_at=2026-11-08T02:01:56Z` (23h01 de 07/11, São Paulo), conferidos. Entrega técnica permanece na PR #24, SHA `75ad486`.
+- [Registro funcional](validation/m4/aceite-funcional.md): três intenções sintéticas distintas, uma emissão confirmada por comando; prévia de permissão e alteração da decisão invalidando confirmação, comprovadas pelas imagens do PI e zero submissões/envios no backend da rodada de permissão. As duas primeiras rodadas sem correlação continuam registradas como tal.
+- Modo interativo do roteiro: duração limitada a 1–60 minutos, identificador exclusivo por rodada, observações sintéticas periódicas e contadores HTTP sem corpos/credenciais; artefatos retidos para conferência. Validação: sintaxe Node, quatro rodadas manuais, contraprova automática com um envio ao fake e revisão local; o produto C#/serviço não foi alterado pelo aceite.
+- Laboratórios encerrados. O aceite não comprova operação contínua M1, perguntas/permissões reais, conclusão do modelo ou custo. Ações reais sem canal e prova atuais permanecem indisponíveis.
+
 ## 07/11/2026 — Integração técnica da M4 e revisão externa resolvida
 
 - [PR #24](https://github.com/RodReis/war-room3d/pull/24) integrada por squash em `75ad486ce0ed66ef06fae142405685d13f5658dd`, `mergedAt=2026-11-07T23:48:13Z`, após a continuação do PI até a integração técnica. SHA remoto confirmado e branch `feat/m4-interacao` preservada; issue #5 aberta, sem aceite funcional presumido.

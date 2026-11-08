@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-08",
+  "buildManifest": "player-build-manifest.json",
+  "scope": "new_disposable_sessions_synthetic_content_one_docker_container",
+  "claude": {
+    "version": "2.1.319",
+    "newSession": true,
+    "cliExit": 0,
+    "costUsd": 0.0195997,
+    "sourceMessages": 2,
+    "roles": ["user", "assistant"],
+    "roundTrip": true,
+    "skillObserved": false,
+    "projectHookRevoked": true
+  },
+  "codex": {
+    "version": "0.166.0",
+    "firstInspectionTimedOutBeforeThread": true,
+    "newThreads": 1,
+    "isolationVerified": true,
+    "sourceMessages": 3,
+    "roles": ["user", "assistant", "assistant"],
+    "roundTrip": true,
+    "uniqueChildren": 1,
+    "childStartedAndCompleted": true,
+    "taskCount": 0,
+    "invocationCount": 0
+  },
+  "combinedService": {
+    "sessions": 3,
+    "agents": 3,
+    "linkedChildren": 1,
+    "httpSnapshot": 200,
+    "sseEvent": true,
+    "chatHttp": {
+      "claude": { "status": 200, "roles": ["user", "assistant"], "receiptIsResponse": false },
+      "codex": { "status": 200, "roles": ["user", "assistant", "assistant"], "receiptIsResponse": false }
+    }
+  },
+  "docker": {
+    "engineLocal": true,
+    "containersCreated": 1,
+    "containersRemaining": 0,
+    "network": "none",
+    "volumes": 0,
+    "ports": 0,
+    "logsRecorded": 1,
+    "coverage": "covered",
+    "secretCanaryRedacted": true
+  },
+  "player": {
+    "sameService": true,
+    "quartelShowsClaudeCodexDocker": true,
+    "inRoomRealChatAndLog": "not_run_ui_integrity",
+    "closedAfterObservation": true
+  },
+  "gateG3": "partial"
+}

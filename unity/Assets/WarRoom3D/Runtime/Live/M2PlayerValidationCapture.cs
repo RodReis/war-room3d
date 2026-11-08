@@ -239,6 +239,18 @@ namespace WarRoom3D
             yield return null;
             if (captureDurationSeconds > 0)
             {
+                var startSignal = Environment.GetEnvironmentVariable("WR3D_VALIDATION_START_SIGNAL");
+                if (!string.IsNullOrWhiteSpace(startSignal))
+                {
+                    var signalDeadline = Time.realtimeSinceStartup + 120f;
+                    while (!File.Exists(startSignal) && Time.realtimeSinceStartup < signalDeadline) yield return null;
+                    if (!File.Exists(startSignal))
+                    {
+                        Debug.LogError("M2 Player: sinal de início da medição não chegou");
+                        Application.Quit(13);
+                        yield break;
+                    }
+                }
                 client.SnapshotChanged += ObserveSnapshot;
                 client.ConnectionChanged += ObserveConnection;
                 try { File.WriteAllText(Path.Combine(captureDirectory, captureName + ".ready"), "ready"); }

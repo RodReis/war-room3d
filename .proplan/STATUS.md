@@ -11,13 +11,13 @@ _(vazio)_
 
 ## A Fazer
 
-### Sem épico
-
-- M2 — validação operacional restante em laboratório (#16)
+_(vazio)_
 
 ## Em Andamento
 
-_(vazio)_
+### Sem épico
+
+- M2 — validação operacional restante em laboratório (#16)
 
 ## Feito
 

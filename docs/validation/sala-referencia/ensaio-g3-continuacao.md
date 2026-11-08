@@ -25,7 +25,7 @@ O build de continuação de desenvolvimento fica em `unity/Builds/WarRoom3D-M5-G
 
 ## Gates restantes após o laboratório
 
-1. G2: demo sem comando passou de modo sintético no Player candidato; foco/gestos humanos e negativos de mensagem longa/capacidade ausente ainda requerem inspeção no mesmo build, registrando falha e captura se ocorrer.
+1. G2: demo sem comando passou de modo sintético no Player candidato; foco/gestos humanos e negativos de mensagem longa/capacidade ausente ainda requerem inspeção no mesmo build, registrando falha e captura se ocorrer. Em 08/11, Player e serviço sintéticos ficaram visíveis, mas a automação do Windows retornou `failed to activate captured window` ao tentar clicar em **Entrar na sala**; nenhum gesto foi contabilizado. O laboratório foi encerrado sem comando ou fonte externa. O modo `WR3D_35_CAPTURE_VIEW=interactive` mantém a fixture por até 180 s para nova inspeção, encerra por `stop.signal` e não produz recibo de aprovação.
 2. G3: preencher matriz por provedor com eventos nativos realmente observados. Se skill Claude não virar `skill.observed` no adaptador, registrar separadamente execução da skill e ausência do evento na UI; não declarar G3 completo. Tarefa/skill Codex sem suporte requer decisão explícita do PI se forem obrigatórias.
 3. G4: repetir desempenho/matriz no **mesmo hash** do build candidato; PI revisa arte, fluxo e limites e registra aceite explícito. Até lá, PR #45 permanece rascunho, #28/#35 abertas e nenhuma sala adicional é replicada.
 

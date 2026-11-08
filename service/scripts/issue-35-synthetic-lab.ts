@@ -10,11 +10,11 @@ import type { Observation } from '../src/operations/operations-store.ts';
 const player = process.env.WR3D_35_PLAYER;
 const output = process.env.WR3D_35_PROOF_DIR;
 const captureView = process.env.WR3D_35_CAPTURE_VIEW;
-if (captureView && captureView !== 'chat' && captureView !== 'logs')
-  throw new Error('WR3D_35_CAPTURE_VIEW aceita apenas chat ou logs');
+if (captureView && !['chat', 'logs', 'interactive'].includes(captureView))
+  throw new Error('WR3D_35_CAPTURE_VIEW aceita chat, logs ou interactive');
 if (!player || !existsSync(player) || !output) throw new Error('Informe WR3D_35_PLAYER e WR3D_35_PROOF_DIR');
 const resolvedOutput = path.resolve(output);
-const captureName = captureView ? `issue-35-${captureView}` : '';
+const captureName = captureView && captureView !== 'interactive' ? `issue-35-${captureView}` : '';
 const reportPath = path.join(resolvedOutput, captureView ? captureName + '.json' : 'issue-35-result.json');
 if (existsSync(reportPath)) throw new Error('Prova anterior existe; use diretório novo');
 mkdirSync(resolvedOutput, { recursive: true });
@@ -98,21 +98,29 @@ try {
       '-logFile', path.join(resolvedOutput, 'player.log')], {
       env: { ...process.env, WR3D_SERVICE_URL: live.url, WR3D_SERVICE_TOKEN: token,
         WR3D_35_PROOF_DIR: captureView ? '' : resolvedOutput, WR3D_COMMAND_TOKEN: '',
-        WR3D_VALIDATION_CAPTURE_DIR: captureView ? resolvedOutput : '',
+        WR3D_VALIDATION_CAPTURE_DIR: captureName ? resolvedOutput : '',
         WR3D_VALIDATION_CAPTURE_NAME: captureName,
         WR3D_VALIDATION_VIEW: captureView ?? '', WR3D_VALIDATION_PROJECT_ID: projectId,
         WR3D_VALIDATION_AGENT_KEY: 'agent-child',
         WR3D_VALIDATION_CHAT_MARKER: captureView === 'chat' ? 'Resposta sintética' : '',
         WR3D_VALIDATION_REQUEST_ID: captureView === 'logs' ? 'request-35' : '' }, stdio: 'ignore' });
-    const timeout = setTimeout(() => { child?.kill(); resolve({ error: 'timeout' }); }, 60000);
-    child.once('exit', code => { clearTimeout(timeout); resolve({ code: code ?? -1 }); });
-    child.once('error', error => { clearTimeout(timeout); resolve({ error: error.message }); });
+    if (captureView === 'interactive') console.log(JSON.stringify({ ready: true, playerPid: child.pid,
+      output: resolvedOutput, stopSignal: path.join(resolvedOutput, 'stop.signal'), synthetic: true }));
+    const stop = captureView === 'interactive' ? setInterval(() => {
+      if (existsSync(path.join(resolvedOutput, 'stop.signal'))) child?.kill();
+    }, 200) : undefined;
+    const timeout = setTimeout(() => { child?.kill(); resolve({ error: 'timeout' }); },
+      captureView === 'interactive' ? 180000 : 60000);
+    child.once('exit', code => { clearTimeout(timeout); if (stop) clearInterval(stop);
+      resolve({ code: captureView === 'interactive' && existsSync(path.join(resolvedOutput, 'stop.signal')) ? 0 : code ?? -1 }); });
+    child.once('error', error => { clearTimeout(timeout); if (stop) clearInterval(stop);
+      resolve({ error: error.message }); });
   });
   const report = existsSync(reportPath) ? JSON.parse(readFileSync(reportPath, 'utf8')) : null;
   const result = { playerExit: outcome.code, playerError: outcome.error, report, sourceLost,
     sourceRecovered, output: resolvedOutput };
   console.log(JSON.stringify(result));
-  if (outcome.code !== 0 || (captureView === 'chat' ?
+  if (outcome.code !== 0 || (captureView === 'interactive' ? false : captureView === 'chat' ?
     !report?.chatExpectedMarkerVisible || report.chatMessageCount !== 2 : captureView === 'logs' ?
     !report?.logRequestIdVisible || !report?.logRedacted || report.logResultCount < 1 :
     report?.status !== 'pass')) process.exitCode = 1;

@@ -13,12 +13,12 @@ updated: 2026-11-08
 - Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35)
 - Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34)
 - Sala de referência — chat por sessão, histórico e interação assistida (#33)
-- Sala de referência — avatares, estações e atividade vinculados à observação (#32)
 
 ## A Fazer
 
 ### Sem épico
 
+- Sala de referência — avatares, estações e atividade vinculados à observação (#32)
 - Sala de referência — hooks e observação real de sessões, agentes e skills (#31)
 - Sala de referência — HUD contextual, navegação e interação legível (#30)
 - Sala de referência — arte 3D, materiais e iluminação fiel ao conceito (#29)

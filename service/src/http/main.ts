@@ -21,7 +21,8 @@ try {
   }, 86400000);
   retentionTimer.unref();
   const configPath = process.env.WR3D_MONITORING_CONFIG_PATH;
-  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown) : null;
+  const monitoring = configPath ? configureMonitoring(store, JSON.parse(readFileSync(configPath, 'utf8')) as unknown,
+    { dockerToken: process.env.WR3D_DOCKER_PROXY_TOKEN }) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const commandToken=process.env.WR3D_COMMAND_TOKEN;

@@ -26,6 +26,7 @@ const report = {provider:'codex',version:'0.166.0',project,output,spool,sessionN
   unhandledRequests:{},failureCode:null};
 let child;
 let timer;
+let completionPoll;
 let pending = new Map();
 let mainThreadId = null;
 let buffer = '';
@@ -120,11 +121,12 @@ try {
     'Ensaio sintético. Use a ferramenta de colaboração para criar exatamente um subagente real, peça WR3D_CHILD_ACK e aguarde. Responda WR3D_MAIN_ACK. Não use outras ferramentas.'}],clientUserMessageId:randomUUID()});
   if(!turn.turn?.id)throw new Error('turn_unconfirmed');
   report.turnStarted=true;
-  await Promise.race([new Promise(resolve=>{const poll=setInterval(()=>{if(report.turnCompleted){clearInterval(poll);resolve();}},100);}),exited]);
+  await Promise.race([new Promise(resolve=>{completionPoll=setInterval(()=>{if(report.turnCompleted){clearInterval(completionPoll);resolve();}},100);}),exited]);
   report.exitCode=child.exitCode;
 }catch(error){report.failureCode=error?.message??'lab_failed';}
 finally{
   if(timer)clearTimeout(timer);
+  if(completionPoll)clearInterval(completionPoll);
   if(child){child.kill();await new Promise(resolve=>{if(child.exitCode!==null)resolve();else{child.once('exit',resolve);setTimeout(resolve,5000);}});}
   report.stdoutBytes=stdoutBytes;report.stderrBytes=stderrBytes;
   report.stderrCode=/invalid transport/i.test(stderrText)?'invalid_transport':

@@ -22,8 +22,8 @@ export function compareTimestamp(left: string, right: string): number {
   return fractionA === fractionB ? 0 : fractionA < fractionB ? -1 : 1;
 }
 
-export function reduceSession(current: SessionState | null, signal: SessionSignal, observedAt: string): SessionState {
-  if (current?.presence === 'encerrada') return current;
+export function reduceSession(current: SessionState | null, signal: SessionSignal, observedAt: string, allowResume = false): SessionState {
+  if (current?.presence === 'encerrada' && !(allowResume && signal === 'session.observed' && compareTimestamp(observedAt,current.lastSeen) > 0)) return current;
   if (current && compareTimestamp(observedAt, current.lastSeen) < 0) return current;
   if (current?.sourceUnavailableAt && compareTimestamp(observedAt, current.sourceUnavailableAt) <= 0) return current;
   if (signal === 'source.unavailable') {

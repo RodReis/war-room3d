@@ -17,6 +17,9 @@ namespace WarRoom3D
         public LiveRoomPlacement[] roomPlacements;
         public LiveSession[] sessions;
         public LiveAgent[] agents;
+        public LiveTask[] tasks;
+        public LiveInvocation[] invocations;
+        public LiveSource[] sources;
         public LiveFeedItem[] feed;
         public LiveResource[] resources;
         public LiveResourceState[] resourceStates;
@@ -67,6 +70,9 @@ namespace WarRoom3D
     [Serializable] public sealed class LiveRoomPlacement { public string projectId; public string sectorId; public string slotId; }
     [Serializable] public sealed class LiveSession { public string sessionKey; public string projectId; public string provider; public string presence; public string freshness; public string lastSeen; }
     [Serializable] public sealed class LiveAgent { public string agentKey; public string sessionKey; public string parentAgentKey; public string presence; public string parentStatus; }
+    [Serializable] public sealed class LiveTask { public string taskId; public string sessionKey; public string agentKey; public string title; public string status; public string provenance; }
+    [Serializable] public sealed class LiveInvocation { public string invocationId; public string sessionKey; public string agentKey; public string kind; public string name; public string status; }
+    [Serializable] public sealed class LiveSource { public string sourceId; public string sourceVersion; public string status; public string errorCode; public string lastReceived; public string lastApplied; }
     [Serializable] public sealed class LiveFeedItem { public string type; public string projectId; public string observedAt; }
     [Serializable] public sealed class LiveResource { public string resourceId; public string environmentId; public string kind; public string name; public string sourceId; }
     [Serializable] public sealed class LiveResourceState

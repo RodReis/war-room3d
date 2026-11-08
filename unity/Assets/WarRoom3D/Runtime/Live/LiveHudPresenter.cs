@@ -30,6 +30,7 @@ namespace WarRoom3D
         private OperationsHudPresenter operations;
         private ReferenceRoomNavigation navigation;
         private AgentPresenter agentPresenter;
+        private ChatPresenter chat;
 
         private void Start()
         {
@@ -54,6 +55,7 @@ namespace WarRoom3D
             root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
             navigation = new ReferenceRoomNavigation(root, ReturnToSector);
             navigation.AgentSelected += OnAgentSelected;
+            root.Q<Button>("chat-open-agent").clicked += () => navigation.SelectTab(1);
             agentPresenter = gameObject.AddComponent<AgentPresenter>();
             agentPresenter.Configure(seatedAgentPrefab != null ? seatedAgentPrefab : Resources.Load<GameObject>("Agents/AgentSeated"),
                 standingAgentPrefab != null ? standingAgentPrefab : Resources.Load<GameObject>("Agents/AgentStanding"));
@@ -61,7 +63,10 @@ namespace WarRoom3D
             history.Configure(root, client);
             operations = gameObject.AddComponent<OperationsHudPresenter>();
             operations.Configure(root, client);
-            gameObject.AddComponent<CommandPresenter>().Configure(root, client, history);
+            var commands = gameObject.AddComponent<CommandPresenter>();
+            commands.Configure(root, client, history);
+            chat = gameObject.AddComponent<ChatPresenter>();
+            chat.Configure(root, client, commands);
             history.ReplayChanged += OnReplayChanged;
             history.ReplayStateChanged += RenderReplayState;
             gameObject.AddComponent<EffectDirector>().Configure(root, client, history, sector);
@@ -135,6 +140,7 @@ namespace WarRoom3D
         private void OnReplayChanged(bool active)
         {
             replayMode = active;
+            if (chat != null) chat.SetReplayMode(active);
             if (operations != null) operations.SetReplayMode(active);
             if (dataCenter != null) dataCenter.ClearReplayInfrastructure();
             if (!active)
@@ -265,6 +271,8 @@ namespace WarRoom3D
                 agentEntries.Add(new AgentEntry(agent.AgentKey, agent.Label, agent.Detail));
             }
             navigation.SetAgents(agentEntries);
+            var selectedAgent = projection.Find(item => item.AgentKey == navigation.SelectedAgentKey);
+            chat?.SetTarget(project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
             var placement = PlacementFor(project.projectId);
             var reference = placement != null && sector.Rooms.TryGetValue(placement.slotId, out var target) && target != null &&
                 target.GetComponentInChildren<ReferenceRoomView>() != null ? target : null;
@@ -487,7 +495,10 @@ namespace WarRoom3D
         private void OnAgentSelected(string key)
         {
             if (agentPresenter == null) return;
-            agentPresenter.Show(AgentPresenterRoom(), AgentProjection.ForProject(snapshot, selectedProjectId, replayMode || client.Connected), key);
+            var projection = AgentProjection.ForProject(snapshot, selectedProjectId, replayMode || client.Connected);
+            agentPresenter.Show(AgentPresenterRoom(), projection, key);
+            var selected = projection.Find(item => item.AgentKey == key);
+            chat?.SetTarget(selectedProjectId, selected?.SessionKey, selected?.AgentKey);
             if (insideRoom)
             {
                 var target = agentPresenter.FindAgent(key);
@@ -500,6 +511,7 @@ namespace WarRoom3D
         private void SelectProjectForValidation(string projectId) => SelectProject(projectId);
         private void SelectAgentForValidation(string key) => navigation?.SelectAgent(key);
         private void OpenEvidenceForValidation() => navigation?.OpenEvidence();
+        private void OpenChatForValidation() => navigation?.SelectTab(1);
 #endif
 
         private Transform AgentPresenterRoom()

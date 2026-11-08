@@ -11,6 +11,7 @@ import { claudeCommands } from '../commands/providers/claude.ts';
 import { codexCommands } from '../commands/providers/codex.ts';
 import type { CommandActor, CommandTarget } from '../commands/types.ts';
 import { handleOperations } from './operations.ts';
+import { handleConversations } from './conversations.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/snapshot.v1.schema.json', import.meta.url), 'utf8'));
 const validateSnapshot = new Ajv2020({ strict: true }).compile(schema);
@@ -51,6 +52,7 @@ export async function startReadOnlyServer(store: EventStore, token: string, port
     if (!request.url) { response.writeHead(404).end(); return; }
     if(isCommandRoute(request.url)) {void handleCommands(request,response,{gateway,actor,targets},{canRead,canCommand},()=>store.snapshot().capabilities);return;}
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
+    if(pathname === '/v1/conversations') {handleConversations(request,response,store.conversations,{canRead,canCommand},actor);return;}
     if (pathname.startsWith('/v1/operations') || pathname === '/v1/logs' || pathname === '/v1/traces' || pathname === '/v1/network' || pathname === '/v1/security' || pathname === '/v1/security/reports') {
       void handleOperations(request,response,store.operations,{canRead,canCommand,actor}); return;
     }

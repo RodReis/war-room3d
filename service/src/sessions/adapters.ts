@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { sessionKey, type Provider } from '../domain/identity.ts';
 import type { NormalizedEvent } from '../store/event-store.ts';
+import type { ObservedMessage } from './conversation-store.ts';
 
 export interface SessionSource {
   sourceId: string;
@@ -10,6 +11,7 @@ export interface SessionSource {
   accountRef: string;
   filePath: string;
   staleAfterMs?: number;
+  conversationContent?: { consentRef: string; retentionDays: number };
 }
 
 type RecordValue = Record<string, unknown>;
@@ -20,6 +22,51 @@ const safeName = (value: unknown): string | null => {
   const name = string(value);
   return name && /^[A-Za-z][A-Za-z0-9._:-]{0,79}$/.test(name) ? name : null;
 };
+
+// Conteúdo fica fora do evento M1 e só é persistido quando a fonte foi autorizada por configuração.
+export function adaptConversationRecord(source: SessionSource, raw: unknown, recordId: string, receivedAt: string): ObservedMessage | null {
+  if (!source.conversationContent?.consentRef) return null;
+  const input = object(raw);
+  if (!input) return null;
+  const params = source.provider === 'codex' ? object(input.params) : input;
+  const method = source.provider === 'codex' ? string(input.method) : string(input.hook_event_name);
+  const nativeSessionId = source.provider === 'codex'
+    ? string(params?.threadId) ?? string(object(params?.thread)?.id) : string(input.session_id);
+  if (!nativeSessionId || !method) return null;
+  let role: 'user' | 'assistant';
+  let content: string | null = null;
+  let nativeRef: string | null = null;
+  let turnRef: string | null = null;
+  let captureTruncated = false;
+  if (source.provider === 'claude') {
+    if (method === 'UserPromptSubmit') {role = 'user'; content = string(input.prompt); nativeRef = string(input.prompt_id);}
+    else if (method === 'Stop') {role = 'assistant'; content = string(input.last_assistant_message); nativeRef = string(input.turn_id);}
+    else return null;
+    captureTruncated = input.contentTruncated === true;
+    turnRef = string(input.prompt_id);
+  } else {
+    const item = object(params?.item);
+    const itemType = string(item?.type);
+    if (method !== 'item/completed' || (itemType !== 'userMessage' && itemType !== 'agentMessage')) return null;
+    role = itemType === 'userMessage' ? 'user' : 'assistant';
+    nativeRef = string(item?.id);
+    if (!nativeRef) return null;
+    const parts = Array.isArray(item?.content) ? item.content.map(value => string(object(value)?.text)).filter((value):value is string => !!value) : [];
+    content = string(item?.text) ?? (parts.length ? parts.join('\n') : null);
+    captureTruncated = item?.contentTruncated === true;
+    turnRef = string(params?.turnId);
+  }
+  if (!content?.trim()) return null;
+  const key = sessionKey(source.provider,source.accountRef,nativeSessionId);
+  const capturedAt = string(input.capturedAt);
+  if (!capturedAt || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(capturedAt) ||
+    !Number.isFinite(Date.parse(capturedAt))) return null;
+  const observedAt = capturedAt;
+  return {messageId:`m-${id(source.sourceId,key,role,nativeRef ?? recordId)}`,projectId:source.projectId,sessionKey:key,
+    sourceId:source.sourceId,provider:source.provider,role,content:content.slice(0,8000),observedAt,receivedAt,nativeRef,turnRef,
+    consentRef:source.conversationContent.consentRef,retentionDays:source.conversationContent.retentionDays,
+    truncated:captureTruncated || content.length>8000};
+}
 
 export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId: string, receivedAt: string): NormalizedEvent[] {
   const input = object(raw);
@@ -88,7 +135,8 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
     const itemType = string(item.type);
     const itemId = string(item.id);
     if (!itemType || !itemId) return [];
-    if (itemType === 'userMessage' && method === 'item/completed') return [base('message.observed','message',{messageId:`m-${id(key,itemId)}`})];
+    if ((itemType === 'userMessage' || itemType === 'agentMessage') && method === 'item/completed')
+      return [base('message.observed','message',{messageId:`m-${id(key,itemId)}`})];
     if (itemType === 'subAgentActivity') {
       const receiver = string(item.agentThreadId);
       const kind = string(item.kind);

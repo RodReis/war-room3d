@@ -167,6 +167,30 @@ namespace WarRoom3D
             return request;
         }
 
+        public UnityWebRequest CreateConversationRequest(string path)
+        {
+            if (!configured || string.IsNullOrEmpty(path) || !path.StartsWith("/v1/conversations?", StringComparison.Ordinal) ||
+                path.Contains("..") || path.Contains("//") || path.Contains("#") || path.Contains("\\"))
+                throw new ArgumentException("Consulta de conversa inválida");
+            var request = UnityWebRequest.Get(baseUrl + path);
+            request.redirectLimit = 0;
+            request.timeout = 10;
+            request.SetRequestHeader("Authorization", "Bearer " + token);
+            return request;
+        }
+
+        public UnityWebRequest CreateConversationDeleteRequest(string path, string sessionKey)
+        {
+            var commandToken = Environment.GetEnvironmentVariable("WR3D_COMMAND_TOKEN");
+            if (string.IsNullOrEmpty(commandToken) || Encoding.UTF8.GetByteCount(commandToken) < 32 || commandToken == token ||
+                string.IsNullOrEmpty(sessionKey)) return null;
+            var request = CreateConversationRequest(path);
+            request.method = UnityWebRequest.kHttpVerbDELETE;
+            request.SetRequestHeader("Authorization", "Bearer " + commandToken);
+            request.SetRequestHeader("X-WR3D-Delete-Confirm", sessionKey);
+            return request;
+        }
+
         private void OnDisable()
         {
             activeRequest?.Abort();

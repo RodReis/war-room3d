@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://war-room3d.local/contracts/conversation-page.v1.schema.json",
+  "title": "Página de conversa observada",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "sessionKey", "items", "nextBefore", "provenance", "receiptIsResponse"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "projectId": {"$ref": "#/$defs/id"},
+    "sessionKey": {"$ref": "#/$defs/id"},
+    "items": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/message"}},
+    "nextBefore": {"type": ["integer", "null"], "minimum": 1},
+    "provenance": {"const": "observed"},
+    "receiptIsResponse": {"const": false}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "time": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"},
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "messageId", "projectId", "sessionKey", "provider", "role", "content", "observedAt", "nativeRef", "turnRef", "sourceId", "consentRef", "expiresAt", "truncated"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "messageId": {"$ref": "#/$defs/id"},
+        "projectId": {"$ref": "#/$defs/id"},
+        "sessionKey": {"$ref": "#/$defs/id"},
+        "provider": {"enum": ["claude", "codex"]},
+        "role": {"enum": ["user", "assistant"]},
+        "content": {"type": "string", "minLength": 1, "maxLength": 8000},
+        "observedAt": {"$ref": "#/$defs/time"},
+        "nativeRef": {"type": ["string", "null"], "maxLength": 160},
+        "turnRef": {"type": ["string", "null"], "maxLength": 160},
+        "sourceId": {"$ref": "#/$defs/id"},
+        "consentRef": {"$ref": "#/$defs/id"},
+        "expiresAt": {"$ref": "#/$defs/time"},
+        "truncated": {"type": "boolean"}
+      }
+    }
+  }
+}

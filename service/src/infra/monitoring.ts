@@ -5,6 +5,8 @@ import { parseInventory, type Inventory } from './inventory.ts';
 import type { EventStore } from '../store/event-store.ts';
 import type { ProjectRecord } from '../domain/identity.ts';
 import { normalizeProjectPath } from '../domain/identity.ts';
+import { createHttpNetworkSink } from '../operations/operation-collector.ts';
+import type { OperationRule } from '../operations/operations-store.ts';
 
 interface MonitoringConfig {
   schemaVersion: '1.0';
@@ -13,6 +15,9 @@ interface MonitoringConfig {
   probes: ({ kind: 'host'; resourceId: string } | { kind: 'api'; resourceId: string; url: string })[];
   intervalMs: number;
   timeoutMs: number;
+  m5NetworkSignals: boolean;
+  m5NetworkRetentionDays: number | undefined;
+  m5Rules: OperationRule[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -24,7 +29,11 @@ function parseConfig(input: unknown): MonitoringConfig {
       !Array.isArray(input.probes) || !Number.isSafeInteger(input.intervalMs) || !Number.isSafeInteger(input.timeoutMs) ||
       (input.intervalMs as number) < 1000 || (input.intervalMs as number) > 3600000 ||
       (input.timeoutMs as number) < 100 || (input.timeoutMs as number) > 30000 ||
-      Object.keys(input).some(key => !['schemaVersion', 'projects', 'inventory', 'probes', 'intervalMs', 'timeoutMs'].includes(key)))
+      (input.m5NetworkSignals !== undefined && typeof input.m5NetworkSignals !== 'boolean') ||
+      (input.m5NetworkRetentionDays !== undefined && (typeof input.m5NetworkRetentionDays!=='number'||!Number.isSafeInteger(input.m5NetworkRetentionDays)||input.m5NetworkRetentionDays<1||input.m5NetworkRetentionDays>3650)) ||
+      (input.m5NetworkSignals===true && input.m5NetworkRetentionDays===undefined) ||
+      (input.m5Rules !== undefined && !Array.isArray(input.m5Rules)) ||
+      Object.keys(input).some(key => !['schemaVersion', 'projects', 'inventory', 'probes', 'intervalMs', 'timeoutMs', 'm5NetworkSignals', 'm5NetworkRetentionDays', 'm5Rules'].includes(key)))
     throw new Error('Configuração de monitoração inválida');
   const projects: ProjectRecord[] = [];
   const projectIds = new Set<string>();
@@ -64,8 +73,19 @@ function parseConfig(input: unknown): MonitoringConfig {
     else probes.push({ kind: 'api', resourceId: value.resourceId, url: value.url as string });
   }
   if (probes.length === 0) throw new Error('Nenhuma sonda configurada');
+  if (input.m5NetworkSignals===true && !probes.some(probe=>probe.kind==='api')) throw new Error('Sinais de rede M5 exigem ao menos uma sonda API configurada');
+  const m5Rules:OperationRule[]=[]; const ruleKeys=new Set<string>();
+  for (const value of (input.m5Rules??[]) as unknown[]) {
+    if (!isRecord(value)||Object.keys(value).some(key=>!['ruleId','version','category','field','operator','expectedValue','severity','enabled'].includes(key))||
+        typeof value.ruleId!=='string'||typeof value.version!=='number'||(value.category!=='network'&&value.category!=='security_detection')||typeof value.field!=='string'||
+        !['eq','gt','gte','lt','lte'].includes(String(value.operator))||!['string','number','boolean'].includes(typeof value.expectedValue)||
+        !['info','low','medium','high','critical'].includes(String(value.severity))||typeof value.enabled!=='boolean') throw new Error('Regra M5 inválida');
+    const key=`${value.ruleId}:${value.version}`; if(ruleKeys.has(key)) throw new Error('Regra M5 duplicada'); ruleKeys.add(key);
+    m5Rules.push(value as unknown as OperationRule);
+  }
   return { schemaVersion: '1.0', projects, inventory, probes,
-    intervalMs: input.intervalMs as number, timeoutMs: input.timeoutMs as number };
+    intervalMs: input.intervalMs as number, timeoutMs: input.timeoutMs as number, m5NetworkSignals: input.m5NetworkSignals === true,
+    m5NetworkRetentionDays: input.m5NetworkRetentionDays as number|undefined, m5Rules };
 }
 
 export function configureMonitoring(store: EventStore, input: unknown): { runner: CollectorRunner; intervalMs: number } {
@@ -91,5 +111,9 @@ export function configureMonitoring(store: EventStore, input: unknown): { runner
     }
   }
   store.registerProjectsAndReplaceInventory(config.projects.filter(project => !existing.has(project.projectId)), config.inventory);
-  return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs), intervalMs: config.intervalMs };
+  for (const rule of config.m5Rules) store.operations.registerRule(rule);
+  const apiResources=new Map(config.probes.filter((probe):probe is {kind:'api';resourceId:string;url:string}=>probe.kind==='api')
+    .map(probe=>[probe.resourceId,{environmentId:resources.get(probe.resourceId)!.environmentId}]));
+  const sink=config.m5NetworkSignals?createHttpNetworkSink(store.operations,apiResources,config.intervalMs,config.m5NetworkRetentionDays!):undefined;
+  return { runner: new CollectorRunner(store.infrastructure, probes, config.timeoutMs, undefined, sink), intervalMs: config.intervalMs };
 }

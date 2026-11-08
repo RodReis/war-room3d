@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://war-room3d.local/schemas/observation.v1.schema.json",
+  "title": "War-Room3D observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "observationId", "sourceId", "sourceVersion", "environmentId", "observedAt", "receivedAt", "category", "classification", "confidence", "evidenceRef", "coverage", "fields"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "observationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" },
+    "sourceId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" },
+    "sourceVersion": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" },
+    "environmentId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" },
+    "resourceId": { "anyOf": [ { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" }, { "type": "null" } ] },
+    "observedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" },
+    "receivedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" },
+    "category": { "enum": ["metric", "log", "trace", "network", "security_detection", "security_report"] },
+    "classification": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,79}$" },
+    "confidence": { "enum": ["observed", "derived", "inferred"] },
+    "evidenceRef": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "coverage": { "const": "covered" },
+    "correlation": { "type": "object", "additionalProperties": false, "properties": {
+      "traceId": { "type": "string", "pattern": "^[A-Fa-f0-9]{16,32}$" },
+      "spanId": { "type": "string", "pattern": "^[A-Fa-f0-9]{16}$" },
+      "requestId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$" }
+    } },
+    "fields": { "type": "object", "maxProperties": 64, "additionalProperties": { "anyOf": [ { "type": "string" }, { "type": "number" }, { "type": "boolean" }, { "type": "null" } ] } }
+  }
+}

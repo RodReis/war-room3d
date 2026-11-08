@@ -43,6 +43,7 @@
             <ui:Label name="resource-name" text="Selecione um recurso" class="project-name" />
             <ui:Label name="resource-status" text="Sem dados · exemplo" class="status" />
             <ui:Label name="resource-detail" text="" class="activity" />
+            <ui:Button name="operations-open-button" text="Logs, rede e segurança" class="primary-button" />
             <ui:Button name="resource-back-button" text="Voltar ao quartel" class="primary-button" />
           </ui:ScrollView>
         </ui:VisualElement>
@@ -81,6 +82,29 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:Button name="history-close" text="Fechar" />
+        </ui:VisualElement>
+        <ui:VisualElement name="operations-mask" class="history-mask" />
+        <ui:VisualElement name="operations-panel" class="operations-panel">
+            <ui:Label text="M5 · OPERAÇÃO AMPLIADA" class="history-seal" />
+            <ui:Label text="Sinais e incidentes" class="history-title" />
+            <ui:Label name="operations-limit" text="Consultas apenas nas fontes autorizadas e registradas."
+                      class="hint" />
+            <ui:TextField name="operations-environment" label="Ambiente" />
+            <ui:TextField name="operations-project" label="Projeto (opcional)" />
+            <ui:TextField name="operations-resource" label="Recurso (opcional)" />
+            <ui:TextField name="operations-from" label="Desde UTC" />
+            <ui:TextField name="operations-to" label="Até UTC" />
+            <ui:TextField name="operations-trace" label="Trace ID / Request ID" />
+            <ui:DropdownField name="operations-category" label="Fonte" />
+            <ui:DropdownField name="operations-severity" label="Severidade" />
+            <ui:VisualElement class="operations-actions">
+                <ui:Button name="operations-sources" text="Cobertura" />
+                <ui:Button name="operations-query" text="Consultar sinais" />
+                <ui:Button name="operations-incidents" text="Incidentes" />
+            </ui:VisualElement>
+            <ui:Label name="operations-status" text="Selecione ambiente e consulte cobertura." class="hint" />
+            <ui:ScrollView name="operations-results" class="operations-results" />
+            <ui:Button name="operations-close" text="Fechar" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -107,6 +107,31 @@ namespace WarRoom3D
             }
         }
 
+        public void GetOperations(string relativePath, Action<long, string> completed)
+        {
+            if (!configured || completed == null || relativePath == null || relativePath.Contains("..") || relativePath.Contains("#") || relativePath.Contains("\\") ||
+                !(relativePath.StartsWith("/v1/operations/", StringComparison.Ordinal) || relativePath.StartsWith("/v1/logs?", StringComparison.Ordinal) ||
+                  relativePath.StartsWith("/v1/traces?", StringComparison.Ordinal) || relativePath.StartsWith("/v1/network?", StringComparison.Ordinal) ||
+                  relativePath.StartsWith("/v1/security?", StringComparison.Ordinal) || relativePath.StartsWith("/v1/security/reports?", StringComparison.Ordinal)))
+            {
+                completed?.Invoke(0, "Consulta M5 indisponível ou rota inválida.");
+                return;
+            }
+            StartCoroutine(RequestOperations(relativePath, completed));
+        }
+
+        private IEnumerator RequestOperations(string relativePath, Action<long, string> completed)
+        {
+            using (var request = UnityWebRequest.Get(baseUrl + relativePath))
+            {
+                request.redirectLimit = 0;
+                request.timeout = 5;
+                request.SetRequestHeader("Authorization", "Bearer " + token);
+                yield return request.SendWebRequest();
+                completed?.Invoke(request.responseCode, request.result == UnityWebRequest.Result.Success ? request.downloadHandler.text : "Consulta M5 indisponível.");
+            }
+        }
+
         public void AcceptSnapshot(string json)
         {
             var parsed = LiveSnapshot.Parse(json);

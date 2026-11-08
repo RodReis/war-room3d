@@ -36,5 +36,7 @@
     { "kind": "host", "resourceId": "host-example" }
   ],
   "intervalMs": 5000,
-  "timeoutMs": 1000
+  "timeoutMs": 1000,
+  "m5NetworkSignals": false,
+  "m5Rules": []
 }

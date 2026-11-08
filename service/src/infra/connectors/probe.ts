@@ -1,5 +1,6 @@
 import type { Reading } from '../health-reducer.ts';
 import type { InfrastructureStore } from '../infrastructure-store.ts';
+import type { OperationReadingSink } from '../../operations/operation-collector.ts';
 
 export interface Probe {
   resourceId: string;
@@ -17,11 +18,13 @@ export class CollectorRunner {
   private readonly probes: readonly Probe[];
   private readonly timeoutMs: number;
   private readonly now: () => string;
-  constructor(store: InfrastructureStore, probes: readonly Probe[], timeoutMs: number, now: () => string = () => new Date().toISOString()) {
+  private readonly operationSink?: OperationReadingSink;
+  constructor(store: InfrastructureStore, probes: readonly Probe[], timeoutMs: number, now: () => string = () => new Date().toISOString(), operationSink?: OperationReadingSink) {
     this.store = store;
     this.probes = probes;
     this.timeoutMs = timeoutMs;
     this.now = now;
+    this.operationSink = operationSink;
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30000) throw new Error('Timeout de coleta inválido');
     const ids = new Set(probes.map(probe => probe.resourceId));
     if (ids.size !== probes.length) throw new Error('Sonda duplicada para recurso');
@@ -42,11 +45,14 @@ export class CollectorRunner {
             new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('Tempo limite da sonda')), { once: true }))
           ]);
           if (reading.resourceId !== probe.resourceId || reading.sourceId !== probe.sourceId) throw new Error('Sonda retornou identidade diferente');
-          this.store.recordReading(reading, this.now());
+          const receivedAt=this.now();
+          this.store.recordReading(reading, receivedAt);
+          try { this.operationSink?.record(reading, receivedAt); } catch { /* M5 sink failure does not invalidate M2 health evidence. */ }
           collected.push(probe.resourceId);
         } catch {
           // Falha da sonda reduz cobertura; não cria incidente de serviço sem evidência.
           this.store.markResourceCollectionFailed(probe.resourceId, this.now());
+          try { this.operationSink?.unavailable(probe.resourceId); } catch { /* M5 coverage remains stale if its state cannot be updated. */ }
           failed.push(probe.resourceId);
         } finally { clearTimeout(timer); }
       }

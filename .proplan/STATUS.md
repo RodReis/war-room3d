@@ -7,19 +7,17 @@ updated: 2026-11-08
 
 ## Backlog
 
+_(vazio)_
+
+## A Fazer
+
 ### Sem épico
 
 - M2 — validação operacional restante em laboratório (#16)
 
-## A Fazer
-
-_(vazio)_
-
 ## Em Andamento
 
-### Sem épico
-
-- M5 — Logs, rede e segurança operacional (#6)
+_(vazio)_
 
 ## Feito
 
@@ -29,6 +27,7 @@ _(vazio)_
 
 ### Sem épico
 
+- M5 — Logs, rede e segurança operacional (#6, finalizado em: 2026-11-08)
 - M4 — Mensagens e permissões assistidas (#5, finalizado em: 2026-11-08)
 - M3 — Meu dia, replay e GitHub (#4, finalizado em: 2026-11-07)
 - M2 — Data center e infraestrutura essencial (#3, finalizado em: 2026-11-06)

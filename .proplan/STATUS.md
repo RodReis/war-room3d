@@ -7,14 +7,13 @@ updated: 2026-11-08
 
 ## Backlog
 
-### Sem épico
-
-- Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35)
+_(vazio)_
 
 ## A Fazer
 
 ### Sem épico
 
+- Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35)
 - Sala de referência — experiência completa no Unity Player antes da replicação (#28)
 
 ## Em Andamento

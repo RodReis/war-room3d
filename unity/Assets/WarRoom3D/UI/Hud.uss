@@ -99,3 +99,35 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .command-panel Button { background-color: rgb(22, 67, 79); color: rgb(226, 234, 240); }
 .command-panel Button:disabled { opacity: 0.45; }
 .command-panel #command-result { color: rgb(157, 185, 194); margin-bottom: 12px; }
+
+.overview { display: none; position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.quartel-mode .overview { display: flex; }
+.quartel-mode #room-label { display: none; }
+.quartel-mode #control-panel { display: none; }
+.quartel-mode.overview-tools-open #control-panel { display: flex; left: auto; right: 24px; top: 123px; bottom: auto; }
+.quartel-mode #effect-banner { top: 196px; left: 24px; right: auto; max-width: 300px; }
+.overview-heading { position: absolute; top: 92px; left: 26px; padding: 8px 10px; border-left-width: 2px; border-left-color: rgb(61, 178, 175); background-color: rgba(7, 19, 27, 0.86); }
+.overview-kicker { color: rgb(135, 211, 208); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px; }
+.overview-title { color: rgb(234, 247, 245); font-size: 25px; -unity-font-style: bold; margin-bottom: 2px; }
+.overview-meta { color: rgb(181, 208, 214); font-size: 13px; margin-top: 1px; }
+.overview-actions { position: absolute; flex-direction: row; top: 82px; right: 22px; }
+.overview-tool { height: 34px; padding-left: 13px; padding-right: 13px; margin-left: 8px; background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); font-size: 13px; border-color: rgb(66, 110, 118); border-radius: 5px; }
+.overview-dock { position: absolute; left: 24px; right: 24px; bottom: 20px; align-items: center; }
+.overview-cards { flex-direction: row; align-items: stretch; }
+.overview-card { min-width: 282px; width: 326px; height: 156px; justify-content: flex-start; flex-shrink: 0; margin-left: 6px; margin-right: 6px; padding: 10px 14px; align-items: stretch; background-color: rgb(11, 27, 37); border-width: 1px; border-top-width: 3px; border-color: rgb(53, 100, 110); border-top-color: rgb(69, 201, 190); border-radius: 7px; color: rgb(232, 246, 244); -unity-text-align: middle-left; }
+.overview-card Label { -unity-text-align: middle-left; }
+.overview-card:hover, .overview-selected { background-color: rgb(19, 48, 57); border-color: rgb(107, 220, 213); }
+.overview-project { font-size: 22px; -unity-font-style: bold; white-space: normal; margin-bottom: 2px; }
+.overview-status { color: rgb(111, 230, 181); font-size: 14px; -unity-font-style: bold; }
+.overview-status.status-waiting { color: rgb(255, 213, 136); }
+.overview-status.status-inactive { color: rgb(182, 199, 210); }
+.overview-alert { color: rgb(161, 197, 201); font-size: 12px; margin-top: 3px; }
+.overview-alert.status-attention { color: rgb(255, 191, 111); }
+
+.overview-dock #overview-scroll { width: 100%; max-width: 676px; height: 168px; }
+.overview-card Label { flex-shrink: 0; margin: 0; padding: 0; }
+.overview-card .overview-kicker { height: 17px; }
+.overview-card .overview-project { height: 28px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.overview-card .overview-status { height: 20px; }
+.overview-card .overview-meta { height: 19px; }
+.overview-card .overview-alert { height: 18px; }

@@ -37,6 +37,19 @@ namespace WarRoom3D
             ApplyPose();
         }
 
+        public void FocusOverview(Vector3 center, float width, float depth)
+        {
+            var camera = GetComponent<Camera>();
+            var halfHeight = Mathf.Tan(camera.fieldOfView * .5f * Mathf.Deg2Rad);
+            var aspect = Mathf.Max(1f, camera.aspect);
+            focus = center - Vector3.up * 1.4f;
+            yaw = 350f;
+            pitch = 44f;
+            distance = Mathf.Clamp(Mathf.Max(width / (1.53f * halfHeight * aspect), depth / (.95f * halfHeight)), 21f, 53f);
+            dragging = false;
+            ApplyPose();
+        }
+
         public void FocusCore()
         {
             focus = new Vector3(0, 0.8f, 0);

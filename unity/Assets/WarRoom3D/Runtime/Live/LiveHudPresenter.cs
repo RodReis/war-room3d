@@ -32,6 +32,12 @@ namespace WarRoom3D
         private AgentPresenter agentPresenter;
         private ChatPresenter chat;
         private RoomLogPresenter logs;
+        private QuartelOverview overview;
+        private string overviewRoomsKey;
+
+        private bool IsPreview => snapshot?.mode == "demo";
+        private bool AtOverview => !insideRoom && !insideDataCenter && !replayMode;
+        private bool HasCurrentData => replayMode || IsPreview || client.Connected;
 
         private void Start()
         {
@@ -40,7 +46,11 @@ namespace WarRoom3D
             orbit.SetHud(this);
             dataCenter = sector.GetComponentInChildren<DataCenterBuilder>();
             dataCenter.UseNeutralIndicators();
-            root.Q<Label>("stage-eyebrow").text = "WAR-ROOM3D / M2 · AO VIVO";
+            root.Q<Label>("stage-eyebrow").text = "WAR-ROOM3D   /   DESENVOLVIMENTO";
+            overview = new QuartelOverview(root.Q("overview-cards"), OpenOverviewProject);
+            root.Q<Button>("overview-center").clicked += ShowDataCenter;
+            root.Q<Button>("overview-tools").clicked += () =>
+                root.EnableInClassList("overview-tools-open", !root.ClassListContains("overview-tools-open"));
             root.Q<Label>("project-list-heading").text = "PROJETOS OBSERVADOS";
             root.Q<Label>("activity-heading").text = "ATIVIDADE OBSERVADA";
             root.Q<Label>("agents-heading").text = "AGENTES OBSERVADOS";
@@ -53,7 +63,12 @@ namespace WarRoom3D
             root.Q<Button>("resource-all-button").clicked += () => SetResourceFilter(false);
             root.Q<Button>("resource-project-button").clicked += () => SetResourceFilter(true);
             root.Q<Button>("angle-button").clicked += () => orbit.Orbit(180f, 0);
-            root.Q<Button>("reset-button").clicked += () => { if (insideDataCenter) orbit.FocusCore(); else FocusSelectedRoom(); };
+            root.Q<Button>("reset-button").clicked += () =>
+            {
+                if (insideDataCenter) orbit.FocusCore();
+                else if (AtOverview) FocusOverview();
+                else FocusSelectedRoom();
+            };
             navigation = new ReferenceRoomNavigation(root, ReturnToSector);
             navigation.AgentSelected += OnAgentSelected;
             root.Q<Button>("chat-open-agent").clicked += () => navigation.SelectTab(1);
@@ -116,9 +131,9 @@ namespace WarRoom3D
         {
             if (root == null) return;
             if (replayMode) return;
-            root.Q<Label>("demo-seal").text = connected ? "AO VIVO · SERVIÇO LOCAL" : snapshot == null ? "SEM CONEXÃO · SEM DADOS" : "SEM CONEXÃO · ÚLTIMO SNAPSHOT";
             if (snapshot == null) root.Q<Label>("activity").text = message;
             else { RefreshProject(); RefreshResources(); }
+            RefreshOverview();
         }
 
         private void Render(LiveSnapshot next)
@@ -139,6 +154,7 @@ namespace WarRoom3D
             else if (Array.Find(snapshot.projects, item => item.projectId == selectedProjectId) == null) selectedProjectId = snapshot.projects[0].projectId;
             RefreshProject();
             RefreshResources();
+            RefreshOverview();
         }
 
         private void OnReplayChanged(bool active)
@@ -160,6 +176,12 @@ namespace WarRoom3D
             {
                 snapshot = null;
                 ShowReplayUnavailable();
+                if (!insideRoom && !insideDataCenter)
+                {
+                    navigation.SetSummaryCollapsed(false);
+                    navigation.SetView(false, null);
+                }
+                SetOverviewVisible();
             }
         }
 
@@ -179,6 +201,7 @@ namespace WarRoom3D
             }
             if (state.projects.Length == 0) selectedProjectId = null;
             else if (Array.Find(state.projects, item => item.projectId == selectedProjectId) == null) selectedProjectId = state.projects[0].projectId;
+            sector.ApplyOverviewPlacements(state.roomPlacements);
             BuildReplayMarkers(state);
             RefreshProject();
             RefreshResources();
@@ -238,12 +261,64 @@ namespace WarRoom3D
             RefreshProject();
             if (insideDataCenter) SetResourceFilter(true);
             if (insideRoom) FocusSelectedRoom();
+            RefreshOverview();
+        }
+
+        private void OpenOverviewProject(string projectId)
+        {
+            SelectProject(projectId);
+            EnterRoom();
+        }
+
+        private void RefreshOverview()
+        {
+            if (replayMode) { SetOverviewVisible(); return; }
+            var placements = snapshot?.roomPlacements;
+            sector.ApplyOverviewPlacements(placements);
+            overview.Render(snapshot, HasCurrentData, selectedProjectId);
+            root.Q("overview-empty").style.display = root.Q("overview-cards").childCount == 0
+                ? DisplayStyle.Flex : DisplayStyle.None;
+            root.Q<Label>("overview-empty").text = snapshot == null
+                ? client.ConnectionMessage : "Nenhum projeto vinculado neste setor.";
+            root.Q<Label>("overview-service").text = IsPreview ? "Serviço local · fora da demonstração" :
+                client.Connected ? "Serviço local · conectado" : "Serviço local · desconectado";
+            root.Q<Label>("overview-source").text = QuartelOverview.SourceLabel(snapshot, client.Connected, replayMode);
+            if (IsPreview)
+            {
+                root.Q("history-button").style.display = DisplayStyle.None;
+                root.Q("command-button").style.display = DisplayStyle.None;
+                root.Q("chat-interact").style.display = DisplayStyle.None;
+                root.Q("chat-delete").style.display = DisplayStyle.None;
+            }
+            root.Q<Label>("demo-seal").text = IsPreview ? "DEMONSTRAÇÃO · DADOS ILUSTRATIVOS" :
+                client.Connected ? "OBSERVAÇÃO LOCAL" : "SEM CONEXÃO";
+            var key = sector.OverviewRoomsKey;
+            if (key != overviewRoomsKey && AtOverview) FocusOverview();
+            overviewRoomsKey = key;
+            SetOverviewVisible();
+        }
+
+        private void SetOverviewVisible()
+        {
+            root.EnableInClassList("quartel-mode", AtOverview);
+            if (AtOverview)
+            {
+                root.Q("project-panel").style.display = DisplayStyle.None;
+                root.Q("summary-toggle").style.display = DisplayStyle.None;
+            }
+        }
+
+        private void FocusOverview()
+        {
+            sector.GetOverviewBounds(out var center, out var width, out var depth);
+            orbit.FocusOverview(center, width, depth);
         }
 
         private void RefreshProject()
         {
             GetComponent<CommandPresenter>()?.SelectProject(selectedProjectId);
             if (snapshot == null) { ShowEmpty(); return; }
+            sector.ApplyOverviewPlacements(snapshot.roomPlacements);
             var project = Array.Find(snapshot.projects, item => item.projectId == selectedProjectId);
             if (project == null) { ShowEmpty(); return; }
             root.Q<Label>("project-name").text = project.name;
@@ -263,7 +338,7 @@ namespace WarRoom3D
             int workingAgents = 0;
             int uncertainAgents = 0;
             var agentEntries = new List<AgentEntry>();
-            var projection = AgentProjection.ForProject(snapshot, project.projectId, replayMode || client.Connected);
+            var projection = AgentProjection.ForProject(snapshot, project.projectId, HasCurrentData);
             foreach (var agent in projection)
             {
                 if (agent.Ended) continue;
@@ -286,11 +361,11 @@ namespace WarRoom3D
             agentPresenter.Show(reference, projection, navigation.SelectedAgentKey);
             if (agentPresenter.OverflowCount > 0)
                 root.Q<Label>("agent-tree").text = "+" + agentPresenter.OverflowCount + " agentes agrupados · lista completa abaixo";
-            string status = !replayMode && !client.Connected ? "Sem dados · conexão perdida" : SessionStatus(sessions);
+            string status = !HasCurrentData ? "Sem dados · conexão perdida" : SessionStatus(sessions);
             var statusLabel = root.Q<Label>("status");
             statusLabel.text = (status == "Trabalhando" ? "● " : status == "Aguardando" ? "○ " : "◇ ") + status;
             statusLabel.EnableInClassList("status-attention", status == "Fonte indisponível");
-            statusLabel.EnableInClassList("status-inactive", (!replayMode && !client.Connected) || sessions.Count == 0);
+            statusLabel.EnableInClassList("status-inactive", (!HasCurrentData) || sessions.Count == 0);
             statusLabel.EnableInClassList("status-waiting", status == "Aguardando");
             root.Q<Label>("provider").text = providers.Count == 0 ? "Sem sessão" : providers.Count > 1 ? "Ambos" : providers.Contains("codex") ? "Codex" : "Claude";
             root.Q<Label>("agents").text = $"{presentAgents} agentes presentes · {workingAgents} trabalhando" +
@@ -300,7 +375,7 @@ namespace WarRoom3D
                 if (task != null && sessionKeys.Contains(task.sessionKey)) { hasActivity = true; break; }
             if (!hasActivity && snapshot.invocations != null) foreach (var invocation in snapshot.invocations)
                 if (invocation != null && sessionKeys.Contains(invocation.sessionKey)) { hasActivity = true; break; }
-            root.Q<Label>("activity").text = !replayMode && !client.Connected
+            root.Q<Label>("activity").text = !HasCurrentData
                 ? "Conexão perdida. O último snapshot não confirma atividade atual."
                 : hasActivity
                     ? "Sessões e atividade observadas. Selecione um agente para ver tarefa, ferramenta e skill vinculadas."
@@ -316,7 +391,7 @@ namespace WarRoom3D
             foreach (var incident in snapshot.incidents)
                 if (Array.IndexOf(incident.projectIds, project.projectId) >= 0) incidents++;
             root.Q<Label>("infrastructure-alert").text = incidents > 0 ? $"Impacto potencial · {incidents} incidente(s) observado(s)" : "Sem incidente vinculado no último snapshot";
-            root.Q<Label>("infrastructure-alert").EnableInClassList("status-attention", incidents > 0 && (replayMode || client.Connected));
+            root.Q<Label>("infrastructure-alert").EnableInClassList("status-attention", incidents > 0 && (HasCurrentData));
             root.Q<Button>("enter-button").SetEnabled(PlacementFor(project.projectId) != null);
         }
 
@@ -357,6 +432,9 @@ namespace WarRoom3D
             navigation.SetView(true, project?.name);
             root.Q<Button>("back-button").style.display = DisplayStyle.Flex;
             root.Q<Button>("enter-button").style.display = DisplayStyle.None;
+            navigation.SetSummaryCollapsed(false);
+            root.EnableInClassList("overview-tools-open", false);
+            SetOverviewVisible();
         }
 
         private void ReturnToSector()
@@ -368,8 +446,11 @@ namespace WarRoom3D
             root.Q<Label>("view-title").text = "Salas observadas e núcleo central";
             root.Q<Button>("back-button").style.display = DisplayStyle.None;
             root.Q<Button>("enter-button").style.display = DisplayStyle.Flex;
-            orbit.ResetView();
+            if (AtOverview) FocusOverview();
+            else orbit.ResetView();
             navigation.SetView(false, null);
+            root.EnableInClassList("overview-tools-open", false);
+            SetOverviewVisible();
         }
 
         private void ShowDataCenter()
@@ -380,6 +461,8 @@ namespace WarRoom3D
             root.Q<VisualElement>("project-panel").style.display = DisplayStyle.None;
             root.Q<VisualElement>("resource-panel").style.display = DisplayStyle.Flex;
             navigation.SetView(false, null);
+            root.EnableInClassList("overview-tools-open", false);
+            SetOverviewVisible();
             SetResourceFilter(selectedProjectId != null);
         }
 
@@ -427,8 +510,8 @@ namespace WarRoom3D
             root.Q<Label>("resource-name").text = resource.name;
             var status = root.Q<Label>("resource-status");
             status.text = HealthText(state);
-            status.EnableInClassList("status-attention", (replayMode || client.Connected) && (state?.health == "degradado" || state?.health == "indisponivel"));
-            status.EnableInClassList("status-inactive", (!replayMode && !client.Connected) || state == null || state.health == "sem_dados");
+            status.EnableInClassList("status-attention", (HasCurrentData) && (state?.health == "degradado" || state?.health == "indisponivel"));
+            status.EnableInClassList("status-inactive", (!HasCurrentData) || state == null || state.health == "sem_dados");
             var names = new List<string>();
             if (state?.dependentProjectIds != null)
                 foreach (var id in state.dependentProjectIds)
@@ -447,7 +530,7 @@ namespace WarRoom3D
 
         private string HealthText(LiveResourceState state)
         {
-            if (!replayMode && !client.Connected) return "Sem dados · conexão perdida";
+            if (!HasCurrentData) return "Sem dados · conexão perdida";
             if (state == null || state.freshness != "atual" || state.coverage != "atual") return "Sem dados";
             switch (state.health)
             {
@@ -471,14 +554,16 @@ namespace WarRoom3D
         public bool IsPointerOverHud(Vector2 screenPosition)
         {
             if (root == null || root.panel == null) return false;
-            Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
+            Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screenPosition.x, Screen.height - screenPosition.y));
             var picked = root.panel.Pick(point);
             for (var element = picked; element != null; element = element.parent)
                 if (element.name == "header" || element.name == "project-panel" || element.name == "resource-panel" ||
+                    element.name == "overview-heading" || element.name == "overview-dock" || element.name == "overview-actions" ||
                     element.name == "control-panel" || element.name == "summary-toggle" || element.name == "evidence-detail" ||
                     element.name == "history-panel" || element.name == "history-mask" || element.name == "operations-panel" ||
                     element.name == "operations-mask" || element.name == "command-panel" || element.name == "command-mask") return true;
-            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
+            return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) ||
+                (AtOverview && (Contains("overview-heading", point) || Contains("overview-dock", point) || Contains("overview-actions", point))) || Contains("control-panel", point) ||
                 Contains("summary-toggle", point) || Contains("evidence-detail", point) ||
                 Contains("history-panel", point) || Contains("history-mask", point) ||
                 Contains("operations-panel", point) || Contains("operations-mask", point) ||
@@ -489,7 +574,7 @@ namespace WarRoom3D
         public string PointerDiagnostic(Vector2 screenPosition)
         {
             if (root == null || root.panel == null) return "panel=unavailable";
-            var point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
+            var point = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screenPosition.x, Screen.height - screenPosition.y));
             var panel = root.Q<VisualElement>("project-panel");
             return $"panelPoint={point} projectBound={panel?.worldBound.ToString() ?? "null"} " +
                 $"projectDisplay={panel?.resolvedStyle.display.ToString() ?? "null"} picked={root.panel.Pick(point)?.name ?? "null"}";
@@ -513,13 +598,18 @@ namespace WarRoom3D
             if (insideRoom || insideDataCenter || snapshot == null) return;
             if (!RoomSceneSelection.TryPickSlot(Camera.main, sector, this, out var slotId)) return;
             foreach (var placement in snapshot.roomPlacements)
-                if (placement.slotId == slotId && placement.sectorId == "setor-01") { SelectProject(placement.projectId); break; }
+                if (placement.slotId == slotId && placement.sectorId == "setor-01")
+                {
+                    if (AtOverview) OpenOverviewProject(placement.projectId);
+                    else SelectProject(placement.projectId);
+                    break;
+                }
         }
 
         private void OnAgentSelected(string key)
         {
             if (agentPresenter == null) return;
-            var projection = AgentProjection.ForProject(snapshot, selectedProjectId, replayMode || client.Connected);
+            var projection = AgentProjection.ForProject(snapshot, selectedProjectId, HasCurrentData);
             agentPresenter.Show(AgentPresenterRoom(), projection, key);
             var selected = projection.Find(item => item.AgentKey == key);
             ShowSessionSource(selected);

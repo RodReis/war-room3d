@@ -21,6 +21,10 @@ namespace WarRoom3D.Editor
             Object.DestroyImmediate(GameObject.Find("Demonstração M2"));
             var hud = GameObject.Find("HUD");
             Object.DestroyImmediate(hud.GetComponent<HudPresenter>());
+            var sector = Object.FindAnyObjectByType<SectorBuilder>();
+            var sectorSettings = new SerializedObject(sector);
+            sectorSettings.FindProperty("overviewLayout").boolValue = true;
+            sectorSettings.ApplyModifiedPropertiesWithoutUndo();
             var document = hud.GetComponent<UIDocument>();
             var client = hud.AddComponent<LiveStateClient>();
             var presenter = hud.AddComponent<LiveHudPresenter>();
@@ -28,7 +32,7 @@ namespace WarRoom3D.Editor
             serialized.FindProperty("document").objectReferenceValue = document;
             serialized.FindProperty("styleSheet").objectReferenceValue = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/WarRoom3D/UI/Hud.uss");
             serialized.FindProperty("client").objectReferenceValue = client;
-            serialized.FindProperty("sector").objectReferenceValue = Object.FindAnyObjectByType<SectorBuilder>();
+            serialized.FindProperty("sector").objectReferenceValue = sector;
             serialized.FindProperty("orbit").objectReferenceValue = Object.FindAnyObjectByType<OrbitCamera>();
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -38,6 +42,22 @@ namespace WarRoom3D.Editor
             };
             AssetDatabase.SaveAssets();
             Debug.Log("Cena M2 live criada: " + ScenePath);
+        }
+
+        [MenuItem("War-Room3D/Build Windows quartel vivo")]
+        public static void BuildWindowsQuartel()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) CreateScene();
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { ScenePath },
+                locationPathName = "Builds/WarRoom3D-Quartel/WarRoom3D.exe",
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                throw new System.Exception("Build Windows quartel falhou: " + report.summary.result);
+            Debug.Log("Build Windows quartel concluído: " + report.summary.totalSize + " bytes");
         }
 
         [MenuItem("War-Room3D/Build Windows M2 live")]

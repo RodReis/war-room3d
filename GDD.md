@@ -1,6 +1,6 @@
 # War-Room3D — Concepção da Experiência e Projeto Técnico
 
-Versão: 1.1 · Base: 06/11/2026 · Revisão visual: 08/11/2026 · Complemento do [PRD](PRD.md).
+Versão: 1.2 · Base: 06/11/2026 · Revisão visual: 09/11/2026 · Complemento do [PRD](PRD.md).
 
 **Estado:** documento aprovado em 06/11/2026 como referência de planejamento. “GDD” descreve aqui a experiência espacial e lúdica de um produto de operação, além de sua arquitetura técnica. O quartel não transforma tarefas reais em objetivos fictícios de jogo. Tecnologias e orçamentos propostos não significam instalação, integração ou desempenho já validados.
 
@@ -38,11 +38,15 @@ As imagens recebidas e a prancha anterior são referências de composição. As 
 
 ### 3.1 Setores e salas
 
-Cada setor oferece seis posições de sala ligadas por corredores a um núcleo de circulação/operação. A disposição final prioriza visibilidade e tratamento de oclusão, não fica presa às duas fileiras da primeira prévia. Um projeto ocupa uma posição persistente. Setores adicionais aparecem conforme necessário; trocar setor não replica logicamente o data center ou duplica seus incidentes.
+Cada setor oferece seis posições dinâmicas de projeto ligadas por corredores a um núcleo de circulação/operação. A disposição final prioriza visibilidade e tratamento de oclusão, não fica presa às duas fileiras da primeira prévia. Um projeto ocupa uma posição persistente. Setores adicionais aparecem conforme necessário; trocar setor não replica logicamente o data center ou duplica seus incidentes.
 
 Se o núcleo for representado em vários setores, são acessos ao mesmo estado operacional com filtro contextual. Projetos sem sessões continuam registrados. Sala inativa pode ser recolhida pelo usuário; a busca e os alertas permanecem acessíveis. O sistema não troca todas as salas de lugar quando uma sessão encerra.
 
 Espaços ainda não usados são encaixes arquitetônicos discretos, sem nomes de projetos fictícios. O cenário de demonstração pode preencher seis salas, mas usa domínio de dados próprio e selo persistente.
+
+No [quartel vivo](docs/specs/2026-11-09-quartel-vivo-design.md), a sala de projeto é criada ou reativada pela presença autorizada de workspace ou sessão, com identidade canônica e posição recuperável. Cafeteria e sala de reunião do PI são espaços fixos, além do data center. No primeiro Player, reservar seus espaços e priorizar a leitura dos dois projetos. A expansão materializa os interiores fixos após o aceite.
+
+A vista inicial liga cartões legíveis às salas, expõe cobertura por fonte e mostra gráfico de eventos por projeto. Avatares masculinos e femininos têm roupa, silhueta e nome ou apelido estáveis. Movimento e detalhes seguem o estado observado. A fidelidade da cena à prancha e a jornada com dados reais são verificadas juntas no Player.
 
 ### 3.2 Sala do projeto
 

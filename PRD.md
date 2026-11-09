@@ -1,6 +1,6 @@
 # War-Room3D — Documento de Requisitos do Produto
 
-Versão: 1.1 · Base: 06/11/2026 · Revisão de entrega: 08/11/2026 · Responsável de produto: Rodrigo.
+Versão: 1.2 · Base: 06/11/2026 · Revisão de entrega: 09/11/2026 · Responsável de produto: Rodrigo.
 
 **Estado:** PRD e [GDD](GDD.md) aprovados em 06/11/2026 como referência de planejamento. Requisitos e metas abaixo descrevem o produto a construir, não funcionalidades entregues. Os relatórios anteriores permanecem como evidência histórica.
 
@@ -54,9 +54,13 @@ O arquivo v2 tem quatro salas periféricas. O requisito do produto continua send
 
 As etapas são unidades de produto com aceite próprio. Não constituem cronograma nem autorização para instalar integrações ou atuar em produção.
 
+<a id="quartel-vivo"></a>
+
+**Prioridade aprovada em 09/11/2026:** [quartel vivo no Player (#46)](https://github.com/RodReis/war-room3d/issues/46). Primeiro, vista fiel ao protótipo com dois projetos ativos de uma fonte real, agentes humanos identificáveis com roupas distintas e gráfico de atividade observada. Depois do aceite no Player, expandir a descoberta de projetos ativos para VS Code, Claude Code Desktop e Codex Desktop. As salas de projeto são dinâmicas. Cafeteria, sala de reunião do PI e data center têm posição fixa. Ver [especificação](docs/specs/2026-11-09-quartel-vivo-design.md) e [plano](docs/superpowers/plans/2026-11-09-quartel-vivo-player.md).
+
 <a id="sala-referencia"></a>
 
-**Prioridade aprovada em 08/11/2026:** entregar [uma sala completa no Unity Player (#28)](https://github.com/RodReis/war-room3d/issues/28), com design rico e fiel ao conceito, detalhes de qualidade, iluminação e cores vivas, layout contextual e fluxo hooks/agentes/skills/chats/logs. [Especificação](docs/specs/2026-11-08-sala-referencia-design.md) e [plano](docs/superpowers/plans/2026-11-08-sala-referencia-player.md) detalham #29–#35. A sala deve ser validada no Player pelo PI antes de replicar acabamento para outras salas/setores. Isso corrige a execução transversal de M0/M1/M4/M5, sem reduzir M0–M5 a uma fase estrutural nem reescrever aceites anteriores. Build/CI e fechamento de issue não equivalem à conclusão dessa experiência.
+**Entrega de referência aprovada em 08/11/2026:** entregar [uma sala completa no Unity Player (#28)](https://github.com/RodReis/war-room3d/issues/28), com design rico e fiel ao conceito, detalhes de qualidade, iluminação e cores vivas, layout contextual e fluxo hooks/agentes/skills/chats/logs. [Especificação](docs/specs/2026-11-08-sala-referencia-design.md) e [plano](docs/superpowers/plans/2026-11-08-sala-referencia-player.md) detalham #29–#35. A sala deve ser validada no Player pelo PI antes de replicar acabamento para outras salas/setores. Isso corrige a execução transversal de M0/M1/M4/M5, sem reduzir M0–M5 a uma fase estrutural nem reescrever aceites anteriores. Build/CI e fechamento de issue não equivalem à conclusão dessa experiência.
 
 | Etapa | Entrega | Critério de saída |
 |---|---|---|

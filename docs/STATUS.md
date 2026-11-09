@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 09/11/2026 para a prioridade da sala de referência; resultados anteriores mantêm as datas de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
+Atualizado em 09/11/2026 para a prioridade do quartel vivo; resultados anteriores mantêm as datas de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
 
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
@@ -11,7 +11,13 @@ Atualizado em 09/11/2026 para a prioridade da sala de referência; resultados an
 | M4 | [#5](https://github.com/RodReis/war-room3d/issues/5) | [Plano](superpowers/plans/2026-11-06-m4-interacao.md) | [PR #24](https://github.com/RodReis/war-room3d/pull/24) integrada por squash em `75ad486`; gateway, painel, [protocolos](validation/m4/protocolos.md) e descoberta limitada pela credencial; recibos pontuais [Claude 2.1.319](validation/m4/claude-windows.md) e [Codex 0.166.0](validation/m4/codex-windows.md), alvos encerrados; [critérios técnicos e limites](validation/m4/resultado.md); produto sem capacidades reais ativas sem vínculo atual | [Aceito com limites](validation/m4/aceite-funcional.md) em 07/11/2026; issue #5 encerrada por autorização explícita do PI. Operação contínua M1 e perguntas/permissões reais não comprovadas |
 | M5 | [#6](https://github.com/RodReis/war-room3d/issues/6) | [Plano](superpowers/plans/2026-11-06-m5-operacao-ampliada.md) | [PR #26](https://github.com/RodReis/war-room3d/pull/26): catálogo/cobertura, API redigida e paginada, regras/incidentes, sinal HTTP M2 e leitura local autorizada dos logs Docker da API ContaIA; [provas e limites](validation/m5/resultado.md) | Issue #6 fechada em `proplan:finalizado` pelo PI; esta ampliação ainda não tem prova visual/aceite próprio. Traces distribuídos, detector e coleta contínua pendentes |
 
-## Próxima entrega prioritária — sala de referência
+## Próxima entrega prioritária — quartel vivo
+
+Planejamento autorizado em 09/11/2026 no [épico #46](https://github.com/RodReis/war-room3d/issues/46). [Especificação](specs/2026-11-09-quartel-vivo-design.md) · [Plano](superpowers/plans/2026-11-09-quartel-vivo-player.md). Implementação e aceite do Player pendentes.
+
+Primeira entrega: [#47](https://github.com/RodReis/war-room3d/issues/47) quartel, [#48](https://github.com/RodReis/war-room3d/issues/48) salas dinâmicas, [#49](https://github.com/RodReis/war-room3d/issues/49) primeira fonte real, [#50](https://github.com/RodReis/war-room3d/issues/50) avatares e [#51](https://github.com/RodReis/war-room3d/issues/51) gráfico. [#52](https://github.com/RodReis/war-room3d/issues/52) valida a jornada no mesmo executável. Expansão: [#53](https://github.com/RodReis/war-room3d/issues/53) espaços fixos, [#54](https://github.com/RodReis/war-room3d/issues/54) VS Code e [#55](https://github.com/RodReis/war-room3d/issues/55) Codex Desktop, após o aceite.
+
+## Entrega anterior — sala de referência
 
 Direção autorizada pelo PI em 08/11/2026: [#28](https://github.com/RodReis/war-room3d/issues/28), [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). #29 arte/luz, #30 layout, #31 hooks/observação, #32 avatares/atividade, #33 chat, #34 logs e #35 Player/aceite. Uma sala acabada e funcional deve passar por revisão visual inicial e aceite final no Player; replicação do acabamento fica bloqueada até decisão explícita do PI.
 
@@ -19,4 +25,4 @@ O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #
 
 ## Índice fatia ↔ SPEC
 
-A sala de referência usa a issue #28 e a especificação datada acima, com mapa #29–#35; não foi inventado número retroativo para SPEC. Os planos M0–M5 permanecem referências técnicas, com a prioridade transversal atual detalhada no novo plano. Histórico em [STATUS-ARQUIVO](STATUS-ARQUIVO.md).
+A sala de referência usa a issue #28 e a especificação datada acima, com mapa #29–#35; não foi inventado número retroativo para SPEC. Os planos M0–M5 permanecem referências técnicas, com a prioridade atual detalhada no plano do quartel vivo. Histórico em [STATUS-ARQUIVO](STATUS-ARQUIVO.md).

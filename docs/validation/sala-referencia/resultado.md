@@ -1,17 +1,17 @@
 # #28/#35 — consolidação da sala de referência
 
-> Atualização de 09/11/2026: o candidato em validação tem árvore `0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58` ([manifesto](player-build-manifest-final.json)), confirmada novamente após os ensaios. O PI confirmou seleção por lista/avatar, vínculo pai/filho, foco Tab, rolagem, Esc, contexto longo M4, bloqueio por capacidade ausente, perda/recuperação de fonte e arrasto direito iniciado dentro do painel sem mover a câmera. A [matriz física](escala-player-final.json) passou nas sete células de 100/125/150% (DPI 96/120/144); DISPLAY2 foi restaurado a 96 DPI. [G3 foi reproduzido](issue-35-replay-proof-current.json) neste hash com os spools autorizados já gravados, sem criar nova sessão/contêiner. Após reinício autorizado do Windows, RNF-01/02 passaram nos três perfis de 600 s do mesmo Player; [métricas atuais](metricas-player-final.json). G4 aguarda decisão explícita do PI e integração. As medições sobre `e997da1c…18f087` são histórico do candidato anterior, sem transferência ao hash atual.
+> Atualização de 09/11/2026: o Player de árvore `0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58` ([manifesto](player-build-manifest-final.json)) teve G2 humano, G3 pontual e escala física 7/7 confirmados. Após reinício autorizado do Windows, RNF-01/02 passaram nos três perfis de 600 s do mesmo executável; [métricas atuais](metricas-player-final.json). O PI respondeu **“Aprovar G4 e integrar PR”** para esse hash, arte, fluxo e limites descritos abaixo. A integração técnica é verificada separadamente no PR #45; esta aprovação não prova operação contínua nem amplia a dispensa Codex. As medições sobre `e997da1c…18f087` são histórico do candidato anterior, sem transferência ao hash atual.
 
 ## Identidade e estado
 
-Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [primeiro build](player-build-manifest.json) tinha árvore `c54d1fcd…ecab5`; o candidato atual tem 304 arquivos/175.678.228 bytes e árvore `0640cb73…eb1fa58` no [manifesto final](player-build-manifest-final.json). A [medição anterior](metricas-player-candidato-e997.json) pertence ao hash `e997da1c…18f087`; [a medição atual](metricas-player-final.json) pertence ao hash `0640cb73…eb1fa58`. PR #45 está em rascunho; decisão G4 do PI pendente. **Este documento não é recibo de aceite.** [Roteiro](aceite-player.md).
+Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [primeiro build](player-build-manifest.json) tinha árvore `c54d1fcd…ecab5`; o candidato atual tem 304 arquivos/175.678.228 bytes e árvore `0640cb73…eb1fa58` no [manifesto final](player-build-manifest-final.json). A [medição anterior](metricas-player-candidato-e997.json) pertence ao hash `e997da1c…18f087`; [a medição atual](metricas-player-final.json) pertence ao hash `0640cb73…eb1fa58`. A decisão G4 do PI é específica desse executável e dos limites do [roteiro](aceite-player.md); merge, CI da `main` e estado das issues são registrados separadamente no [PR #45](https://github.com/RodReis/war-room3d/pull/45) e nas issues.
 
 | Gate | Estado no candidato `0640cb73…eb1fa58` | Evidência | Falta na #35 |
 |---|---|---|---|
 | G1 — arte | `pass` específico da #29, segundo decisão do PI em 08/11/2026 | [Arte](arte.md), [issue #29](https://github.com/RodReis/war-room3d/issues/29) | Reinspecionar no build final com avatares/HUD/logs, sem alterar aceite anterior. |
 | G2 — fluxo controlado | `pass` pontual, sintético, com revisão humana assistida | Automação `Logs/issue-35-v2-g2-auto/`; PI confirmou seleção por lista/avatar, vínculo pai/filho, Tab, roda sobre painel, Esc, contexto longo M4, capacidade ausente e fonte perdida/recuperada. Arrasto direito iniciado no painel permaneceu bloqueado após restauração da câmera; logs distinguem giros iniciados na cena. Demo sem comando passou no retry `Logs/issue-35-v2-demo-retry/`. | Registrar decisão G4 sobre esse conjunto e seus limites. |
 | G3 — operação | `pass` pontual no hash atual, **com dispensa PI para tarefa/skill Codex CLI 0.166.0** | [Recibo do replay atual](issue-35-replay-proof-current.json): skill/chat Claude, chat Codex e log Docker no Player; quatro capturas com saída 0 e sem exceção. | Operação contínua e novas versões continuam fora da prova. |
-| G4 — aceite final | `not_run` (decisão PI pendente) | G1 específico da #29, G2/G3 pontuais, matriz física e [RNF-01/02 de 600 s](metricas-player-final.json) no hash atual. | Decisão explícita do PI sobre este SHA/build, arte, fluxo e dispensa Codex restrita. |
+| G4 — aceite final | `pass` por decisão expressa do PI em 09/11/2026 | PI aprovou arte e fluxo no Player de árvore `0640cb73…eb1fa58`, matriz 7/7, [RNF-01/02 de 600 s](metricas-player-final.json) e limites de G3/intervalos/viewport. | Integração técnica no PR #45 e encerramento do card são fatos separados; operação contínua não foi ensaiada. |
 
 ## Critérios transversais
 
@@ -129,7 +129,7 @@ Versões locais ensaiadas na #35: Claude Code 2.1.319 e Codex CLI 0.166.0. `pass
 | Capturas e relatórios | [capturas sintéticas](capturas/), [métricas sanitizadas](metricas-player.json); CSVs/SQLite/spools brutos em `Logs/` ignorados |
 | Decisão visual/funcional do PI | `not_run` |
 
-Enquanto G4 estiver pendente, #28 e #35 permanecem abertas; não replicar a sala.
+G4 foi aprovado apenas para a sala de referência e este build. Integração técnica e estado das issues devem ser confirmados no GitHub; eventual replicação de salas é trabalho posterior, fora desta fatia.
 
 ## Histórico da continuação anterior
 

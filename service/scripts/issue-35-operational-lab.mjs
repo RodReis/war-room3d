@@ -24,8 +24,7 @@ if (![claudePath, codexPath, playerPath].every(value => value && path.isAbsolute
   throw new Error('Informe relatórios absolutos de Claude/Codex e Player M5');
 const claude = JSON.parse(readFileSync(claudePath, 'utf8'));
 const codex = JSON.parse(readFileSync(codexPath, 'utf8'));
-if (claude.provider !== 'claude' || codex.provider !== 'codex' || !claude.roundTrip || !codex.roundTrip ||
-    !claude.skillObserved ||
+if (claude.provider !== 'claude' || codex.provider !== 'codex' || !claude.sessionNew || !codex.roundTrip ||
     !claude.project || !codex.project ||
     !existsSync(claude.spool) || !existsSync(codex.spool))
   throw new Error('Sessões autorizadas, chat ou subagente não comprovados');
@@ -50,6 +49,7 @@ const projectId = 'lab-35-claude', environmentId = 'env-35-docker', resourceId =
 writeFileSync(composeFile, `services:\n  api:\n    image: node:24-alpine\n    network_mode: "none"\n    read_only: true\n    command: ["node", "-e", "console.log('WR3D35_DOCKER_SOURCE requestId=req-35-docker token=synthetic-secret'); setInterval(() => {}, 1000)"]\n`);
 let up = false, store, proxy, api, player;
 const summary = { status: 'fail', syntheticContent: true, providers: ['claude', 'codex'],
+  claudeSkillObserved: claude.skillObserved === true, claudeRoundTrip: claude.roundTrip === true,
   oneCodexChild: false, sourceToStore: false, chatHttp: {}, docker: {}, player: { captures: {} } };
 try {
   execFileSync('docker', ['image', 'inspect', 'node:24-alpine'], { stdio: 'ignore', timeout: 10000, windowsHide: true });
@@ -166,11 +166,11 @@ try {
   for (const provider of ['claude', 'codex']) {
     const session = snapshot.sessions.find(item => item.projectId === `lab-35-${provider}` &&
       !children.some(child => child.sessionKey === item.sessionKey));
-    const agent = snapshot.agents.find(item => item.projectId === session.projectId &&
-      item.sessionKey === session.sessionKey && !item.parentAgentKey);
+    const agent = snapshot.agents.find(item => item.sessionKey === session.sessionKey && !item.parentAgentKey);
     assert.ok(agent?.agentKey);
     summary.player.captures[`${provider}Chat`] = await runCapture(`${provider}-chat`, 'chat',
-      session.projectId, agent.agentKey, provider === 'claude' ? 'WR3D_35_CLAUDE_RESPOSTA' : 'WR3D_35_MAIN_ACK');
+      session.projectId, agent.agentKey,
+      provider === 'claude' ? (claude.skillObserved ? 'WR3D_35_CLAUDE_RESPOSTA' : 'não está instalado') : 'WR3D_35_MAIN_ACK');
   }
   summary.player.captures.dockerLog = await runCapture('claude-room-docker-log', 'logs', projectId, '', 'req-35-docker');
   const captures = summary.player.captures;
@@ -178,7 +178,7 @@ try {
     captures.codexChat.exitCode === 0 && captures.codexChat.markerVisible &&
     captures.dockerLog.exitCode === 0 && captures.dockerLog.requestIdVisible && captures.dockerLog.redacted;
   summary.status = summary.sourceToStore && summary.oneCodexChild && summary.docker.redacted &&
-    summary.player.passed ? 'pass' : 'fail';
+    summary.player.passed ? (summary.claudeSkillObserved && summary.claudeRoundTrip ? 'pass' : 'partial') : 'fail';
   writeFileSync(path.join(output, 'result.json'), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify({ output, status: summary.status, player: summary.player,
     sessionCount: snapshot.sessions.length, linkedChildCount: children.length }));

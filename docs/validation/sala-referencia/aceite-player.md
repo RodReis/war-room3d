@@ -2,7 +2,7 @@
 
 ## Objeto da revisão
 
-Uma sala de referência no build identificado em [resultado.md](resultado.md). As provas das #29–#34 foram feitas em builds e momentos distintos; só o manifesto final desta página e do resultado reúne a versão submetida ao PI. Dados sintéticos permanecem identificados na tela. Nenhuma sala adicional será replicada por este card.
+Uma sala de referência no build identificado em [resultado.md](resultado.md) e na [continuação G3](ensaio-g3-continuacao.md). As provas das #29–#34 foram feitas em builds e momentos distintos; o [manifesto G3](player-build-manifest-g3.json) identifica o candidato mais recente, com escala 125/150% ainda sem prova nesse hash. Dados sintéticos permanecem identificados na tela. Nenhuma sala adicional será replicada por este card.
 
 ## Roteiro G1–G4
 

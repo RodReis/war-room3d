@@ -1,0 +1,54 @@
+{
+  "issue": 35,
+  "gate": "G3",
+  "status": "partial",
+  "syntheticContent": true,
+  "buildTreeSha256": "ecbff36349675059123d9edbe7ab5975bff074125dbe6b191defe7a4968f7b1c",
+  "claude": {
+    "version": "2.1.319",
+    "newSession": true,
+    "exitCode": 0,
+    "costUsd": 0.0207681,
+    "roles": ["user", "assistant"],
+    "skillObserved": false,
+    "roundTrip": false,
+    "playerChatMessageCount": 2,
+    "failureVisibleInPlayer": true
+  },
+  "codex": {
+    "version": "0.166.0",
+    "newThread": true,
+    "oneSubagentObserved": true,
+    "inheritedMcpServersDisabled": 16,
+    "shellDisabled": true,
+    "roles": ["user", "assistant", "assistant"],
+    "roundTrip": true,
+    "playerChatMessageCount": 3,
+    "responseVisibleInPlayer": true,
+    "taskObserved": false,
+    "skillObserved": false
+  },
+  "docker": {
+    "image": "node:24-alpine",
+    "containersCreated": 1,
+    "removed": true,
+    "network": "none",
+    "volumes": 0,
+    "ports": 0,
+    "rootReadOnly": true,
+    "logsRecorded": 1,
+    "logVisibleInClaudeRoom": true,
+    "requestIdVisible": true,
+    "secretRedacted": true
+  },
+  "serviceAndPlayer": {
+    "sessions": 3,
+    "agents": 3,
+    "linkedChildren": 1,
+    "chatOptIn": true,
+    "receiptsAreNotResponses": true,
+    "captureExitCodes": [0, 0, 0],
+    "capturesReplayedFromOriginalDatabase": true
+  },
+  "limit": "A skill Claude não carregou; tarefa/skill Codex não foram observadas. G3 não está completo."
+}

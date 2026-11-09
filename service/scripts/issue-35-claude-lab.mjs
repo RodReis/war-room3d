@@ -10,9 +10,9 @@ import { SessionFileCollector } from '../src/sessions/file-source.ts';
 import { sessionKey } from '../src/domain/identity.ts';
 
 const plan = {provider:'claude',version:'2.1.319',newSession:true,existingSessions:false,
-  syntheticPrompt:'/wr3d-35-synthetic WR3D_35_CLAUDE_PERGUNTA',
+  syntheticPrompt:'/wr3d-35:synthetic WR3D_35_CLAUDE_PERGUNTA',
   maxBudgetUsd:0.10,timeoutMs:60000,hookScope:'temporary_project_only',
-  tools:['Skill'],mcpServers:[],automaticRetry:false,skillInvocation:'direct-slash',
+  tools:['Skill'],mcpServers:[],automaticRetry:false,skillInvocation:'temporary-plugin-slash',
   sendsRealMessage:process.argv[2]==='--run'};
 if (process.argv[2]!=='--run') {
   process.stdout.write(JSON.stringify(plan)+'\n');
@@ -26,11 +26,23 @@ if (process.argv[2]!=='--run') {
   const spool=path.join(output,'source.jsonl');
   const settingsDir=path.join(project,'.claude');
   const settingsPath=path.join(settingsDir,'settings.local.json');
-  const skillDir=path.join(settingsDir,'skills','wr3d-35-synthetic');
+  const pluginDir=path.join(project,'plugin');
+  const skillDir=path.join(pluginDir,'skills','synthetic');
+  const manifestDir=path.join(pluginDir,'.claude-plugin');
   const capture=path.join(root,'service','src','sessions','capture-source.ts');
-  mkdirSync(output,{recursive:true});mkdirSync(settingsDir,{recursive:true});mkdirSync(skillDir,{recursive:true});writeFileSync(spool,'');
+  mkdirSync(output,{recursive:true});mkdirSync(settingsDir,{recursive:true});
+  mkdirSync(skillDir,{recursive:true});mkdirSync(manifestDir,{recursive:true});writeFileSync(spool,'');
+  writeFileSync(path.join(manifestDir,'plugin.json'),JSON.stringify({name:'wr3d-35',
+    description:'Laboratório sintético descartável da issue 35',version:'1.0.0'}));
   const skillMarker=`WR3D_35_SKILL_${randomUUID().replaceAll('-','').toUpperCase()}`;
-  writeFileSync(path.join(skillDir,'SKILL.md'),'---\nname: wr3d-35-synthetic\ndescription: Skill de laboratório sintético da issue 35\n---\nResponda WR3D_35_CLAUDE_RESPOSTA e '+skillMarker+'. Não leia arquivos nem use ferramentas.\n');
+  writeFileSync(path.join(skillDir,'SKILL.md'),'---\nname: synthetic\ndescription: Skill de laboratório sintético da issue 35\ndisable-model-invocation: true\n---\nResponda WR3D_35_CLAUDE_RESPOSTA e '+skillMarker+'. Não leia arquivos nem use ferramentas.\n');
+  const validation=spawnSync(binary,['plugin','validate',pluginDir],
+    {encoding:'utf8',windowsHide:true,timeout:10000,maxBuffer:16384});
+  if(validation.status!==0 || !validation.stdout.includes('Validation passed')){
+    if(!path.resolve(project).startsWith(path.resolve(tmpdir())+path.sep))throw new Error('temporary_target_invalid');
+    rmSync(project,{recursive:true,force:true});
+    throw new Error('temporary_plugin_validation_failed: '+validation.stdout+' '+validation.stderr);
+  }
   const hookCommand=`node "${capture}" claude "${spool}" --content`;
   writeFileSync(settingsPath,JSON.stringify({hooks:Object.fromEntries(['SessionStart','UserPromptSubmit','PreToolUse','PostToolUse','Stop']
     .map(event=>[event,[{hooks:[{type:'command',command:hookCommand,timeout:5}]}]]))}));
@@ -38,9 +50,10 @@ if (process.argv[2]!=='--run') {
   const report={provider:'claude',version:plan.version,project,output,spool,sessionNew:true,hookProjectOnly:true,
     timeoutMs:plan.timeoutMs,budgetUsd:plan.maxBudgetUsd,exitCode:null,timedOut:false,costUsd:null,
     errorKind:null,outputKinds:{},spoolEvents:{},sourceMessages:0,roles:[],roundTrip:false,
-    skillHookObserved:false,skillBodyObserved:false,skillObserved:false,
+    skillHookObserved:false,skillBodyObserved:false,skillObserved:false,pluginValidated:true,
     revoked:false,stderrBytes:0};
-  const args=['--restricted','--print','--tools','Skill','--strict-mcp-config','--mcp-config','{"mcpServers":{}}',
+  const args=['--restricted','--print','--tools','Skill','--plugin-dir',pluginDir,
+    '--strict-mcp-config','--mcp-config','{"mcpServers":{}}',
     '--permission-mode','dontAsk','--permission-prompts','none','--no-session-persistence','--session-id',nativeSessionId,
     '--settings',settingsPath,'--output-format','stream-json','--verbose','--max-budget-usd','0.10',plan.syntheticPrompt];
   let child;
@@ -67,7 +80,7 @@ if (process.argv[2]!=='--run') {
     try{report.exitCode=await new Promise(resolve=>{child.once('exit',resolve);child.once('error',()=>resolve(null));});}
     finally{clearTimeout(timer);}
   } finally {
-    rmSync(settingsPath,{force:true});rmSync(skillDir,{recursive:true,force:true});report.revoked=true;
+    rmSync(settingsPath,{force:true});rmSync(pluginDir,{recursive:true,force:true});report.revoked=true;
     const source={sourceId:'issue-35-claude-lab',sourceVersion:plan.version,provider:'claude',
       projectId:'issue-35-lab',accountRef:'disposable-35',filePath:spool,
       conversationContent:{consentRef:'issue-35-synthetic-authorization',retentionDays:1}};
@@ -93,6 +106,8 @@ if (process.argv[2]!=='--run') {
     finally{store.close();}
     writeFileSync(path.join(output,'result.json'),JSON.stringify(report,null,2));
     process.stdout.write(JSON.stringify({...report,output})+'\n');
+    if(!path.resolve(project).startsWith(path.resolve(tmpdir())+path.sep))throw new Error('temporary_target_invalid');
+    rmSync(project,{recursive:true,force:true});
     if(!report.roundTrip||!report.skillObserved)process.exitCode=1;
   }
 }

@@ -1,16 +1,16 @@
 {
-  "buildTreeSha256": "e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087",
+  "buildTreeSha256": "0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58",
   "source": "Windows physical DPI and synthetic M4 Player proof",
   "monitor": "DISPLAY2",
   "cells": [
-    { "resolution": [1920, 1080], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-final-m4-100-1920" },
-    { "resolution": [1440, 900], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-final-m4-100-1440" },
-    { "resolution": [1366, 768], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-final-m4-100-1366" },
-    { "resolution": [1920, 1080], "scalePercent": 125, "status": "not_run", "reason": "DisplayConfigGetDeviceInfo retornou Win32 31; SystemSettings.exe não expôs janela controlável" },
-    { "resolution": [1440, 900], "scalePercent": 125, "status": "not_run", "reason": "DisplayConfigGetDeviceInfo retornou Win32 31; SystemSettings.exe não expôs janela controlável" },
-    { "resolution": [1920, 1080], "scalePercent": 150, "status": "not_run", "reason": "DisplayConfigGetDeviceInfo retornou Win32 31; SystemSettings.exe não expôs janela controlável" },
-    { "resolution": [1440, 900], "scalePercent": 150, "status": "not_run", "reason": "DisplayConfigGetDeviceInfo retornou Win32 31; SystemSettings.exe não expôs janela controlável" }
+    { "resolution": [1920, 1080], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-v2-m4-100-1920" },
+    { "resolution": [1440, 900], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-v2-m4-100-1440" },
+    { "resolution": [1366, 768], "scalePercent": 100, "dpi": 96, "status": "pass", "evidence": "Logs/issue-35-v2-m4-100-1366" },
+    { "resolution": [1920, 1080], "scalePercent": 125, "dpi": 120, "status": "pass", "evidence": "Logs/issue-35-v2-m4-125-1920" },
+    { "resolution": [1440, 900], "scalePercent": 125, "dpi": 120, "status": "pass", "evidence": "Logs/issue-35-v2-m4-125-1440" },
+    { "resolution": [1920, 1080], "scalePercent": 150, "dpi": 144, "status": "pass", "evidence": "Logs/issue-35-v2-m4-150-1920" },
+    { "resolution": [1440, 900], "scalePercent": 150, "dpi": 144, "status": "pass", "evidence": "Logs/issue-35-v2-m4-150-1440" }
   ],
   "finalDpi": { "DISPLAY1": 96, "DISPLAY2": 96 },
-  "limit": "A matriz completa passou no build anterior. A escala 125/150% não foi executada neste hash final; G4 depende de prova ou dispensa expressa do PI."
+  "limit": "DPI físico aplicado manualmente pelo PI em DISPLAY2 e conferido por GetDpiForMonitor; cada célula executou laboratório M4 sintético. DPI final de ambos os monitores: 96."
 }

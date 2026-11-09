@@ -45,15 +45,6 @@ const playerProcesses = () => {
     path.resolve(item.ExecutablePath ?? '').toLowerCase() === path.resolve(playerPath).toLowerCase());
 };
 try {
-  const sessionName = `WR3D35${profile}${Date.now().toString(36)}`;
-  monitor = spawn(presentMonPath, ['--process_name', 'WarRoom3D.exe', '--output_file', csvPath,
-    '--date_time', '--no_console_stats', '--timed', String(seconds + 80), '--terminate_after_timed',
-    '--set_circular_buffer_size', '8192', '--session_name', sessionName],
-  { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  monitor.stdout.pipe(monitorStdout); monitor.stderr.pipe(monitorStderr);
-  const monitorExit = finished(monitor);
-  await sleep(2000);
-  if (monitor.exitCode !== null) throw new Error('PresentMon encerrou antes do Player');
   proof = spawn(process.execPath, [path.join(root, 'service/scripts/m2-performance-proof.mjs'), String(seconds)],
   { cwd: root, env: { ...process.env, WR3D_REFERENCE_PROFILE: profile,
     WR3D_CAPTURE_DIR: outputPath, WR3D_PLAYER_PATH: playerPath,
@@ -62,9 +53,9 @@ try {
   proof.stdout.pipe(proofStdout); proof.stderr.pipe(proofStderr);
   const proofExit = finished(proof);
   let playerInfo;
-  const readyUntil = Date.now() + 120000;
+  const readyUntil = Date.now() + 180000;
   while (Date.now() < readyUntil) {
-    if (proof.exitCode !== null || monitor.exitCode !== null) throw new Error('Processo encerrou antes do sinal');
+    if (proof.exitCode !== null) throw new Error('Prova/Player encerrou antes do sinal');
     const screenshot = readdirSync(outputPath).some(name => name.startsWith(`performance-${seconds}s-`) && name.endsWith('.png'));
     if (screenshot) {
       playerInfo = playerProcesses()[0];
@@ -73,6 +64,15 @@ try {
     await sleep(500);
   }
   if (!playerInfo?.ProcessId) throw new Error('Player visível/screenshot não confirmado antes do sinal');
+  const sessionName = `WR3D35${profile}${Date.now().toString(36)}`;
+  monitor = spawn(presentMonPath, ['--process_name', 'WarRoom3D.exe', '--output_file', csvPath,
+    '--date_time', '--no_console_stats', '--no_track_input', '--timed', String(seconds + 80), '--terminate_after_timed',
+    '--set_circular_buffer_size', '8192', '--session_name', sessionName],
+  { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  monitor.stdout.pipe(monitorStdout); monitor.stderr.pipe(monitorStderr);
+  const monitorExit = finished(monitor);
+  await sleep(2000);
+  if (monitor.exitCode !== null || proof.exitCode !== null) throw new Error('PresentMon/Player encerrou antes do sinal');
   const videoText = execFileSync('powershell.exe', ['-NoProfile', '-Command',
     'Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,CurrentRefreshRate | ConvertTo-Json -Compress'],
   { encoding: 'utf8', timeout: 10000, windowsHide: true }).trim();

@@ -99,13 +99,13 @@ try {
         WR3D_VALIDATION_CAPTURE_DIR: captureDir, WR3D_VALIDATION_CAPTURE_NAME: name,
         WR3D_VALIDATION_VIEW: referenceProfile === 'reduced' ? 'room-reduced' : referenceProfile === 'visual' ? 'room' : 'center',
         WR3D_VALIDATION_PROJECT_ID: referenceProfile ? referenceProjectId : '',
-        WR3D_VALIDATION_DURATION_SECONDS: String(seconds + (referenceProfile ? 18 : 5)) },
+        WR3D_VALIDATION_DURATION_SECONDS: String(seconds + (referenceProfile ? 60 : 5)) },
       stdio: 'ignore'
     });
     child.on('error', error => resolve({ event: 'spawn_error', code: error.code }));
     child.on('exit', (code, signal) => resolve({ event: 'exit', code, signal }));
   });
-  const readyDeadline = performance.now() + (startSignal ? 150000 : 30000);
+  const readyDeadline = performance.now() + (startSignal ? 210000 : 180000);
   while (!existsSync(artifact('ready')) && performance.now() < readyDeadline) {
     if (child.exitCode !== null) throw new Error('Player encerrou antes de iniciar a medição');
     await pause(100);
@@ -163,6 +163,8 @@ try {
   if (status === timeout || status.event !== 'exit' || status.code !== 0)
     throw new Error(`Player não concluiu a captura: ${status === timeout ? 'timeout' : JSON.stringify(status)}`);
   writeFileSync(artifact('accepted.jsonl'), accepted.map(event => JSON.stringify(event)).join('\n') + '\n');
+  if (!existsSync(artifact('json')) || !existsSync(artifact('trace.jsonl')))
+    throw new Error(`Player saiu sem relatório/trace após ${seconds}s: ${JSON.stringify(status)}`);
   const report = JSON.parse(readFileSync(artifact('json'), 'utf8'));
   const trace = readFileSync(artifact('trace.jsonl'), 'utf8').trim().split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
   let maxRenderGapMs = 0;

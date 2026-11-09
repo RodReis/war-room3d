@@ -1,0 +1,27 @@
+{
+  "issue": 35,
+  "gate": "G3",
+  "date": "2026-11-09",
+  "status": "pass-with-pi-waiver",
+  "buildTreeSha256": "0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58",
+  "source": "spools sintéticos opt-in e SQLite do laboratório autorizado em 2026-11-08",
+  "startsProvider": false,
+  "startsDocker": false,
+  "sourceDatabaseCopied": true,
+  "service": {
+    "sessions": 4,
+    "linkedCodexChildren": 1,
+    "claudeSkillObserved": true,
+    "claudeChatHttp": 200,
+    "claudeChatRoles": ["user", "assistant"],
+    "receiptIsResponse": false
+  },
+  "player": {
+    "claudeChat": { "exitCode": 0, "messages": 2, "responseVisible": true, "noException": true },
+    "claudeSkill": { "exitCode": 0, "markerVisible": true, "noException": true },
+    "codexChat": { "exitCode": 0, "messages": 3, "responseVisible": true, "linkedChildCount": 1, "noException": true },
+    "dockerLog": { "exitCode": 0, "results": 1, "requestIdVisible": true, "redacted": true, "noException": true }
+  },
+  "rawLocal": "Logs/issue-35-claude-plugin-replay-2c293a02-ee25-4476-abc7-e5f8e96c26f2/result.json",
+  "limit": "Replay pontual no mesmo build, sem operação contínua. Tarefa/skill Codex CLI 0.166.0 não observadas e dispensadas pelo PI somente nessa versão; filho real já encerrado antes do replay."
+}

@@ -5,12 +5,15 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const variant = process.argv[2] ?? 'base';
-if (!['base','--g3','--final'].includes(variant)) throw new Error('Uso: issue-35-collect-metrics.mjs [--g3|--final]');
+if (!['base','--g3','--final'].includes(variant)) throw new Error('Uso: issue-35-collect-metrics.mjs [--g3|--final prefixo-em-Logs]');
 const measured = variant !== 'base';
+const finalPrefix = process.argv[3];
+if (variant === '--final' && (!finalPrefix || !/^[-a-zA-Z0-9_]+$/.test(finalPrefix)))
+  throw new Error('Informe o prefixo dos três diretórios válidos em Logs/ para --final');
 const scenarios = variant === '--final' ? {
-  visual: 'issue-35-rebuild-visual',
-  reduced: 'issue-35-rebuild-reduced',
-  sector: 'issue-35-rebuild-sector'
+  visual: `${finalPrefix}-visual`,
+  reduced: `${finalPrefix}-reduced`,
+  sector: `${finalPrefix}-sector`
 } : variant === '--g3' ? {
   visual: 'issue-35-g3-visual-final',
   reduced: 'issue-35-g3-reduced-final',
@@ -28,7 +31,7 @@ async function sha256(file) {
   for await (const chunk of createReadStream(file)) hash.update(chunk);
   return hash.digest('hex');
 }
-const result = { date: '2026-11-08', unityVersion: '6000.3.27f1', nodeVersion: process.version,
+const result = { date: variant === '--final' ? '2026-11-09' : '2026-11-08', unityVersion: '6000.3.27f1', nodeVersion: process.version,
   buildTreeSha256: build.treeSha256, source: 'synthetic-local', scenarios: {} };
 for (const [name, directoryName] of Object.entries(scenarios)) {
   const directory = path.join(root, 'Logs', directoryName);

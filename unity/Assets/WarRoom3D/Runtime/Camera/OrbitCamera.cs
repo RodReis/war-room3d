@@ -13,6 +13,9 @@ namespace WarRoom3D
         private float distance;
         private bool dragging;
         private IHudPointerArea hud;
+#if DEVELOPMENT_BUILD && !UNITY_EDITOR
+        private int pointerDebugFrames;
+#endif
 
         public float Yaw => yaw;
         public float Pitch => pitch;
@@ -80,16 +83,33 @@ namespace WarRoom3D
         {
             var mouse = Mouse.current;
             if (mouse == null) return;
-            if (mouse.rightButton.wasPressedThisFrame) dragging = hud == null || !hud.IsPointerOverHud(mouse.position.ReadValue());
+            Vector2 position = mouse.position.ReadValue();
+            Vector2 delta = mouse.delta.ReadValue();
+            Vector2 start = position - delta;
+#if DEVELOPMENT_BUILD && !UNITY_EDITOR
+            if (System.Environment.GetEnvironmentVariable("WR3D_POINTER_DEBUG") == "1")
+            {
+                if (mouse.rightButton.wasPressedThisFrame) pointerDebugFrames = 20;
+                if (pointerDebugFrames > 0 && mouse.rightButton.isPressed)
+                {
+                    Debug.Log($"WR3D_POINTER frame={Time.frameCount} screen={Screen.width}x{Screen.height} pos={position} start={start} " +
+                        $"hud={hud?.GetType().Name ?? "null"} startHit={hud?.IsPointerOverHud(start)} posHit={hud?.IsPointerOverHud(position)} " +
+                        $"dragging={dragging} {(hud is LiveHudPresenter live ? live.PointerDiagnostic(position) : "")}");
+                    pointerDebugFrames--;
+                }
+            }
+#endif
+            if (mouse.rightButton.wasPressedThisFrame) dragging = hud == null ||
+                (!hud.IsPointerOverHud(start) && !hud.IsPointerOverHud(position));
             if (mouse.rightButton.wasReleasedThisFrame) dragging = false;
-            if (dragging && mouse.rightButton.isPressed && hud != null && hud.IsPointerOverHud(mouse.position.ReadValue())) dragging = false;
+            if (dragging && mouse.rightButton.isPressed && hud != null &&
+                (hud.IsPointerOverHud(start) || hud.IsPointerOverHud(position))) dragging = false;
             if (dragging && mouse.rightButton.isPressed)
             {
-                Vector2 delta = mouse.delta.ReadValue();
                 Orbit(delta.x * 0.18f, -delta.y * 0.18f);
             }
             float scroll = mouse.scroll.ReadValue().y;
-            if (Mathf.Abs(scroll) > 0.01f && (hud == null || !hud.IsPointerOverHud(mouse.position.ReadValue())))
+            if (Mathf.Abs(scroll) > 0.01f && (hud == null || !hud.IsPointerOverHud(position)))
                 Zoom(scroll * 0.02f);
         }
 

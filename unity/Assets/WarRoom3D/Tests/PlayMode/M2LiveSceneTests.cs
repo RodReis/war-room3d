@@ -35,6 +35,8 @@ namespace WarRoom3D.Tests
                 var document = Object.FindAnyObjectByType<UIDocument>();
                 Assert.That(client, Is.Not.Null);
                 Assert.That(hud, Is.Not.Null);
+                Assert.That(hud.IsPointerOverHud(new Vector2(Screen.width - 40f, Screen.height * 0.5f)), Is.True,
+                    "Painel lateral live deve bloquear input da câmera");
                 Assert.That(Object.FindAnyObjectByType<DemoLoader>(), Is.Null);
                 Assert.That(Object.FindAnyObjectByType<InfrastructureDemoLoader>(), Is.Null);
                 Assert.That(client.Snapshot, Is.Null);
@@ -70,13 +72,18 @@ namespace WarRoom3D.Tests
             client.AcceptSnapshot(Snapshot.Replace("\"coverage\":\"atual\"", "\"coverage\":\"perdida\""));
             Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Sem dados"));
             var uncertain = Snapshot.Replace("\"sessions\":[],\"agents\":[]",
-                "\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"presence\":\"desconhecida\",\"freshness\":\"desconhecido\",\"lastSeen\":\"2026-11-06T16:00:00Z\"}]," +
+                "\"sessions\":[{\"sessionKey\":\"s1\",\"projectId\":\"p1\",\"provider\":\"codex\",\"sourceId\":\"source-codex\",\"presence\":\"desconhecida\",\"freshness\":\"desconhecido\",\"lastSeen\":\"2026-11-06T16:00:00Z\"}]," +
                 "\"agents\":[{\"agentKey\":\"a1\",\"sessionKey\":\"s1\",\"presence\":\"desconhecida\",\"parentStatus\":\"principal\"}]")
+                .Replace("\"feed\":[]", "\"sources\":[{\"sourceId\":\"source-codex\",\"status\":\"indisponivel\"}],\"feed\":[]")
                 .Replace("\"coverage\":\"atual\"", "\"coverage\":\"perdida\"");
             client.AcceptSnapshot(uncertain);
             Assert.That(root.Q<Label>("agents").text, Does.Contain("0 agentes presentes"));
             Assert.That(root.Q<Label>("agents").text, Does.Contain("1 incertos"));
             Assert.That(root.Q<Label>("agent-tree").text, Does.Not.Contain("ativos"));
+            Assert.That(root.Q<Label>("source-session-status").text, Does.Contain("Fonte indisponível"));
+            client.AcceptSnapshot(uncertain.Replace("\"status\":\"indisponivel\"", "\"status\":\"atual\""));
+            Assert.That(root.Q<Label>("source-session-status").text, Does.Contain("Fonte ativa"));
+            Assert.That(root.Q<Label>("source-session-status").text, Does.Contain("Sessão sem confirmação"));
             Assert.Throws<System.ArgumentException>(() => client.AcceptSnapshot(Snapshot.Replace("\"mode\":\"live\"", "\"mode\":\"demo\"")));
             Assert.That(root.Q<Label>("resource-status").text, Is.EqualTo("Sem dados"));
         }

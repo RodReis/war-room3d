@@ -104,6 +104,7 @@ namespace WarRoom3D
             root.Q<Label>("activity").text = "O serviço local ainda não forneceu um snapshot válido.";
             root.Q<Label>("agent-tree").text = "Sem dados";
             navigation.SetAgents(Array.Empty<AgentEntry>());
+            ShowSessionSource(null);
             if (agentPresenter != null) agentPresenter.Show(null, null, null);
             root.Q<Label>("feed").text = "Sem eventos";
             root.Q<Label>("infrastructure-alert").text = "Sem dados de infraestrutura";
@@ -276,6 +277,7 @@ namespace WarRoom3D
             }
             navigation.SetAgents(agentEntries);
             var selectedAgent = projection.Find(item => item.AgentKey == navigation.SelectedAgentKey);
+            ShowSessionSource(selectedAgent);
             chat?.SetTarget(project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
             logs?.SetTarget(snapshot, project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
             var placement = PlacementFor(project.projectId);
@@ -470,12 +472,29 @@ namespace WarRoom3D
         {
             if (root == null || root.panel == null) return false;
             Vector2 point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
+            var picked = root.panel.Pick(point);
+            for (var element = picked; element != null; element = element.parent)
+                if (element.name == "header" || element.name == "project-panel" || element.name == "resource-panel" ||
+                    element.name == "control-panel" || element.name == "summary-toggle" || element.name == "evidence-detail" ||
+                    element.name == "history-panel" || element.name == "history-mask" || element.name == "operations-panel" ||
+                    element.name == "operations-mask" || element.name == "command-panel" || element.name == "command-mask") return true;
             return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) || Contains("control-panel", point) ||
                 Contains("summary-toggle", point) || Contains("evidence-detail", point) ||
                 Contains("history-panel", point) || Contains("history-mask", point) ||
                 Contains("operations-panel", point) || Contains("operations-mask", point) ||
                 Contains("command-panel", point) || Contains("command-mask", point);
         }
+
+#if DEVELOPMENT_BUILD && !UNITY_EDITOR
+        public string PointerDiagnostic(Vector2 screenPosition)
+        {
+            if (root == null || root.panel == null) return "panel=unavailable";
+            var point = RuntimePanelUtils.ScreenToPanel(root.panel, screenPosition);
+            var panel = root.Q<VisualElement>("project-panel");
+            return $"panelPoint={point} projectBound={panel?.worldBound.ToString() ?? "null"} " +
+                $"projectDisplay={panel?.resolvedStyle.display.ToString() ?? "null"} picked={root.panel.Pick(point)?.name ?? "null"}";
+        }
+#endif
 
         private void Update()
         {
@@ -503,6 +522,7 @@ namespace WarRoom3D
             var projection = AgentProjection.ForProject(snapshot, selectedProjectId, replayMode || client.Connected);
             agentPresenter.Show(AgentPresenterRoom(), projection, key);
             var selected = projection.Find(item => item.AgentKey == key);
+            ShowSessionSource(selected);
             chat?.SetTarget(selectedProjectId, selected?.SessionKey, selected?.AgentKey);
             logs?.SetTarget(snapshot, selectedProjectId, selected?.SessionKey, selected?.AgentKey);
             if (insideRoom)
@@ -510,6 +530,28 @@ namespace WarRoom3D
                 var target = agentPresenter.FindAgent(key);
                 if (target != null) orbit.FocusAgent(target);
             }
+        }
+
+        private void ShowSessionSource(AgentProjectionRecord agent)
+        {
+            var label = root.Q<Label>("source-session-status");
+            if (agent == null || snapshot?.sessions == null)
+            {
+                label.text = "Selecione um agente para consultar a fonte da sessão.";
+                return;
+            }
+            var session = Array.Find(snapshot.sessions, item => item.sessionKey == agent.SessionKey);
+            if (session == null || string.IsNullOrEmpty(session.sourceId))
+            {
+                label.text = "Fonte da sessão não informada; estado atual não verificável.";
+                return;
+            }
+            var source = snapshot.sources == null ? null : Array.Find(snapshot.sources, item => item.sourceId == session.sourceId);
+            var sourceState = source?.status == "indisponivel" ? "Fonte indisponível" :
+                source?.status == "atual" ? "Fonte ativa" : "Estado da fonte não informado";
+            var sessionState = agent.Uncertain ? "Sessão sem confirmação; nenhuma atividade atual inferida." :
+                "Sessão confirmada pelo último sinal observado.";
+            label.text = sourceState + " · " + session.sourceId + "\n" + sessionState;
         }
 
 #if DEVELOPMENT_BUILD && !UNITY_EDITOR

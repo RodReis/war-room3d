@@ -2,8 +2,8 @@
   "format": "wr3d-player-build-manifest-v1",
   "excluded": "BurstDebugInformation_DoNotShip",
   "fileCount": 304,
-  "totalBytes": 175674363,
-  "treeSha256": "e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087",
+  "totalBytes": 175678228,
+  "treeSha256": "0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58",
   "files": [
     {
       "path": "D3D12/D3D12Core.dll",
@@ -132,8 +132,8 @@
     },
     {
       "path": "WarRoom3D_Data/boot.config",
-      "bytes": 397,
-      "sha256": "3fe31ebeb6e6ace003ddc7d723b22475e6fed6110b85d90c4fe88f53687a3819"
+      "bytes": 398,
+      "sha256": "83d14818e3fcd098b137b91065beee2d121bbd766bc9d8938359b5187a02a5b4"
     },
     {
       "path": "WarRoom3D_Data/globalgamemanagers",
@@ -153,22 +153,22 @@
     {
       "path": "WarRoom3D_Data/level0",
       "bytes": 3008,
-      "sha256": "b98a617c92db4c5ed40a5cd60e9a9575237e0d56dff26dc33fbaf346735b90a6"
+      "sha256": "aa8874963b9995b4e85550cd867f391ee1d12a8f8cad3ab7caaedfdd5807204c"
     },
     {
       "path": "WarRoom3D_Data/level1",
-      "bytes": 3532,
-      "sha256": "b8c05af6eac878348b01aa2efd9475a34fd8f5aef875984e65af010102cbd1e5"
+      "bytes": 3536,
+      "sha256": "92f417311899dd39ec6601a893396cc71c75da2ea96d62ae9c773b2c08f49697"
     },
     {
       "path": "WarRoom3D_Data/Managed/Assembly-CSharp.dll",
       "bytes": 3584,
-      "sha256": "dadbc12637dce1202d02dbfbea3389a469974d53baa75ae8d3ac006369b41443"
+      "sha256": "3149d7d23e1c88648c72b1b5ec77844d08152602d179b57ca91e072f8c89c01c"
     },
     {
       "path": "WarRoom3D_Data/Managed/Assembly-CSharp.pdb",
       "bytes": 17428,
-      "sha256": "1ae73c75d78618c7efa1b01f4d74e62e88171bcf08cf66ad285cffd868089f3f"
+      "sha256": "98363a8a886aac9e83014b187bf73883927affd2b62e82754d4091c95a8a0aca"
     },
     {
       "path": "WarRoom3D_Data/Managed/glTFast.dll",
@@ -1447,13 +1447,13 @@
     },
     {
       "path": "WarRoom3D_Data/Managed/WarRoom3D.Runtime.dll",
-      "bytes": 217600,
-      "sha256": "29faf2a8d1250709cc1f8782f203a6f829b8a936e2972fe48650f8edafc5b44d"
+      "bytes": 220160,
+      "sha256": "bfea9434475f814e5a668d77dcd1ee9ebd1c0f60e311e5f5c4f76cf24dca0f42"
     },
     {
       "path": "WarRoom3D_Data/Managed/WarRoom3D.Runtime.pdb",
-      "bytes": 77028,
-      "sha256": "e3aa97dc78d1906dfd1667519c0a6d3fdb4adca5bd81cc88dca912666116c435"
+      "bytes": 77608,
+      "sha256": "058f4545edb9f6d39cca614b6499911b398ca1b8bb662a65bc0dd755323105a1"
     },
     {
       "path": "WarRoom3D_Data/Plugins/x86_64/lib_burst_generated.dll",
@@ -1502,8 +1502,8 @@
     },
     {
       "path": "WarRoom3D_Data/sharedassets0.assets",
-      "bytes": 1505600,
-      "sha256": "b9272055bbcac7e8739a4570d00db6c29d0c878411a9e8660f35a7966523291c"
+      "bytes": 1506320,
+      "sha256": "20086dba33579ead034b825565c9f60be601f75a19d11617e133f7637cedbcd3"
     },
     {
       "path": "WarRoom3D_Data/sharedassets0.assets.resS",

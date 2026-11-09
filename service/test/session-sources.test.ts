@@ -34,7 +34,7 @@ test('expansão de skill guarda só metadados e exige cadastro explícito', () =
   assert.equal(suspicious?.command_name,undefined);
   assert.equal(suspicious?.command_source,undefined);
   const source={sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',
-    filePath:'C:\\lab\\events.jsonl',skillCommands:['wr3d-35:synthetic']};
+    filePath:path.join(tmpdir(),'wr3d-claude-events.jsonl'),skillCommands:['wr3d-35:synthetic']};
   const event=adaptSessionRecord(source,captured,'file:100','2026-11-08T11:00:00.000Z');
   assert.equal(event.length,1);
   assert.equal(event[0].type,'skill.observed');
@@ -47,7 +47,7 @@ test('expansão de skill guarda só metadados e exige cadastro explícito', () =
 test('configuração restringe comandos de skill à fonte Claude', () => {
   const base={schemaVersion:'1.0',projects:[{projectId:'p',name:'Projeto',canonicalPath:'C:\\lab'}],sources:[
     {sourceId:'lab',sourceVersion:'2.1.319',provider:'claude',projectId:'p',accountRef:'lab',
-      filePath:'C:\\lab\\events.jsonl',skillCommands:['wr3d-35:synthetic']}]};
+      filePath:path.join(tmpdir(),'wr3d-claude-events.jsonl'),skillCommands:['wr3d-35:synthetic']}]};
   assert.deepEqual(parseSessionSources(base).sources[0].skillCommands,['wr3d-35:synthetic']);
   assert.throws(()=>parseSessionSources({...base,sources:[{...base.sources[0],provider:'codex'}]}));
   assert.throws(()=>parseSessionSources({...base,sources:[{...base.sources[0],skillCommands:['wr3d-35:synthetic','wr3d-35:synthetic']}]}));
@@ -112,7 +112,7 @@ test('captura subAgentActivity v2 guarda thread filha e descarta caminho e texto
 });
 
 test('backfill preserva horário da fonte distinto do recebimento', () => {
-  const source = {sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',filePath:'C:\\lab\\events.jsonl'};
+  const source = {sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',filePath:path.join(tmpdir(),'wr3d-claude-events.jsonl')};
   const raw = {...sanitizeSourceRecord('claude',{hook_event_name:'SessionStart',session_id:'s',cwd:'C:\\repo\\p'}),capturedAt:'2026-11-08T10:00:00.000Z'};
   const events = adaptSessionRecord(source,raw,'file:100','2026-11-08T11:00:00.000Z');
   assert.equal(events[0].observedAt,'2026-11-08T10:00:00.000Z');

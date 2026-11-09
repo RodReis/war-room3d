@@ -2,23 +2,23 @@
 
 ## Identidade e estado
 
-Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [manifesto do build](player-build-manifest.json) identifica 302 arquivos/175.634.292 bytes pelo SHA-256 da árvore `c54d1fcdbf2f9e2dc9cbe9d3feda6853dc2007dba9cd2880bc76be2b1beecab5`. A [medição consolidada](metricas-player.json) associa as três capturas de 600 s à mesma árvore. Commit/PR final e decisão do PI permanecem pendentes; **este documento não é recibo de aceite**. [Roteiro](aceite-player.md).
+Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [primeiro build](player-build-manifest.json) tinha árvore `c54d1fcd…ecab5`; o [candidato final](player-build-manifest-final.json) tem árvore `e997da1c…18f087`, 304 arquivos/175.674.363 bytes. A [medição final](metricas-player-final.json) associa três execuções de 600 s a esse hash. Commit/PR final e decisão do PI permanecem pendentes; **este documento não é recibo de aceite**. [Roteiro](aceite-player.md).
 
 | Gate | Estado nesta preparação | Evidência já existente | Falta na #35 |
 |---|---|---|---|
 | G1 — arte | `pass` específico da #29, segundo decisão do PI em 08/11/2026 | [Arte](arte.md), [issue #29](https://github.com/RodReis/war-room3d/issues/29) | Reinspecionar no build final com avatares/HUD/logs, sem alterar aceite anterior. |
-| G2 — fluxo controlado | `partial`; cadeia principal, M4, demo sem comando e matriz de layout sintéticos `pass` | [HUD](issue-30-hud.md), [avatares](issue-32-avatares.md), [chat](issue-33-chat.md), [logs](issue-34-logs.md) têm provas anteriores. A [prova #35](#prova-sintetica-da-jornada) executou cadeia no Player; [M4](#pedido-m4-no-player-final) cobriu prévia/recibo/replay/troca de projeto; [matriz](#matriz-de-resolucao-e-escala-fisica) cobriu o layout. [Demo G3](ensaio-g3-continuacao.md) não expôs comando. | Gesto/foco humano em todas as combinações. |
-| G3 — operação | `partial`; serviço integrado e capturas de chat/log no Player G3 | [#31](issue-31-observacao.md), [#33](issue-33-chat.md) e [#34](issue-34-logs.md) eram provas separadas. O [primeiro ensaio #35](#laboratorio-g3-autorizado) reuniu duas sessões, um filho e Docker no serviço. O [segundo ensaio](ensaio-g3-continuacao.md) mostrou chat Claude/Codex e log Docker dentro das salas. | Skill Claude não carregou; tarefa/skill Codex ausentes. Limite aceito da #33 não dispensa G3 geral. |
-| G4 — aceite final | `not_run` | G1 aprovado na #29; manifesto, desempenho e escala física medidos no build local. | Decisão explícita do PI sobre este SHA/build e limites G2/G3. |
+| G2 — fluxo controlado | `partial`; cadeia principal, M4 e demo sem comando sintéticos `pass` no build final | [HUD](issue-30-hud.md), [avatares](issue-32-avatares.md), [chat](issue-33-chat.md), [logs](issue-34-logs.md) têm provas anteriores. A [prova automatizada final](ensaio-g3-continuacao.md#g2-e-escala-no-build-final) mostrou filho ativo, chat, log, fonte perdida/recuperada e retorno; [demo final](capturas/issue-35-30-final-demo.png) sem comando. | Gesto/foco humano e negativos manuais de contexto longo/capacidade ausente. |
+| G3 — operação | `pass` pontual **com dispensa PI para tarefa/skill Codex CLI 0.166.0** | [#31](issue-31-observacao.md), [#33](issue-33-chat.md) e [#34](issue-34-logs.md) tinham provas separadas. O [laboratório #35](ensaio-g3-continuacao.md) reuniu duas sessões, um filho Codex e Docker; replay no mesmo Player final mostrou [skill Claude](capturas/issue-35-19-claude-final-skill.png), [chat Claude](capturas/issue-35-18-claude-final-chat.png), [chat Codex](capturas/issue-35-20-codex-final-chat.png) e [log Docker](capturas/issue-35-21-docker-final-log.png). | Operação contínua e novas versões não comprovadas; dispensa não se estende a elas. |
+| G4 — aceite final | `not_run` | G1 aprovado na #29; manifesto e desempenho final identificados. | Decisão explícita do PI sobre este SHA/build e limites G2, 125/150% e dispensa Codex restrita. |
 
 ## Critérios transversais
 
 | Critério | Estado | Base e limite |
 |---|---|---|
-| RNF-01, 10 eventos/s, p95 ≤2 s | `pass` visual, reduzido e setor | P95 275/434/370 ms; 6.000 eventos regulares e 1.000 de rajada aceitos/cobertos por perfil. |
-| RNF-02 visual, 1080p/600 s, apresentação p95 ≤16,67 ms | `pass` nesta medição | PresentMon 2.6.0: p95 2,2521 ms em 599,999 s, janela visível. A [#16](../m2/issue-16-fps.md) permanece reprovada no seu build anterior (24,663 ms). |
-| RNF-02 reduzido, 1080p/600 s, apresentação p95 ≤33,33 ms | `pass` nesta medição | PresentMon 2.6.0: p95 5,7297 ms em 599,998 s, janela visível; intervalos indisponíveis separados. |
-| RNF-06, 100/125/150% físicos | `pass` na matriz sintética de layout | Windows/monitor do Player em DPI efetivo 96/120/144; 1920×1080 e 1440×900 nos três percentuais e 1366×768 em 100%. [Matriz e capturas](#matriz-de-resolucao-e-escala-fisica). Não substitui gesto/foco humano. |
+| RNF-01, 10 eventos/s, p95 ≤2 s | `pass` visual, reduzido e setor no hash final | P95 270/271/269 ms; 6.000 eventos regulares e 1.000 de rajada aceitos/cobertos por perfil. |
+| RNF-02 visual, 1080p/600 s, apresentação p95 ≤16,67 ms | `pass` no hash final | PresentMon 2.6.0: p95 2,2566 ms, janela visível. A [#16](../m2/issue-16-fps.md) permanece reprovada no seu build anterior (24,663 ms). |
+| RNF-02 reduzido, 1080p/600 s, apresentação p95 ≤33,33 ms | `pass` no hash final | PresentMon 2.6.0: p95 1,7119 ms; intervalos indisponíveis separados. |
+| RNF-06, 100/125/150% físicos | `partial` no hash final | [Matriz final](escala-player-final.json): DPI 96/100% passou em 1920×1080, 1440×900 e 1366×768; 125/150% `not_run`. A matriz completa passou no primeiro build, sem transferência automática ao final. |
 | Negativos de fonte/comando | `partial` | Perda/recuperação de fonte sem atividade inventada no Player #35; M4 sintético bloqueou replay e troca de projeto; demo G3 não expôs comando. Capacidade ausente e foco/gestos ainda requerem consolidação na mesma jornada. |
 
 ## Medição visual no Player final
@@ -79,16 +79,16 @@ Versões locais ensaiadas na #35: Claude Code 2.1.319 e Codex CLI 0.166.0. `pass
 
 | Capacidade | Claude | Codex | Consequência para G3 |
 |---|---|---|---|
-| Sessão principal | `pass` nova sessão/spool/API | `pass` nova thread/spool/API | Quartel mostrou ambas; sala não inspecionada nessa prova. |
+| Sessão principal | `pass` nova sessão/spool/API | `pass` nova thread/spool/API | Ambas as salas inspecionadas no Player final. |
 | Subagente e pai | Hook sem ID de pai na fonte verificada | `pass` 1 filho, início/turno/fim vinculados | Claude fica vínculo pendente; não inferir pai. |
-| Tarefa | Eventos adaptados #31 | 0 tarefa no ensaio #35 | Obrigatório sem suporte precisa decisão do PI. |
-| Ferramenta | Skill não invocada no ensaio #35 | 0 invocação no ensaio #35 | A fixture G2 mostra a UI, mas G3 real segue parcial. |
-| Skill | Skill oferecida, `skillObserved=false` | 0 invocação no ensaio #35 | Obrigatório sem suporte precisa decisão do PI. |
-| Chat observado | `pass` opt-in, duas mensagens HTTP 200 | `pass` opt-in, três mensagens HTTP 200 | Ida/volta no backend; inspeção na sala com fontes reais `not_run`. |
+| Tarefa | Sem tarefa nova no ensaio da skill | 0 tarefa no ensaio #35 | PI dispensou tarefa Codex **somente na CLI 0.166.0**; sem evento inventado. |
+| Ferramenta | Skill `/wr3d-35:synthetic` executada; `PreToolUse Skill` não foi emitido | 0 invocação no ensaio #35 | Sem afirmar ferramenta nativa onde o hook não a expôs. |
+| Skill | `pass` `UserPromptExpansion` → `skill.observed` → detalhe do agente no Player | 0 invocação no ensaio #35 | PI dispensou skill Codex **somente na CLI 0.166.0**. |
+| Chat observado | `pass` opt-in, duas mensagens HTTP 200 e Player | `pass` opt-in, três mensagens HTTP 200 e Player | Resposta visível separada do recibo; laboratório pontual. |
 | Pergunta/permissão real | Indisponível no adaptador #33 | Indisponível no adaptador #33 | PI aceitou limite da #33 e fluxo nativo, sem aprovar G3/G4 geral. |
 | Log real correlacionado | Fonte Docker pontual #35 sem agente | Fonte Docker pontual #35 sem agente | Cobertura pontual; Request ID exato, sem atribuição fictícia de sessão. |
 
-## Manifesto final e decisão
+## Manifesto do primeiro candidato e decisão
 
 | Campo | Valor |
 |---|---|
@@ -106,4 +106,17 @@ Enquanto G2–G4 estiverem pendentes, #28 e #35 permanecem abertas; não replica
 
 ## Continuação preparada após decisão do PI
 
-O PI escolheu completar os gates e autorizou preparar um [novo ensaio G2/G3](ensaio-g3-continuacao.md). O build de desenvolvimento G3 foi gerado em diretório separado e passou compilação Windows; chat, log e demonstração sem comando passaram no Player com fixture sintética **no mesmo build G3**. Após autorização específica, o novo ensaio criou uma sessão Claude, uma thread Codex com um filho e um contêiner Docker descartável. O Player G3 exibiu os dois chats e o log da fonte Docker; a skill Claude não carregou e tarefa/skill Codex não foram observadas. [Recibo sanitizado](issue-35-operational-proof-g3.json), [capturas e diagnóstico](ensaio-g3-continuacao.md). G3 permanece parcial. RNF-01/02 foram [repetidos no hash G3](metricas-player-g3.json) e passaram nos três perfis de 600 s; a [matriz física G3](escala-player-g3.json) passou em 100%, mas 125/150% ficaram `not_run` por erro 31 da API do Windows antes da alteração. O [manifesto G3](player-build-manifest-g3.json) preserva a identidade separada do build anterior. Gesto/foco humano em G2 e decisão G4 do PI continuam pendentes.
+O PI escolheu completar os gates e autorizou preparar um [novo ensaio G2/G3](ensaio-g3-continuacao.md). O build de desenvolvimento G3 foi gerado em diretório separado e passou compilação Windows; chat, log e demonstração sem comando passaram no Player com fixture sintética **no mesmo build G3**. Após autorização específica, o segundo ensaio criou uma sessão Claude, uma thread Codex com um filho e um contêiner Docker descartável. O Player G3 exibiu os dois chats e o log Docker; a skill local Claude não carregou. [Recibo sanitizado](issue-35-operational-proof-g3.json). Uma [sessão Claude adicional](issue-35-claude-plugin-proof-g3.json), autorizada separadamente, executou a skill por plugin temporário, mas o hook usado então não gerou `skill.observed`. Após corrigir o capturador e obter nova autorização, [outro ensaio Claude](issue-35-claude-skill-proof-final.json) comprovou `UserPromptExpansion` até `skill.observed` no serviço e no Player final. [Capturas e diagnóstico](ensaio-g3-continuacao.md). Tarefa/skill Codex não foram observadas; **o PI dispensou essas duas capacidades apenas para Codex CLI 0.166.0**. O replay no build final exibiu skill Claude, chat Claude/Codex e log Docker sem exceções. RNF-01/02 foram [repetidos no hash G3](metricas-player-g3.json) e passaram nos três perfis de 600 s; a [matriz física G3](escala-player-g3.json) passou em 100%, mas 125/150% ficaram `not_run` por erro 31 da API do Windows antes da alteração. O [manifesto G3](player-build-manifest-g3.json) e o [manifesto final](player-build-manifest-final.json) distinguem os builds; desempenho passou no [hash final](metricas-player-final.json); escala física final passou a 100% e ficou `not_run` a 125/150%. Gesto/foco humano em G2 e decisão G4 do PI continuam pendentes.
+
+## Candidato final identificado
+
+| Campo | Valor |
+|---|---|
+| Código da PR | branch `feat/35-player-acceptance`; SHA remoto e CI após publicação desta continuação |
+| Unity / perfil / cenas | 6000.3.27f1, Development, M2 Live e Quartel M0; pacotes do projeto no baseline `dc583a6` |
+| Build local | `unity/Builds/WarRoom3D-M5-Final/WarRoom3D.exe`; 304 arquivos/175.674.363 bytes; árvore SHA-256 `e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087` ([manifesto](player-build-manifest-final.json)) |
+| Executável / Runtime SHA-256 | `93043e47abfce89ae9d048dbf34108e101edb367150e6203e0bcee27cd5a623d` / `29faf2a8d1250709cc1f8782f203a6f829b8a936e2972fe48650f8edafc5b44d` |
+| Hardware / monitor | Ryzen 7 9800X3D, 31,1 GiB RAM; Radeon 32.0.21030.2001 e RTX 5060 32.0.16.1692; Player 1920×1080/60 Hz no ensaio visual; GPU usada não isolada |
+| Dados / fontes | Carga de desempenho sintética; Claude Code 2.1.319 com skill e chat sintéticos opt-in, Codex 0.166.0 e Docker descartável nos ensaios autorizados separados. Autorizações consumidas; sem operação contínua. |
+| Escala / resolução / desempenho | [Hash final](metricas-player-final.json): visual/reduzido/setor 600 s, 7.000/7.000 eventos cada, propagação p95 270/271/269 ms e apresentação p95 2,2566/1,7119/7,5246 ms, todos abaixo dos alvos. [Escala final](escala-player-final.json): 100% físico `pass` em 1920/1440/1366; 125/150% `not_run`. |
+| Aceite PI | G1 específico da #29; G3 pontual `pass` com dispensa Codex CLI 0.166.0; G2 `partial`; G4 `not_run`. |

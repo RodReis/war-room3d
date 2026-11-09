@@ -1,0 +1,1529 @@
+{
+  "format": "wr3d-player-build-manifest-v1",
+  "excluded": "BurstDebugInformation_DoNotShip",
+  "fileCount": 304,
+  "totalBytes": 175674363,
+  "treeSha256": "e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087",
+  "files": [
+    {
+      "path": "D3D12/D3D12Core.dll",
+      "bytes": 4725304,
+      "sha256": "625bd40005b1c3708695d5256ecf230d278e6b8edba5a88af70f3d91324f3052"
+    },
+    {
+      "path": "D3D12/d3d12SDKLayers.dll",
+      "bytes": 4930104,
+      "sha256": "c0730cc70d3250d3de19c04c17845ba9e70eecaf502d684d1409195ebc5b5959"
+    },
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll",
+      "bytes": 7829936,
+      "sha256": "d734c4dfc0e84b5f0694c30337595187a2a03943d38409f67ebb94c637321cb4"
+    },
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/MonoPosixHelper.dll",
+      "bytes": 611248,
+      "sha256": "5a0b427f0040f177a45b28079278ea46e4979ebb023ca43593813e903d3cf3f5"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/machine.config",
+      "bytes": 29066,
+      "sha256": "e91782a27fa39fc6c1d6ee8b08529f5d35052310d0006034b878eb04b8f2af30"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/settings.map",
+      "bytes": 2622,
+      "sha256": "49c6160f9d54af4270a3b4e997fc4a8301f79b9e2070118fa46ddbcbbc44f9a2"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/2.0/web.config",
+      "bytes": 11635,
+      "sha256": "cf2b54339e069b9e42f7d6795eecbf562c50c1011f4ca8f65f578fe52d97ff92"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/machine.config",
+      "bytes": 33598,
+      "sha256": "e60aec2c5115d65b3acb3c55ea21576dbd770f579166c017125571e46ae560ed"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/settings.map",
+      "bytes": 2622,
+      "sha256": "ce1db1ad8a9512073164e3eccdc193f7eda036e1a9733caec4635de21b2865c8"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.0/web.config",
+      "bytes": 18802,
+      "sha256": "e38bb8cc68fe5b4edecdfd288d094b9e8ced7629039b2a347682aba0d8bd7492"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/Browsers/Compat.browser",
+      "bytes": 1605,
+      "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/DefaultWsdlHelpGenerator.aspx",
+      "bytes": 60575,
+      "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/machine.config",
+      "bytes": 34056,
+      "sha256": "ee950004b576fb28dc85f4b0435ed04bf96612de2e8b53be84d07afe85a0de6c"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/settings.map",
+      "bytes": 2622,
+      "sha256": "ce1db1ad8a9512073164e3eccdc193f7eda036e1a9733caec4635de21b2865c8"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/4.5/web.config",
+      "bytes": 18811,
+      "sha256": "c4cbddd4fd9347b58cc5a72b36dc4ba1ad2bb699e65869d05cd3fb9865f0d824"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/browscap.ini",
+      "bytes": 311984,
+      "sha256": "4ddd50f31fb968f30bedefc253a46dc3f2890192d05cdaa9e0a64a056eee807e"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/config",
+      "bytes": 3815,
+      "sha256": "5776169973a26a387b8b3e5c0f2301a7ab9a6dd7c7d3efa22a96abc47fbf8662"
+    },
+    {
+      "path": "MonoBleedingEdge/etc/mono/mconfig/config.xml",
+      "bytes": 25817,
+      "sha256": "0c56e34c69124510fa8c19e7b4c2ca6c1c4ff460ae19f798dd0ca035809e396d"
+    },
+    {
+      "path": "UnityCrashHandler64.exe",
+      "bytes": 1728944,
+      "sha256": "72d968abdbabbe7695eb579bb6ae1ee059137717ccd81d60b0f0972fdff762aa"
+    },
+    {
+      "path": "UnityPlayer.dll",
+      "bytes": 84535208,
+      "sha256": "79698b81da115be4bc33edc264f9a45c022e57c1d34d56a99f645bf3fa23ce9d"
+    },
+    {
+      "path": "WarRoom3D_Data/app.info",
+      "bytes": 26,
+      "sha256": "5e0ffb3eb969bc7e24c49d00b5dac805a33c1588c8271d28c225b5159ad60739"
+    },
+    {
+      "path": "WarRoom3D_Data/boot.config",
+      "bytes": 397,
+      "sha256": "3fe31ebeb6e6ace003ddc7d723b22475e6fed6110b85d90c4fe88f53687a3819"
+    },
+    {
+      "path": "WarRoom3D_Data/globalgamemanagers",
+      "bytes": 247508,
+      "sha256": "33ca24d9aa9a5a304691bd3b5d47f6381e8598eaaa5259da02bba1ca5acbe839"
+    },
+    {
+      "path": "WarRoom3D_Data/globalgamemanagers.assets",
+      "bytes": 1036456,
+      "sha256": "f90dbe566be93391d29b85c330c810a7ec4c82621ca52c0099d6be7450250b58"
+    },
+    {
+      "path": "WarRoom3D_Data/globalgamemanagers.assets.resS",
+      "bytes": 6176992,
+      "sha256": "f122983b2e999b7f97c5b76ff4a4d07663df0407e3d921d2826aa61d3671a70a"
+    },
+    {
+      "path": "WarRoom3D_Data/level0",
+      "bytes": 3008,
+      "sha256": "b98a617c92db4c5ed40a5cd60e9a9575237e0d56dff26dc33fbaf346735b90a6"
+    },
+    {
+      "path": "WarRoom3D_Data/level1",
+      "bytes": 3532,
+      "sha256": "b8c05af6eac878348b01aa2efd9475a34fd8f5aef875984e65af010102cbd1e5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Assembly-CSharp.dll",
+      "bytes": 3584,
+      "sha256": "dadbc12637dce1202d02dbfbea3389a469974d53baa75ae8d3ac006369b41443"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Assembly-CSharp.pdb",
+      "bytes": 17428,
+      "sha256": "1ae73c75d78618c7efa1b01f4d74e62e88171bcf08cf66ad285cffd868089f3f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.dll",
+      "bytes": 346624,
+      "sha256": "218acd76b62e7bc50e2f03ae63c6162fc2146def4ca5c32f596f9a3ac0314bce"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Documentation.Examples.dll",
+      "bytes": 32256,
+      "sha256": "e368263e02fa06a66fc152a3c3f9937ce0116299f44c5189ea12f65f0747e4ff"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Documentation.Examples.pdb",
+      "bytes": 23736,
+      "sha256": "0fc182b4762f77a8786ae7523cb22dd1462782a06135fac80fa2939b908fd09b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.dots.dll",
+      "bytes": 3584,
+      "sha256": "806d810f91fa20668f14f10d5c6b19cf7906620a82d1c51c67a6d08c85074826"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.dots.pdb",
+      "bytes": 16032,
+      "sha256": "584d6491e569d4a09c5bcc52676b51eff2a9f9b98344c74d97fe6722c9199484"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Export.dll",
+      "bytes": 102912,
+      "sha256": "3cceedf530c955f352bac6b5a1f3155dedd757d05cbaa81dfcbd7bf7cb7d1166"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Export.pdb",
+      "bytes": 54524,
+      "sha256": "237ded394ca4c5bc8ed54e1a9766722eaa253224fa58dca3baf412d00a556f77"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Newtonsoft.dll",
+      "bytes": 12288,
+      "sha256": "68ea7dd054246487733e9613023d72419c73e0f0175e72fcfa10ec5e1db6944c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.Newtonsoft.pdb",
+      "bytes": 21672,
+      "sha256": "9bfa8dc8d2aa3999ab532716c6a7efe9e656c65bbe2dab8021b567b3699442a1"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/glTFast.pdb",
+      "bytes": 158032,
+      "sha256": "f2e456e6af6825e1154740f91294438f509178059c95f23ef0c68c83ce4d750a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Mono.Security.dll",
+      "bytes": 241152,
+      "sha256": "5d31f464d713c407bad0a90fd2447565ca49256b8ce33c39a16eb6db2cb02e25"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/mscorlib.dll",
+      "bytes": 4632064,
+      "sha256": "88cf708875a938c510a22bf246459e148cf19a9d9b812990a5af695d13252e4b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/netstandard.dll",
+      "bytes": 90112,
+      "sha256": "6ae62e082dc494a2433984177f60ca4db5fae69b1f360a8b33754172b310b8c5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Newtonsoft.Json.dll",
+      "bytes": 691712,
+      "sha256": "a56146202232958f46bd6a28b5a7da166aea123ee0d646735a46e5c341dfbf1f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Newtonsoft.Json.pdb",
+      "bytes": 2174464,
+      "sha256": "17cbab4d4207187ed94173c0d59d7a39fabed7c9035b73634c1f02188dd60168"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.ComponentModel.Composition.dll",
+      "bytes": 257024,
+      "sha256": "40bf98b40377cc030b2f8a933899ec9ca721d81edf7b3f8c9ae15882401efb72"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Configuration.dll",
+      "bytes": 124928,
+      "sha256": "3e7e2368d76810ce0a8edef0b20e5d927126fe3dd7a8f1ed1a896c1c146b10f4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Core.dll",
+      "bytes": 1113088,
+      "sha256": "2bdd5d2c6bb88c47893bb96c1420f63627519f0fa6f504ce963cc305d86a29d9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Data.DataSetExtensions.dll",
+      "bytes": 29696,
+      "sha256": "9289021d5905c70be32aba1ac8fa25070e407d6a2e4f6c9673adde941aefa73f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Data.dll",
+      "bytes": 2125312,
+      "sha256": "d7b938b66130ffde13ee9c4c624b28c1b79ca2c11a57e776bf722e70a5bf6c72"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.dll",
+      "bytes": 2641920,
+      "sha256": "6f0024fe5efaa74add45d3bd52d9de4569e246a6b0c3ce413b821bebc58984ab"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Drawing.dll",
+      "bytes": 489984,
+      "sha256": "8774095688ddaba20edcac24a9789674fcfabf5e4733c2bf3a71fb0a0cda1597"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.EnterpriseServices.dll",
+      "bytes": 44544,
+      "sha256": "3587e65c48d4a26af9df8b47b5f689b0b79913fd44263e30c024b702edfea6d3"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.IO.Compression.dll",
+      "bytes": 114688,
+      "sha256": "24ad13bff1a635a589d0a2264558ba4826261fff226732f6605254e3b952e375"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.IO.Compression.FileSystem.dll",
+      "bytes": 18432,
+      "sha256": "6f260a2f7b3005f4fafaee0dff4b2458920c74a3978bd3ad8f5fba943de2b87f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Net.Http.dll",
+      "bytes": 122880,
+      "sha256": "6bff14de0e159b0c7aebe91fc06ece5ac5457abfee125bb098ee5b09da22ffdd"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Numerics.dll",
+      "bytes": 119296,
+      "sha256": "186ecd00df724714191400dfef9926662a1c8235dbbcdac8643d6546fcb649a5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Runtime.dll",
+      "bytes": 12288,
+      "sha256": "e0a7334b7ba419aaab6bd3bb6992d693e689341a9178172c9bf99c2aa6a085bd"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Runtime.Serialization.dll",
+      "bytes": 934400,
+      "sha256": "18b8701188117a07853a67e7f05d58fa5f44bab843c57772ca955db00976feb2"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Security.dll",
+      "bytes": 320000,
+      "sha256": "93716b1a2384af184ca04e6cc2706ab72ba1dff6445207b1d13e37cea2a66432"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.ServiceModel.Internals.dll",
+      "bytes": 215040,
+      "sha256": "3ff6b69bbbc49139320fbf7ce6092e253d5c17cd40d05d5cf60345888fad163d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Transactions.dll",
+      "bytes": 35328,
+      "sha256": "73251ccfe8656e354fbeb33a95c8ef45ed7a9afb3566df213dfc5b0ef787203b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Xml.dll",
+      "bytes": 3160064,
+      "sha256": "d94453a9e1ed9b55b33ec49f9b38caad75306d3e7b0a8743937539437629b500"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/System.Xml.Linq.dll",
+      "bytes": 136704,
+      "sha256": "9df5adedc6b590c8ae1c12345b6b981be8cb6afa5c799e67ec1de17b50b0c579"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.AI.Navigation.dll",
+      "bytes": 32256,
+      "sha256": "c29f2e58a80c102b029a437cf6b63c937948d19a0b38ab3f42473f1e250570de"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.AI.Navigation.pdb",
+      "bytes": 29192,
+      "sha256": "ec52b8bb7f189ee099dd9af91af8dc44db74ff622446b3533a83c0b08bf7bb08"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Burst.dll",
+      "bytes": 327680,
+      "sha256": "c1dc9b67f5d90838a99e6144c992cba33a56ee5480cfc38b4a553690e1feddcf"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Burst.pdb",
+      "bytes": 217892,
+      "sha256": "6361ee5884c995f42fd73b184328be19224b0a4fc887cde4c1bd2c12583bfdc5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Burst.Unsafe.dll",
+      "bytes": 5632,
+      "sha256": "9d9c1ff52411decbee5d9f0d1cd61ebeaa222077aa77a52101ea3debafae98e2"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Collections.dll",
+      "bytes": 478208,
+      "sha256": "3f6a849d494c36bf58d60d2e9518979732f9add09b2eda726257bf1b2feb8203"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Collections.LowLevel.ILSupport.dll",
+      "bytes": 5120,
+      "sha256": "ff50383f807f9692e4913b97e47d86fefcb8faa33d6d48cd3e3fd6fc7ffb448d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Collections.pdb",
+      "bytes": 304844,
+      "sha256": "f3da43ad38ed6ad58c58fe764c7183105702fb4c56d6b9fb7d87c9080f5ddccc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InputSystem.dll",
+      "bytes": 1227264,
+      "sha256": "e981bdc72896f71aa6fedb9492862c3957fc13f1a214b5007d545551513b76c0"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InputSystem.ForUI.dll",
+      "bytes": 16384,
+      "sha256": "b82877c5a7e164c4f2287496cb45bf192e3c871516943a7334006b83b3e22f3d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InputSystem.ForUI.pdb",
+      "bytes": 20440,
+      "sha256": "0b7cc2de7787947fd4efca50d04cad50446191a1193a72eabc453513e925d27b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InputSystem.pdb",
+      "bytes": 563656,
+      "sha256": "094d3c0b674a0f08ac6349d1dd483bf6b8f3e5676b3b5e64ee00a0b70bfe4a0c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InternalAPIEngineBridge.004.dll",
+      "bytes": 4096,
+      "sha256": "d59d04089a5f64821cb1d364c388c300ec38bbae808301d3db9beacc04acee3a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.InternalAPIEngineBridge.004.pdb",
+      "bytes": 15892,
+      "sha256": "ccb9c844c3fe8e2ee21863caf051788cf60752722b50ba241ddc8d14ef09609d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Mathematics.dll",
+      "bytes": 871424,
+      "sha256": "12d4a06e17c4b608148ffdce3fc42e9f0c56be0e1f86fd2cd16a739b5ccb3632"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Mathematics.pdb",
+      "bytes": 510684,
+      "sha256": "594f17d8295dbc5e438f42850b84c75eac69e0e974edcd7c45f1998ba837e7a4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Multiplayer.Center.Common.dll",
+      "bytes": 8704,
+      "sha256": "2db5624c6482703f6525ece871b3dc68097772bf0ba39acd4e0bcf68f8595f12"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Multiplayer.Center.Common.pdb",
+      "bytes": 16920,
+      "sha256": "1500cd93395339313431c8bff46b93a6113c8ce403bbe26e1fb02321599dc1e3"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Pipeline.Attributes.dll",
+      "bytes": 7168,
+      "sha256": "4872f423d0af6ea3a14936c0f14b0db8c7bb8ec5cb415a43145c37597930afe0"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Pipeline.Attributes.pdb",
+      "bytes": 17312,
+      "sha256": "c739183951ac0870197312cbeb26bac6c7b14e4740bfd21ec16c7d72af51b162"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.dll",
+      "bytes": 7680,
+      "sha256": "1a0358afbf8e029d047d5dabb5a5ef6d9d102bea834cbc250fbc2528313f7af9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.pdb",
+      "bytes": 15952,
+      "sha256": "0b5075ea13b5eab82359fe9292d70bc61d0a7e7cba35d50a69673bd3b7c9e866"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.Runtime.dll",
+      "bytes": 1230336,
+      "sha256": "b2f28b5e685a519dadc03326b3600de6280e2d15018d71d02cf0669cf9294f73"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.Runtime.pdb",
+      "bytes": 456220,
+      "sha256": "26d1fda43580cd64a9330508c06a50c9c0c1772adf8ed7046468a4ce4b8672a4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.dll",
+      "bytes": 4608,
+      "sha256": "8e73638e9a0ef5b886b86b4aa2afa1be890860176c3b7fed4fe521d3ff111fb5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.pdb",
+      "bytes": 15808,
+      "sha256": "2423887c7989dbeb0a7d11b4e3fffdf7041536397b665c7829243dc6c95a4b2c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.dll",
+      "bytes": 3584,
+      "sha256": "ac505ddd699d471d41b1cb16c917cc2bac3816e3d374f157b866b465718622bb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.pdb",
+      "bytes": 15652,
+      "sha256": "abd5bb5adf8820074cbeda17a56d9a40cd9a5b89ccd4d24477eeb2a86a7e1e33"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.dll",
+      "bytes": 243712,
+      "sha256": "14ba1ce16c6749ec90e6390ee983492c5ae7b36bd95d6ab3bf65df6c34804611"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.pdb",
+      "bytes": 122116,
+      "sha256": "1eb994c34995610822be56d5e1120edfd5438c3c24776e356a5c8e8f15d8fd36"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll",
+      "bytes": 3584,
+      "sha256": "88faacabd152f7eb008c5c228889f4fe1ea8b311319e8560c10ab9f873f5d4f1"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.pdb",
+      "bytes": 15652,
+      "sha256": "78651d0530f08beff8ffddfbd43df4c15fbfb84b0e57c842ab7c84410425599d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.dll",
+      "bytes": 243712,
+      "sha256": "ac84f7fcc4f93889c48944fc5d052153a4fed5c3f7878c021191e5d08532cf8d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.pdb",
+      "bytes": 151464,
+      "sha256": "f40bae63890d0b5c26f13cecb513f40c30cfeacdc0f28c92334b951c0b3ae7f7"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.dll",
+      "bytes": 4096,
+      "sha256": "db23adbd24f955fe9729f3446b85a02fa61cc8acf2e978d2831bc3dac69485ee"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.pdb",
+      "bytes": 15732,
+      "sha256": "b1af4366ffd2cde9469a839eb1a990ae068f5150f38babc3bdfbbf06b7874b31"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Runtime.dll",
+      "bytes": 755200,
+      "sha256": "3a53de9631b9904f8d6d35bf9b5826848d078c9b061f92e1a1800873af8e503d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Runtime.pdb",
+      "bytes": 307884,
+      "sha256": "831d638659a09cae95e364d13d6f89fa2609629da867e050c28d53fa88d6aecc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Shaders.dll",
+      "bytes": 3584,
+      "sha256": "4900f99060a9ce7f69ac188f46441b1b5a2659a961db981e551da7870c94e1bb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.RenderPipelines.Universal.Shaders.pdb",
+      "bytes": 15640,
+      "sha256": "06a9bc8866ff0940dfb7a371c15589f611ef4ae60e6409e1116d01c368f9f215"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.TextMeshPro.dll",
+      "bytes": 499712,
+      "sha256": "b0807e1f4bc889cb72461caf23e0fa6a5bb4b14a8c5b631ac309f9b21d79e90e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.TextMeshPro.pdb",
+      "bytes": 253400,
+      "sha256": "4483692651714ca49b8c3512d685f754fbeb012377a8a72bec41d27ef24fc722"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Timeline.dll",
+      "bytes": 136704,
+      "sha256": "2674a73f8f96ba7f94237c2303e3bffa00a3b98aa9b98f346f8d20e83b2fbbd2"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.Timeline.pdb",
+      "bytes": 85432,
+      "sha256": "cb482a301ab76d7778977cd8532c4ff26661f6ef424fae7f6845839aa17634a4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.UnifiedRayTracing.Runtime.dll",
+      "bytes": 100864,
+      "sha256": "c2385119dfe5771590266126ad900e104bd44518daccb31bebf67df16ba14984"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.UnifiedRayTracing.Runtime.pdb",
+      "bytes": 55312,
+      "sha256": "0c1b487cce2bca272ad7fbd6c1d28b2f9cde53cd655851e8765533061f822d23"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.Antlr3.Runtime.dll",
+      "bytes": 86016,
+      "sha256": "ed7ce205f66eafe39bbb5d084d42e7fe11cb4b386ff208e5d5110891be0b7b37"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.Core.dll",
+      "bytes": 593408,
+      "sha256": "7db5007f4c96446b6a57f53c7d0e530891832df334de93b2e9ce24598a7e2451"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.Core.pdb",
+      "bytes": 312280,
+      "sha256": "2e9bc28b526ad2ea5d4b007254d39b701fe08e5d531d4b90810afe06eb24a0b8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.DocCodeExamples.dll",
+      "bytes": 6144,
+      "sha256": "a0db578aefee2ffce4376f338af09f5ac96f14fe98ae7c2751d7c3d6ff55fa43"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.DocCodeExamples.pdb",
+      "bytes": 16288,
+      "sha256": "3ae666d55358645b06558e99b5120ec911adad68f01bcd78c58f2c5d0c7930df"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.Flow.dll",
+      "bytes": 361472,
+      "sha256": "5a5c8a4b5a78a41d2ef02fd3c15d9ee407b369bc79dbceea6faf7fb3f7d8b21b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.Flow.pdb",
+      "bytes": 200488,
+      "sha256": "84a150b52e78ccde0e801951ff226f0d5a953fae04d1a7f4a58d06aad34bc6be"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.State.dll",
+      "bytes": 28672,
+      "sha256": "213bd40e79484f29cb93506f46e17a092d9b85162e60fae8dab2fd447ebe12ee"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/Unity.VisualScripting.State.pdb",
+      "bytes": 27472,
+      "sha256": "50088612b947d4dfe64a3ae4f01d0b9dacc434a0c8c7791c71f27f24a3b774b5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AccessibilityModule.dll",
+      "bytes": 51120,
+      "sha256": "442beb2de0ec1b4f4a3171e7c79f0b6559868c3152ccefe4049517817ff4f41b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AccessibilityModule.pdb",
+      "bytes": 23076,
+      "sha256": "beb06fbf52465da6a3b610cf6e17dbcaae15eb7935b440113c32eee575c643f4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AdaptivePerformanceModule.dll",
+      "bytes": 125352,
+      "sha256": "13881ed68a1346e2574a25bf268faf50f2fed34de9cd821e54a8bd27b08e233e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AdaptivePerformanceModule.pdb",
+      "bytes": 53316,
+      "sha256": "ea1db6ad4051d232a1313875f57d1866da574ec2a9ce55edf8e4859149bfcc0c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AIModule.dll",
+      "bytes": 77224,
+      "sha256": "c5a0b0631b1f5ccd3be0b7ad402a2d9470f8e9df148fa81ba22d4b6e7f67305f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AIModule.pdb",
+      "bytes": 20664,
+      "sha256": "cf48b986654cc7f99402e403401bec2d1ccbc36db2c4b5f54a07c1283918c0cb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AMDModule.dll",
+      "bytes": 21936,
+      "sha256": "5225280fc82c27161ef353d9085cfdcbb90d0b12bb68de898e619a78174a37bd"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AMDModule.pdb",
+      "bytes": 12032,
+      "sha256": "4126bcec1bbaf3fac5cc36efccf03bfff13123b691dbd915f648c248c70eb1e5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AndroidJNIModule.dll",
+      "bytes": 121776,
+      "sha256": "bd2969a567d89f3b777c400f5aa032d0f8008320b642a9625439d1c0e6ce6513"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AndroidJNIModule.pdb",
+      "bytes": 50232,
+      "sha256": "e77b2bc10ddd1e7b31d195e818c2f532a6d286d2f1b1228166251d7608c9d547"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AnimationModule.dll",
+      "bytes": 225192,
+      "sha256": "adc6409f1904d7eb81beb837f82adc2963b9870b6f2f1fb82ccbdb95eaae6553"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AnimationModule.pdb",
+      "bytes": 60776,
+      "sha256": "48a48f169b15844477de26061fd463ead22a3d9fcd03f196d76d83a540b2803a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ARModule.dll",
+      "bytes": 25520,
+      "sha256": "209e79beb27a982cd6138f3f27c9df0079cf0f4734e1034385ade9a9f521ecfc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ARModule.pdb",
+      "bytes": 10012,
+      "sha256": "f3df9d75a32321bcab5577937ccc36c65f9055fc8f79e0ba30b3d9b4c8ff539f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AssetBundleModule.dll",
+      "bytes": 41904,
+      "sha256": "fdddfc9fdd8b8111427468e675831676390b815f513f55b9fae2efe177c98944"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AssetBundleModule.pdb",
+      "bytes": 14152,
+      "sha256": "901abf5b759faf5fb0f5b04b64110618d2dd49875224e024eabe06fdb8db11ef"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AudioModule.dll",
+      "bytes": 142760,
+      "sha256": "ed1cf512657624d465c6694d5699b2fbcec3ac463684d4f8f098b95d89662bdb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.AudioModule.pdb",
+      "bytes": 35200,
+      "sha256": "67c5738146f0bd0d09a61578593306c4f3ba3311be6fcd7d1f2af6ad2e037369"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClothModule.dll",
+      "bytes": 36264,
+      "sha256": "30f65f178b46be60d46c8cbe6abe2cea303e804335e147d9364f3a034ad74772"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClothModule.pdb",
+      "bytes": 10580,
+      "sha256": "5870985782705e2efb4c75c1fafd7982ba5dde902ee93a48abc13e851bfba85b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClusterInputModule.dll",
+      "bytes": 28080,
+      "sha256": "36b7dc56f94789420c1ff5397d8c9fc33d781990254e9cb78a73351750a2007c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClusterInputModule.pdb",
+      "bytes": 9396,
+      "sha256": "ffacaa579525b616e2eff7b0aff35f4ac4c42d9af06ffd8ff90b4e8290ba4eea"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClusterRendererModule.dll",
+      "bytes": 26544,
+      "sha256": "ceac807790561d6a09289fd456c9d7c134225004605f4fdadac06d6c94aacb7e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ClusterRendererModule.pdb",
+      "bytes": 10004,
+      "sha256": "5c27b39de2a25c65e3543033eece599025049f0b9a0511f3b8be89a010bf8e27"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ContentLoadModule.dll",
+      "bytes": 32688,
+      "sha256": "db2f65e0b69d25de8a3c45c1c673260f95410f2f88781203114bf41e39300a37"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ContentLoadModule.pdb",
+      "bytes": 11176,
+      "sha256": "b1d38ec28a9b07aa0e7030b76a699b12f265d1b5e039c44da179529837d27afe"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.CoreModule.dll",
+      "bytes": 1985960,
+      "sha256": "9c8111978e073d75f535c819b4e64a0bc1770ae3b5b14a9894911ca977d9cad5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.CoreModule.pdb",
+      "bytes": 573776,
+      "sha256": "d6498c45fd11f87e5f9442a99e0aa89aeca00621ae8b63840113bf249440b2a0"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.CrashReportingModule.dll",
+      "bytes": 26536,
+      "sha256": "5fc996a90ab5984a1328a8b40a511aee6efa17d661d0dacd13ea41bc575a8525"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.CrashReportingModule.pdb",
+      "bytes": 10008,
+      "sha256": "26bee38591acdad55a415dec7fdc539d70e5166981f6521a71bd4cdfbdbd0ace"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.DirectorModule.dll",
+      "bytes": 41904,
+      "sha256": "c9932f7e8910bf1e74312330d323a3caa1305cc8377239fd0c41dc4e7a260e60"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.DirectorModule.pdb",
+      "bytes": 13920,
+      "sha256": "1134f10020280112e6aded78f3f4327e49f42ef8590bb0a8509ea45babbd9492"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.dll",
+      "bytes": 197544,
+      "sha256": "be9528e70fefa76c7868c772b83592a3ae35881b924f2c4a082188fe1fdeb65a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.DSPGraphModule.dll",
+      "bytes": 31656,
+      "sha256": "e8fd53b96b696241155caf69cf8bcc449622d4e05e4db6781d5ff9b3702c6497"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.DSPGraphModule.pdb",
+      "bytes": 9604,
+      "sha256": "74389c982c703843ca762233812571fb88d0592d6f4246e17e8b7a5f3e2eed79"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GameCenterModule.dll",
+      "bytes": 45992,
+      "sha256": "c70a2d5658429be29b1dae226e81eb446069386f026e0fa6960a51a45476dc24"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GameCenterModule.pdb",
+      "bytes": 17488,
+      "sha256": "d38ed39164ef9d19c4b5404ddd4ca62e1224d46ef79165886d090686afa96ab8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GIModule.dll",
+      "bytes": 24496,
+      "sha256": "e5afe58161d32e56a93f74265e98e7bdd10b07fd7e0aed10f7912f4452b6ebf6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GIModule.pdb",
+      "bytes": 9276,
+      "sha256": "a9819774790f442e72238b0224b07f76d61f1c04984872389e0bce4ac35d49cc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.dll",
+      "bytes": 14256,
+      "sha256": "02abee679551aa0e7797c0f66fcf259fc3ba24632f3513caae085a526349c9e5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.pdb",
+      "bytes": 9304,
+      "sha256": "8b0bb3bb97b0b69e011940cd1ef030dd3b246cded885e4c21f34f1eb439896ec"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GridModule.dll",
+      "bytes": 30640,
+      "sha256": "f71bb7229a36a6b6438e5b00562359cb545f7c3f3ad856e88479f5d6fb0e5c4d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.GridModule.pdb",
+      "bytes": 10132,
+      "sha256": "8e7241afa475d329ac4ce46feaa80aa1288961c43b035d9e11a6dc7bba76f49c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HierarchyCoreModule.dll",
+      "bytes": 109488,
+      "sha256": "9e689a52dedacd8f5c3bcac31a9e0a181bd607d87ca9dc1e60f89e945b749c4a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HierarchyCoreModule.pdb",
+      "bytes": 36440,
+      "sha256": "bd0ceac67e5d9fcac241fb89592347a1171cff862c8280c8d80d888ee290a2eb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HierarchyModule.dll",
+      "bytes": 102320,
+      "sha256": "52d25be01992f1e9d1bbcfa0e272a62cf06e30fea3d2ed4bafd3dcad1289aeab"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HierarchyModule.pdb",
+      "bytes": 47660,
+      "sha256": "869e0ba0964167fb1becf5c1fc27cfb72c95b3088d181b46059c0686253eedf6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HotReloadModule.dll",
+      "bytes": 24488,
+      "sha256": "10fb96fe9daa75c55dc84966866ab97f51635c4327561dadcdf2158dcabd1228"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.HotReloadModule.pdb",
+      "bytes": 9276,
+      "sha256": "ef27334f897dda7421d30e30b830cab1735f0d0a060ead811af8d66d548d9950"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.IdentifiersModule.dll",
+      "bytes": 16808,
+      "sha256": "0bd79194805cf9ac93fb113ab6530a057601ce0afcf2ad74b76b25032fe1dda6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.IdentifiersModule.pdb",
+      "bytes": 9760,
+      "sha256": "f28c8738cc9beb0efada018b5881a6cc0f3e0e34c97e61191befcc89f922f910"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ImageConversionModule.dll",
+      "bytes": 31144,
+      "sha256": "b5f15bae01a57b29049bc8c710d88b4ccb349370de923b01e3a782c89e0427fa"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ImageConversionModule.pdb",
+      "bytes": 10616,
+      "sha256": "0ddb7d1d26b5c89e6a86ec31eed983de87b87b4a41b945b62c373b75ca15a674"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.IMGUIModule.dll",
+      "bytes": 214440,
+      "sha256": "339d6b270183d5c15141ec3f56ca4e7baf2771b5f9aa7588b76a71b5b1f73008"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.IMGUIModule.pdb",
+      "bytes": 90504,
+      "sha256": "3299f66976977be6425f91faf6dc719600a926cb34751a341b73521b86c66f0c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputForUIModule.dll",
+      "bytes": 57776,
+      "sha256": "36934e41ced0af39f7af8e2c6bddc1ee6ff03d6795e2d40f9b5bf37079d816bf"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputForUIModule.pdb",
+      "bytes": 26108,
+      "sha256": "d636181ce66753195fa70718bc4a391cbd7858680cdcef017eb0fca8cb48e904"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputLegacyModule.dll",
+      "bytes": 45488,
+      "sha256": "17469853ab1ad77dfd1d9eafb7d16c2895c2019d143a3c7018828849c250b924"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputLegacyModule.pdb",
+      "bytes": 15384,
+      "sha256": "cd0bcc70469991fd8d48440bb22105ebf84256722812b4dc872229e1e92073fe"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputModule.dll",
+      "bytes": 28584,
+      "sha256": "ccded6c8e5079be8d933b8d9bfabd43fedcdd4b1cbc0e62e2f0ddbaac0a488cc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InputModule.pdb",
+      "bytes": 10644,
+      "sha256": "f7790d36fa51b168e99bc0da2462a89063b594f147cb0eb3608cabe54321c048"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InsightsModule.dll",
+      "bytes": 14248,
+      "sha256": "105465684c0d747083baee1be832312367e8f0a1842d573c28cbdd4a4d243140"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.InsightsModule.pdb",
+      "bytes": 9600,
+      "sha256": "67e3afbfb43ff30ed3a2800c028a6486595369a9bdb9bf6d642d013b933f1e97"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.JSONSerializeModule.dll",
+      "bytes": 27048,
+      "sha256": "776ae3680f7efec5dec58bed58d0056d695b66e79de2ca837d39046ec6589360"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.JSONSerializeModule.pdb",
+      "bytes": 9900,
+      "sha256": "498fb9745dcff77ef3d398a8c94e1094344b10b11408d647c38083963306490a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.LocalizationModule.dll",
+      "bytes": 27048,
+      "sha256": "a7258d3786263e7ed2e8760f6e68a18ff7a83bde59d3702481888aa18f8a0ab0"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.LocalizationModule.pdb",
+      "bytes": 9696,
+      "sha256": "386b37b71515552909d32bb04af9e951eeaa3dd688026b55b74fa118657cca15"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.MarshallingModule.dll",
+      "bytes": 83888,
+      "sha256": "d1345c867bd792c20424c1e43169c5ea09b39cdbd57301fcdeb58381e34e820e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.MarshallingModule.pdb",
+      "bytes": 14288,
+      "sha256": "0501187edd33bfe6aa67c4e47dec14a5f890f95e0cb03f9651a020b2af18d2c5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.MultiplayerModule.dll",
+      "bytes": 17840,
+      "sha256": "e546269934123416a03a79394f227965c8340ada62edfebb67ad9b60b599fc6c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.MultiplayerModule.pdb",
+      "bytes": 10368,
+      "sha256": "f9f05ae7c5b2e56e688306316276d522bc9c33bcdbfd61bca71e34b17895c6ac"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.NVIDIAModule.dll",
+      "bytes": 40872,
+      "sha256": "6adeab93cfe56683ba1b542ceb850af601f87564c38d5e5e9b004c3b8da99d42"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.NVIDIAModule.pdb",
+      "bytes": 16444,
+      "sha256": "90d447d20043d61cdd44dd8ff1ba8fef95c228a6e224eca1b37c07fd4c8c2e5c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ParticleSystemModule.dll",
+      "bytes": 172456,
+      "sha256": "149b36542f81840999f6174abf4220a7e152375dc7e2ba4b5479b0fd1578bfc6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ParticleSystemModule.pdb",
+      "bytes": 40528,
+      "sha256": "728a82505016312436169e374655e4fa0f7aa876fa2a73e01f1e5334a5924dc8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.pdb",
+      "bytes": 12676,
+      "sha256": "3a183c9b87a10f88d799d5651f38fb778de78305d2b64dab188afc42158f7454"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PerformanceReportingModule.dll",
+      "bytes": 25008,
+      "sha256": "548b60cbe2a338bd009b2ed07d18f4d0d1a800ecc38eeb9d8d150beea45a02e9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PerformanceReportingModule.pdb",
+      "bytes": 9480,
+      "sha256": "44f8fe9f06e849d70bb99dc086f0e95dcc9ec97fca8922bccd35fbed82a14fba"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.Physics2DModule.dll",
+      "bytes": 585640,
+      "sha256": "888ab4ed5093e41fdc8b0a08b2f7de768723936e1a027aa0b2d23bbd61042cb5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.Physics2DModule.pdb",
+      "bytes": 134972,
+      "sha256": "047db2265f791375983c4b9f3e388054cc7add27907928e7321bccbb59b02c8b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.dll",
+      "bytes": 14256,
+      "sha256": "026dcb0a3ecbca2978fffca1f1327f93fb20ddda1dac0ad7f48ea2534fd77d92"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.pdb",
+      "bytes": 9296,
+      "sha256": "39353434a35702ab417c08956ee08ce39014fff3fed073b53da0f8d4fa33a51a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PhysicsModule.dll",
+      "bytes": 183720,
+      "sha256": "6550298ffcf3c9703daafe444b5f02a58af5ed4a17943c8d859fa15303eb33b1"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PhysicsModule.pdb",
+      "bytes": 46224,
+      "sha256": "27702667bc192c3768651d535029884a8f64bbd75a9d040c74f6be299298bd4c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PropertiesModule.dll",
+      "bytes": 134064,
+      "sha256": "190c700a682c8d26786dafbb5f4a15bcc00854b905c57dafb26e21493f0dfb2f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.PropertiesModule.pdb",
+      "bytes": 62772,
+      "sha256": "46e476627c24c926c0feba2b44d4c5b6e31bc2af78b5a30fafca64555ac0cd50"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.RenderAs2DModule.dll",
+      "bytes": 25520,
+      "sha256": "129e267f9d2d62099a64cb8c9f5d68a0ff8b40ea84d8ad5e865f0ef9334b3d38"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.RenderAs2DModule.pdb",
+      "bytes": 9324,
+      "sha256": "77f421aa22d38a44b91856cb20ed00c441aad9748a20c9a23ba7fc0a7e67ada7"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+      "bytes": 24488,
+      "sha256": "ae5e1fc3ec98fb839cbf9c8b8f8c019fbd08b201b120aeeb4e4e745592b62e11"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.pdb",
+      "bytes": 9336,
+      "sha256": "57f4ce3134eb0f691014b68ff1a4644d5297092a582db4d384b4c64439bf92ed"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ScreenCaptureModule.dll",
+      "bytes": 26536,
+      "sha256": "322e9138a67ff8aa7c154a8eebf5b8a96fa1cd014c1008094acfe533353d3e69"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ScreenCaptureModule.pdb",
+      "bytes": 9880,
+      "sha256": "dcefd19ddac7fff240fd0bcf5240201b507a2f1ca8f2be33b9060e921f32f5b7"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ShaderRuntimeModule.dll",
+      "bytes": 25520,
+      "sha256": "4140ba8837449f78eeffaeacf6457e8ac723493579776e97255909ef378c70b1"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ShaderRuntimeModule.pdb",
+      "bytes": 9316,
+      "sha256": "e90dd8026a3362422d64ce73761b2df3e8da2479faf91e46ba6b613522a95d30"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.dll",
+      "bytes": 24488,
+      "sha256": "0553cd3735e099371f5978ceeb3dc3a784f1a3d5812041dc07ff97c5fac354d1"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.pdb",
+      "bytes": 9400,
+      "sha256": "e8174d44499a86dd8a29032fb08a4b630729ac1eaf98285564148baad6b7ef33"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SharedInternalsModule.dll",
+      "bytes": 38320,
+      "sha256": "7856689039403d1cae83b6d19998e2a25839f38078ea24816cc5c3937c024f69"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SharedInternalsModule.pdb",
+      "bytes": 14288,
+      "sha256": "cc2f373b2a0b9b9c40d2fd1a75f24f1211d0dbf02d8a0fd65cdf7b847fe95dd8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SpriteMaskModule.dll",
+      "bytes": 28592,
+      "sha256": "4b109631a4dd5c2ea76adc7f8be6dca2abb9fc362d5adc2212d29dee9928224e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SpriteMaskModule.pdb",
+      "bytes": 9608,
+      "sha256": "7f7484f5f31cb453fed40e39dfdafef7bc0c93374f5d499cf9a30ef62f76923c"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SpriteShapeModule.dll",
+      "bytes": 32680,
+      "sha256": "c78de281a16d151ab5a6b93eb65f485c438d0029cb2c7f3143240eb89a0760c3"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SpriteShapeModule.pdb",
+      "bytes": 10932,
+      "sha256": "e5d0f97b8afd1f2f30256e95ba5c7cd0888bf0388856a0391687afaa80ca7e42"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.StreamingModule.dll",
+      "bytes": 26024,
+      "sha256": "e427e7abb657e09605e8f74c3380426657ce744fe9ceab18c9532a5bb0ace237"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.StreamingModule.pdb",
+      "bytes": 9352,
+      "sha256": "47c822ef1c23c4e2cabb5f1c5c835c071e5908a3e67022c68628abae117226e2"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SubstanceModule.dll",
+      "bytes": 29104,
+      "sha256": "d037388cbce303b3b2406e3c3a3827d36523203d2b66a6731edb570400115f68"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SubstanceModule.pdb",
+      "bytes": 11480,
+      "sha256": "70b49772a287e13fc811ca1d296f69085c977c16051e748d5a24ec1de8122d02"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SubsystemsModule.dll",
+      "bytes": 41904,
+      "sha256": "d0e817e1c70f0bed527f7e2d116f9ae26a43f1c0c13802e65904a7d7794c123b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.SubsystemsModule.pdb",
+      "bytes": 16020,
+      "sha256": "d73514c91dce4ab9548d767b4e5712650f398c4f39cf0542f21f3c0a0bddd4d9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TerrainModule.dll",
+      "bytes": 134064,
+      "sha256": "955ccf8fea49d83fe629d0ba21cff4936cd06a6172c00af021e7ef46c79e8038"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TerrainModule.pdb",
+      "bytes": 33988,
+      "sha256": "1148cf50590e7a345d4e7e60ea982dfcbac6dc96dcda9f57245fa355b8ff53df"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TerrainPhysicsModule.dll",
+      "bytes": 25512,
+      "sha256": "b73c4ee167f458344f916441f1ebfa8fb6ad4570113d328d7e343d95a85e473b"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TerrainPhysicsModule.pdb",
+      "bytes": 9740,
+      "sha256": "33c5b9e7605d4f6bcd2aa7d2f35ffa6bd0746ed08be59a240f9f71c43bd49f36"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll",
+      "bytes": 91568,
+      "sha256": "78cfd939acc8b8976c60985dae7ffae01771afb2a2ef55e29b239c2f8febdfd4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextCoreFontEngineModule.pdb",
+      "bytes": 31540,
+      "sha256": "afe52fa2734ce9f8f30a65faa1b0eca91dcc1a367ea2afa48be6c21bc9dbba02"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextCoreTextEngineModule.dll",
+      "bytes": 334760,
+      "sha256": "bc411104d7544c4d268db0f52711a0e97c7a75f65c49c67b28ea711f8020fa07"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextCoreTextEngineModule.pdb",
+      "bytes": 153992,
+      "sha256": "0652c8a0af266d943bf7603609c07cee3aeddbc6a8c5109290244a1f0ef7975e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextRenderingModule.dll",
+      "bytes": 39344,
+      "sha256": "2304db3f51951463a7db45219b3ac8ce9c13ccb346f1a56c52c2f1bc9a963703"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TextRenderingModule.pdb",
+      "bytes": 15380,
+      "sha256": "12445f41f144f32f46b7bf98c964f4c69a945f360efd1bbb116ebe72d55036e5"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TilemapModule.dll",
+      "bytes": 58800,
+      "sha256": "147eb74a8b0250a2a5edee9ceaace7fb41f0ed7989daf7441fac167bcd348370"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TilemapModule.pdb",
+      "bytes": 19112,
+      "sha256": "3d2ec64b401b13a2cc37f3deb0de0cf0f34ce00a7e08a31aedd2ad10d2ab3f04"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TLSModule.dll",
+      "bytes": 32176,
+      "sha256": "cd10e680c8ebca12756d22c4ca6dfa0ed5782a754ec6c0c54c60792ff27f7b9e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.TLSModule.pdb",
+      "bytes": 9296,
+      "sha256": "e6c50ac79db1bfe61cfa2dd713d898cb754e54f190a9baef1b0e657209074bce"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UI.dll",
+      "bytes": 296448,
+      "sha256": "3bb7ee50b5e88dea9b3482c8a597c0f6fea4d1518b9730b246ad113d2fa4c703"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UI.pdb",
+      "bytes": 181620,
+      "sha256": "50289f9b5e85bb88615ed76787fddf2e82efc23c215b271bcb3103dac072ec8e"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UIElementsModule.dll",
+      "bytes": 2453936,
+      "sha256": "626ed8ba55b1441d553725f81af8f9752697e5dc78293c5e83b2660886c7a8d3"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UIElementsModule.pdb",
+      "bytes": 1100484,
+      "sha256": "c9e5a6ea72b3d7b0fc6dd3895a1e3595cd787b181b744d318bb7da308a389bc6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UIModule.dll",
+      "bytes": 50088,
+      "sha256": "d8db67c6d9fc805103456232b5c6fbdb4d159555cf0f6d08401312a8a6505fe4"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UIModule.pdb",
+      "bytes": 13980,
+      "sha256": "be7cbe509eff08f27739f1d93ddc08e1c3d3a173144677681deb3f23c76978a9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UmbraModule.dll",
+      "bytes": 24496,
+      "sha256": "d9a09e7f1f36a2def0c81d2e6debe25d41f0716dea76c2575fc1844fe50f43f8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UmbraModule.pdb",
+      "bytes": 9276,
+      "sha256": "34bd47f22e68306fd89cb66589b0afa7eb1cfb3d4e13c585e5724be3d6ac5d70"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.dll",
+      "bytes": 35752,
+      "sha256": "f08714505f790891047c14267d6eb756fac886222bd21d9938d7a91b021f6f45"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.pdb",
+      "bytes": 13756,
+      "sha256": "6f1a2736361a4cfdea2fb80d1dc49fb8747f44162fbc433923b19505d1887088"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityAnalyticsModule.dll",
+      "bytes": 60840,
+      "sha256": "5cc53f32ce6e67e88d4dd5bdb4ba96c15e545e0e42adbcf76a8c1e36960ddbed"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityAnalyticsModule.pdb",
+      "bytes": 18000,
+      "sha256": "3712a5491a903e5441680701d0798e73d63a87e217ff2b4a200eeff7a5ddf968"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityConnectModule.dll",
+      "bytes": 27568,
+      "sha256": "2a19aee5618167f728814d81a56330fbcb56d4536f7e6f5e081d44f4bcad96ea"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityConnectModule.pdb",
+      "bytes": 9872,
+      "sha256": "624440a64e9a3e252d7053a3ca85e308c0ffbc744ae45f1c5ab2a98c75b3f66f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityConsentModule.dll",
+      "bytes": 16304,
+      "sha256": "1137b51f15ddd6b806c8de81f01d963e79abf17d805596a77d671128a3e06f0d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityConsentModule.pdb",
+      "bytes": 9904,
+      "sha256": "b787a1ace545a0a3b23e69c81281bd602af3662ea51058b60c20ac1ecfc41214"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityCurlModule.dll",
+      "bytes": 26032,
+      "sha256": "3a8ce3d0b1a41ef999b5fb727c82205633df190136ed52befa366c9b3212c094"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityCurlModule.pdb",
+      "bytes": 9668,
+      "sha256": "c22ae50550eba40aaf589484b325713aceeff0977aa2aa66bbf0f810722ef6cd"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.dll",
+      "bytes": 28584,
+      "sha256": "9ea50d7095aaff9e8a5be3665642e18e4d85200e7ae8ded081aaefe0f6d3acc6"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.pdb",
+      "bytes": 10848,
+      "sha256": "291fca5bbf4375c6c9d719b8a7e9b322fab2e7b33819737bd2327f73c4550278"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll",
+      "bytes": 28584,
+      "sha256": "4bc8333f4a37a7278c697e168589286eabbbb4ee89190ec11f90ebf51a8772b7"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestAudioModule.pdb",
+      "bytes": 10648,
+      "sha256": "5a6bb985bb13768ef76e7d6533da86bdd65b4e896e8f51c622beef6bcd87dbab"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestModule.dll",
+      "bytes": 70064,
+      "sha256": "3b7c90dc673b26a2aa0f169e0236000d0d8c9ce87263f1937be025e185a5a8f9"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestModule.pdb",
+      "bytes": 28484,
+      "sha256": "23bb850fda41ec36127a07ee1a68cc06eef52ea0e58d4080066cf0c7b722ec62"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll",
+      "bytes": 27568,
+      "sha256": "2486d6c3a289311a7e637828ddaa02cff2d1d7745373fa2660e4577b39b0d552"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestTextureModule.pdb",
+      "bytes": 10816,
+      "sha256": "e97048478ecc9e4de7860ec87685b28d154d6ea093dc0e1e7f15d0f50a86abaf"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestWWWModule.dll",
+      "bytes": 36776,
+      "sha256": "bd14adea58a9d96857ce1a4b5b5dfc58352cda26004ef6601e01e5ab25c99fa3"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.UnityWebRequestWWWModule.pdb",
+      "bytes": 13716,
+      "sha256": "7ad240c5606932dd6fe080af10d699adebb1f4bdc8d9093abc0b6d878ac73a26"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VectorGraphicsModule.dll",
+      "bytes": 254888,
+      "sha256": "37274bedc8811bcb51f7e36b802ce8d34061172fcf5b31dfc76aca61f4347e26"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VectorGraphicsModule.pdb",
+      "bytes": 144672,
+      "sha256": "4c064693653d5edaca2b9b7ff5b56c1203143a00f6255fe2556b4b1447fcaf86"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VehiclesModule.dll",
+      "bytes": 31656,
+      "sha256": "6b74f465072a43bfa7f11a935d8b01e4b80f35da036f3104897f725909f8cc90"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VehiclesModule.pdb",
+      "bytes": 10516,
+      "sha256": "1b6255dafbd4fae86c37e7159b5dac8a810d7da4e417f97572a92454e2d10080"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VFXModule.dll",
+      "bytes": 78256,
+      "sha256": "2150fe80f1fad4bd4b66e0c41fb34f404c80a8c87e42eaf4801c118215cba390"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VFXModule.pdb",
+      "bytes": 18784,
+      "sha256": "d178faaf2226335bd53fddbd480f38872b186668ad13e8fde348e142c29c0b48"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VideoModule.dll",
+      "bytes": 49072,
+      "sha256": "5f4e7f2cadce7ea5ded26692492c73e7da516cc601c49109513a77d404f68a6f"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VideoModule.pdb",
+      "bytes": 14164,
+      "sha256": "20fd2dba729df6e5c5158153348e06f6d82538011cb5e77f4e4cbf7f61cb2359"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VirtualTexturingModule.dll",
+      "bytes": 42920,
+      "sha256": "415f5f6c0274ab7be1bc27748c99ae3df0a78bb31275db3ba2dd8f1c359443cd"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VirtualTexturingModule.pdb",
+      "bytes": 13524,
+      "sha256": "e46aa84fadb7b17bd8a7fa4f7b25a82b5cb09d45870a9655f488ecb97c4fa0fe"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VRModule.dll",
+      "bytes": 31656,
+      "sha256": "3cb0728788130b00bb7db870bf3db47dd1cac9e9b8fcc3d1a200f43ae1cadcfb"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.VRModule.pdb",
+      "bytes": 10404,
+      "sha256": "cbad6fd6e419bb082a0ee096fef71d12c1ef21b0f8f6d9c4b4ff203744b0c332"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.WindModule.dll",
+      "bytes": 26544,
+      "sha256": "7ea4f812c7f788429fa6a27f0680f12a615009c741ace12f261d21c55e39bb08"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.WindModule.pdb",
+      "bytes": 9412,
+      "sha256": "90848aede9bf0d28a254f610ca0464e4af7fe2bb8f7813dde063343309ba6ecc"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.XRModule.dll",
+      "bytes": 88488,
+      "sha256": "6657ffbc31ecfb708b30ec37c924dfe1750784af3742861f1adac75789ff611a"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/UnityEngine.XRModule.pdb",
+      "bytes": 24288,
+      "sha256": "ccd0baeaafab47a9970640182bca37db40d7f4252626ae111a6e994b6f9de9e8"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/WarRoom3D.Runtime.dll",
+      "bytes": 217600,
+      "sha256": "29faf2a8d1250709cc1f8782f203a6f829b8a936e2972fe48650f8edafc5b44d"
+    },
+    {
+      "path": "WarRoom3D_Data/Managed/WarRoom3D.Runtime.pdb",
+      "bytes": 77028,
+      "sha256": "e3aa97dc78d1906dfd1667519c0a6d3fdb4adca5bd81cc88dca912666116c435"
+    },
+    {
+      "path": "WarRoom3D_Data/Plugins/x86_64/lib_burst_generated.dll",
+      "bytes": 628224,
+      "sha256": "e85b45bcf1e8e8e12ecd97dbb8b34a1bff3efa07338b71aee6519fe7ff86e1bb"
+    },
+    {
+      "path": "WarRoom3D_Data/Plugins/x86_64/lib_burst_generated.pdb",
+      "bytes": 4239360,
+      "sha256": "076bc78984d906b1086431f87ee826f2fc8df182e18a516464070c050d016f6b"
+    },
+    {
+      "path": "WarRoom3D_Data/Plugins/x86_64/libonigwrap.dll",
+      "bytes": 551336,
+      "sha256": "c22db1e7be04c50eb47e67362bf705830bb95df30c02c22dd7add835ee777583"
+    },
+    {
+      "path": "WarRoom3D_Data/resources.assets",
+      "bytes": 536616,
+      "sha256": "b32a8f5ad5533cb254eb5eab3c12696c8f81e288ad8663159def4fbcdbe523bb"
+    },
+    {
+      "path": "WarRoom3D_Data/resources.assets.resS",
+      "bytes": 355232,
+      "sha256": "85f67786ec21256029ab25e418cb6a2b4816972073a04c490aff06b2d32cd7f6"
+    },
+    {
+      "path": "WarRoom3D_Data/Resources/unity default resources",
+      "bytes": 5883716,
+      "sha256": "32b58bdb9cf090212b46a8ca7436dcdae89e4ef43e9d55a835233c21d1347734"
+    },
+    {
+      "path": "WarRoom3D_Data/Resources/unity_builtin_extra",
+      "bytes": 398152,
+      "sha256": "8eb298d98f3763f3c38b0291af28e4fd2d0587682f11e3685c0bba25334446bb"
+    },
+    {
+      "path": "WarRoom3D_Data/RuntimeInitializeOnLoads.json",
+      "bytes": 6049,
+      "sha256": "7f789ead52fed9d40336fa0a281e52e7a29ea6490673744dc6b13a53bcb483a6"
+    },
+    {
+      "path": "WarRoom3D_Data/ScriptingAssemblies.json",
+      "bytes": 4537,
+      "sha256": "8d76bf1ae7678e9b2d5b6d8a2736bb10c879b1ae6ad8898f55ee4ef30f7388b6"
+    },
+    {
+      "path": "WarRoom3D_Data/sharedassets0.assets",
+      "bytes": 1505600,
+      "sha256": "b9272055bbcac7e8739a4570d00db6c29d0c878411a9e8660f35a7966523291c"
+    },
+    {
+      "path": "WarRoom3D_Data/sharedassets0.assets.resS",
+      "bytes": 2456976,
+      "sha256": "4ff0d0fb51aec51bbb8a5dcd129ce920244353508babea3129f0d157109497c1"
+    },
+    {
+      "path": "WarRoom3D_Data/sharedassets1.assets",
+      "bytes": 29872,
+      "sha256": "f0cdb73d6ceaaa36481cd2205220bb3bac4f5e7e69dd000a9154792087440781"
+    },
+    {
+      "path": "WarRoom3D.exe",
+      "bytes": 667136,
+      "sha256": "93043e47abfce89ae9d048dbf34108e101edb367150e6203e0bcee27cd5a623d"
+    },
+    {
+      "path": "WinPixEventRuntime.dll",
+      "bytes": 58368,
+      "sha256": "81adcfd8253c3489be720da7e30f16004dc9a1f02a8b418c6c3aef4993032e6d"
+    }
+  ]
+}

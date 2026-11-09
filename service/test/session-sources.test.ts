@@ -21,6 +21,60 @@ test('captura descarta conteúdo e caminhos privados', () => {
   assert.deepEqual(codex,{method:'item/completed',params:{threadId:'t',item:{type:'commandExecution',id:'i',status:'completed'}}});
 });
 
+test('expansão de skill guarda só metadados e exige cadastro explícito', () => {
+  const raw={hook_event_name:'UserPromptExpansion',session_id:'session-a',cwd:'C:\\privado',
+    expansion_type:'slash_command',command_name:'wr3d-35:synthetic',command_source:'plugin',
+    command_args:'segredo-sintetico',prompt:'/wr3d-35:synthetic segredo-sintetico',transcript_path:'C:\\privado\\history.jsonl'};
+  const captured=sanitizeSourceRecord('claude',raw,true)!;
+  assert.equal(captured.command_name,'wr3d-35:synthetic');
+  assert.equal(captured.command_source,'plugin');
+  assert.equal(JSON.stringify(captured).includes('segredo-sintetico'),false);
+  assert.equal(JSON.stringify(captured).includes('history.jsonl'),false);
+  const suspicious=sanitizeSourceRecord('claude',{...raw,command_name:'C:\\privado',command_source:'C:\\privado'});
+  assert.equal(suspicious?.command_name,undefined);
+  assert.equal(suspicious?.command_source,undefined);
+  const source={sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',
+    filePath:'C:\\lab\\events.jsonl',skillCommands:['wr3d-35:synthetic']};
+  const event=adaptSessionRecord(source,captured,'file:100','2026-11-08T11:00:00.000Z');
+  assert.equal(event.length,1);
+  assert.equal(event[0].type,'skill.observed');
+  assert.equal(event[0].payload.name,'wr3d-35:synthetic');
+  assert.deepEqual(adaptSessionRecord({...source,skillCommands:[]},captured,'file:100','2026-11-08T11:00:00.000Z'),[]);
+  assert.deepEqual(adaptSessionRecord(source,{...captured,command_name:'plugin:custom-command'},'file:100','2026-11-08T11:00:00.000Z'),[]);
+  assert.deepEqual(adaptSessionRecord(source,{...captured,expansion_type:'mcp_prompt'},'file:100','2026-11-08T11:00:00.000Z'),[]);
+});
+
+test('configuração restringe comandos de skill à fonte Claude', () => {
+  const base={schemaVersion:'1.0',projects:[{projectId:'p',name:'Projeto',canonicalPath:'C:\\lab'}],sources:[
+    {sourceId:'lab',sourceVersion:'2.1.319',provider:'claude',projectId:'p',accountRef:'lab',
+      filePath:'C:\\lab\\events.jsonl',skillCommands:['wr3d-35:synthetic']}]};
+  assert.deepEqual(parseSessionSources(base).sources[0].skillCommands,['wr3d-35:synthetic']);
+  assert.throws(()=>parseSessionSources({...base,sources:[{...base.sources[0],provider:'codex'}]}));
+  assert.throws(()=>parseSessionSources({...base,sources:[{...base.sources[0],skillCommands:['wr3d-35:synthetic','wr3d-35:synthetic']}]}));
+  assert.throws(()=>parseSessionSources({...base,sources:[{...base.sources[0],skillCommands:['/segredo']}] }));
+});
+
+test('expansão de skill cadastrada atravessa spool e aparece na atividade sem conteúdo', t => {
+  const directory=mkdtempSync(path.join(tmpdir(),'wr3d-slash-skill-'));
+  const store=new EventStore(path.join(directory,'events.db'));
+  t.after(()=>{store.close();rmSync(directory,{recursive:true,force:true});});
+  store.registerProject({projectId:'p',name:'Projeto',canonicalPath:'C:\\lab'});
+  const filePath=path.join(directory,'claude.jsonl');
+  const source={sourceId:'lab',sourceVersion:'2.1.319',provider:'claude' as const,projectId:'p',accountRef:'lab',
+    filePath,skillCommands:['wr3d-35:synthetic']};
+  const collector=new SessionFileCollector(store,[source]);
+  const line=(value:unknown)=>`${JSON.stringify(sanitizeSourceRecord('claude',value))}\n`;
+  writeFileSync(filePath,line({hook_event_name:'SessionStart',session_id:'s',cwd:'C:\\lab'})+
+    line({hook_event_name:'UserPromptExpansion',session_id:'s',cwd:'C:\\lab',expansion_type:'slash_command',
+      command_name:'wr3d-35:synthetic',command_source:'plugin',command_args:'segredo',prompt:'segredo'}));
+  collector.poll();
+  const snapshot=store.snapshot();
+  assert.deepEqual((snapshot.invocations as {kind:string;name:string;status:string}[])
+    .map(item=>[item.kind,item.name,item.status]),
+    [['skill','wr3d-35:synthetic','observada']]);
+  assert.equal(JSON.stringify(snapshot).includes('segredo'),false);
+});
+
 test('comando de hook grava somente campos permitidos', t => {
   const directory = mkdtempSync(path.join(tmpdir(),'wr3d-capture-'));
   t.after(() => rmSync(directory,{recursive:true,force:true}));

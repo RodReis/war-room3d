@@ -7,6 +7,7 @@ import { normalizeProjectPath } from '../domain/identity.ts';
 type RecordValue = Record<string,unknown>;
 const object = (value: unknown): RecordValue | null => value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : null;
 const string = (value: unknown): string | null => typeof value === 'string' && value.length > 0 && value.length <= 160 ? value : null;
+const commandName = (value: unknown): string | null => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9._:-]{0,79}$/.test(value) ? value : null;
 
 const contentText = (value:unknown):string|null => typeof value === 'string' && value.trim() ? value.slice(0,8000) : null;
 export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, includeConversationContent=false): RecordValue | null {
@@ -15,7 +16,7 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, i
   if (provider === 'claude') {
     const hook = string(input.hook_event_name);
     const session = string(input.session_id);
-    if (!hook || !session || typeof input.cwd !== 'string' || !['SessionStart','SessionEnd','UserPromptSubmit','Stop','SubagentStart','SubagentStop','PreToolUse','PostToolUse','PostToolUseFailure','TaskCreated','TaskCompleted','PermissionRequest'].includes(hook)) return null;
+    if (!hook || !session || typeof input.cwd !== 'string' || !['SessionStart','SessionEnd','UserPromptSubmit','UserPromptExpansion','Stop','SubagentStart','SubagentStop','PreToolUse','PostToolUse','PostToolUseFailure','TaskCreated','TaskCompleted','PermissionRequest'].includes(hook)) return null;
     let cwdHash: string;
     try { cwdHash = createHash('sha256').update(normalizeProjectPath(input.cwd)).digest('hex'); }
     catch { return null; }
@@ -27,6 +28,9 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, i
       ...(string(input.tool_use_id) ? {tool_use_id:string(input.tool_use_id)} : {}),
       ...(string(input.tool_name) ? {tool_name:string(input.tool_name)} : {}),
       ...(string(input.task_id) ? {task_id:string(input.task_id)} : {}),
+      ...(hook === 'UserPromptExpansion' && ['slash_command','mcp_prompt'].includes(String(input.expansion_type)) ? {expansion_type:input.expansion_type} : {}),
+      ...(hook === 'UserPromptExpansion' && commandName(input.command_name) ? {command_name:commandName(input.command_name)} : {}),
+      ...(hook === 'UserPromptExpansion' && ['plugin','project','user','builtin'].includes(String(input.command_source)) ? {command_source:input.command_source} : {}),
       ...(includeConversationContent && hook === 'UserPromptSubmit' && contentText(input.prompt) ? {prompt:contentText(input.prompt)} : {}),
       ...(includeConversationContent && hook === 'Stop' && contentText(input.last_assistant_message) ? {last_assistant_message:contentText(input.last_assistant_message)} : {}),
       ...(includeConversationContent && ((hook === 'UserPromptSubmit' && typeof input.prompt === 'string' && input.prompt.length > 8000) ||

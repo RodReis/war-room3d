@@ -68,6 +68,7 @@ namespace WarRoom3D
             public int chatMessageCount;
             public string chatSessionKey;
             public bool chatExpectedMarkerVisible;
+            public bool activityExpectedMarkerVisible;
             public int logResultCount;
             public bool logRequestIdVisible;
             public bool logRedacted;
@@ -240,6 +241,12 @@ namespace WarRoom3D
                     Time.realtimeSinceStartup < until) yield return null;
             }
             yield return new WaitForEndOfFrame();
+            if (captureView == "agent")
+            {
+                var evidenceScroll = GetComponent<UIDocument>()?.rootVisualElement.Q<ScrollView>("evidence-scroll");
+                if (evidenceScroll != null) evidenceScroll.scrollOffset = new Vector2(0, 100000);
+                yield return new WaitForEndOfFrame();
+            }
             if (captureView == "project-bottom")
             {
                 var panel = GetComponent<UIDocument>()?.rootVisualElement.Q<VisualElement>("project-panel");
@@ -371,6 +378,12 @@ namespace WarRoom3D
                     if (item is Label label && marker.Length > 0 && label.ClassListContains("chat-assistant") &&
                         label.text.Contains(marker)) report.chatExpectedMarkerVisible = true;
             }
+            if (captureView == "agent")
+            {
+                var marker = Environment.GetEnvironmentVariable("WR3D_VALIDATION_ACTIVITY_MARKER") ?? "";
+                var evidence = GetComponent<UIDocument>()?.rootVisualElement.Q<Label>("evidence-body")?.text ?? "";
+                report.activityExpectedMarkerVisible = marker.Length > 0 && evidence.Contains(marker);
+            }
             if (captureView == "logs")
             {
                 var root = GetComponent<UIDocument>()?.rootVisualElement;
@@ -389,6 +402,8 @@ namespace WarRoom3D
             }
             if (captureView == "chat" && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WR3D_VALIDATION_CHAT_MARKER")) &&
                 !report.chatExpectedMarkerVisible) { Application.Quit(16); yield break; }
+            if (captureView == "agent" && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WR3D_VALIDATION_ACTIVITY_MARKER")) &&
+                !report.activityExpectedMarkerVisible) { Application.Quit(18); yield break; }
             if (captureView == "logs" && (!report.logRequestIdVisible || !report.logRedacted))
             { Application.Quit(17); yield break; }
             Application.Quit(report.connected ? 0 : 6);

@@ -2,7 +2,7 @@
 
 ## Objeto da revisão
 
-Uma sala de referência no build identificado em [resultado.md](resultado.md) e na [continuação G3](ensaio-g3-continuacao.md). As provas das #29–#34 foram feitas em builds e momentos distintos; o [manifesto G3](player-build-manifest-g3.json) identifica o candidato mais recente, com escala 125/150% ainda sem prova nesse hash. Dados sintéticos permanecem identificados na tela. Nenhuma sala adicional será replicada por este card.
+Uma sala de referência no build identificado em [resultado.md](resultado.md) e na [continuação G3](ensaio-g3-continuacao.md). As provas das #29–#34 foram feitas em builds e momentos distintos. O candidato mais recente é `unity/Builds/WarRoom3D-M5-Final/WarRoom3D.exe`, árvore SHA-256 `e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087` ([manifesto](player-build-manifest-final.json)); [chat Claude](capturas/issue-35-18-claude-final-chat.png), [skill Claude](capturas/issue-35-19-claude-final-skill.png), [chat Codex](capturas/issue-35-20-codex-final-chat.png) e [log Docker](capturas/issue-35-21-docker-final-log.png) foram vistos nele. [Desempenho](metricas-player-final.json) e [escala física](escala-player-final.json) têm medição própria nesse hash: RNF-01/02 passaram, 100% passou e 125/150% continuam `not_run`. Dados sintéticos permanecem identificados na tela. Nenhuma sala adicional será replicada por este card.
 
 ## Roteiro G1–G4
 

@@ -4,9 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const g3 = process.argv[2] === '--g3';
-if (process.argv[2] && !g3) throw new Error('Uso: issue-35-collect-metrics.mjs [--g3]');
-const scenarios = g3 ? {
+const variant = process.argv[2] ?? 'base';
+if (!['base','--g3','--final'].includes(variant)) throw new Error('Uso: issue-35-collect-metrics.mjs [--g3|--final]');
+const measured = variant !== 'base';
+const scenarios = variant === '--final' ? {
+  visual: 'issue-35-rebuild-visual',
+  reduced: 'issue-35-rebuild-reduced',
+  sector: 'issue-35-rebuild-sector'
+} : variant === '--g3' ? {
   visual: 'issue-35-g3-visual-final',
   reduced: 'issue-35-g3-reduced-final',
   sector: 'issue-35-g3-sector-final'
@@ -16,7 +21,8 @@ const scenarios = g3 ? {
   sector: 'issue-35-sector-final'
 };
 const build = JSON.parse(readFileSync(path.join(root, 'docs/validation/sala-referencia',
-  g3 ? 'player-build-manifest-g3.json' : 'player-build-manifest.json'), 'utf8'));
+  variant === '--final' ? 'player-build-manifest-final.json' :
+  variant === '--g3' ? 'player-build-manifest-g3.json' : 'player-build-manifest.json'), 'utf8'));
 async function sha256(file) {
   const hash = createHash('sha256');
   for await (const chunk of createReadStream(file)) hash.update(chunk);
@@ -37,13 +43,14 @@ for (const [name, directoryName] of Object.entries(scenarios)) {
   if (internal.referenceProfile !== name || !external.fullDuration ||
       internal.plannedEvents !== 7000 || internal.acceptedEvents !== 7000 ||
       internal.sequenceCoveredEvents !== 7000 || !Object.values(internal.validity).every(Boolean) ||
-      (g3 && (external.intervalMs.p95 > targetMs ||
+      (measured && (external.intervalMs.p95 > targetMs ||
         !Number.isSafeInteger(environment.processWorkingSetPointInTimeBytes))))
     throw new Error(`Cenário inválido: ${name}`);
   const { samplesMs, ...latency } = internal.latency;
-  if (g3 && (!path.isAbsolute(environment.build) ||
-      !environment.build.replaceAll('\\', '/').includes('/WarRoom3D-M5-G3/')))
-    throw new Error(`Build G3 divergente: ${name}`);
+  const expectedBuild = variant === '--final' ? '/WarRoom3D-M5-Final/' : '/WarRoom3D-M5-G3/';
+  if (measured && (!path.isAbsolute(environment.build) ||
+      !environment.build.replaceAll('\\', '/').includes(expectedBuild)))
+    throw new Error(`Build divergente: ${name}`);
   result.scenarios[name] = {
     view: internal.view, resolution: internal.resolution, physicalDpi: environment.appliedDpi ?? 96,
     monitorHz: environment.video?.[0]?.CurrentRefreshRate ?? null,
@@ -54,7 +61,7 @@ for (const [name, directoryName] of Object.entries(scenarios)) {
     presentTargetMs: targetMs, presentP95Ms: external.intervalMs.p95,
     presentWithinTarget: external.intervalMs.p95 <= targetMs,
     internalFrameP95Ms: internal.frame.p95Ms, internalFrameIsNotPresentMetric: true,
-    external, processWorkingSetPointInTimeBytes: g3 ?
+    external, processWorkingSetPointInTimeBytes: measured ?
       environment.processWorkingSetPointInTimeBytes ?? null : name === 'visual' ? 731938816 :
       name === 'reduced' ? 692129792 : 694681600,
     raw: { directory: `Logs/${directoryName}`, csvSha256: await sha256(csvPath),
@@ -62,7 +69,8 @@ for (const [name, directoryName] of Object.entries(scenarios)) {
   };
 }
 const output = path.join(root, 'docs/validation/sala-referencia',
-  g3 ? 'metricas-player-g3.json' : 'metricas-player.json');
+  variant === '--final' ? 'metricas-player-final.json' :
+  variant === '--g3' ? 'metricas-player-g3.json' : 'metricas-player.json');
 writeFileSync(output, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify({ output, buildTreeSha256: result.buildTreeSha256,
   p95Ms: Object.fromEntries(Object.entries(result.scenarios).map(([name, value]) => [name, value.presentP95Ms])) }));

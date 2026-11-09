@@ -11,6 +11,7 @@ export interface SessionSource {
   accountRef: string;
   filePath: string;
   staleAfterMs?: number;
+  skillCommands?: string[];
   conversationContent?: { consentRef: string; retentionDays: number };
 }
 
@@ -101,6 +102,11 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
     if (method === 'SessionEnd') return [base('session.ended','session')];
     if (method === 'UserPromptSubmit') return [base('session.working','session'),base('message.observed','message',{messageId:`m-${id(key,eventRecordId)}`})];
     if (method === 'Stop') return [base('session.waiting','session')];
+    if (method === 'UserPromptExpansion') {
+      const command = safeName(input.command_name);
+      if (input.expansion_type !== 'slash_command' || !command || !source.skillCommands?.includes(command)) return [];
+      return [base('skill.observed','skill',{invocationId:`i-${id(key,'slash-skill',eventRecordId)}`,name:command},currentAgent)];
+    }
     if (method === 'SubagentStart' && subagentId) {
       const parentId = string(input.parent_agent_id);
       return [base('agent.observed','agent',parentId ? {parentAgentKey:agent(parentId)} : {parentStatus:'vinculo_pendente'},currentAgent)];

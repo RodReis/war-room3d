@@ -35,11 +35,14 @@ export function parseSessionSources(input: unknown): {projects:ProjectRecord[];s
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Fonte de sessão inválida');
     const source = value as Record<string,unknown>;
     const content = source.conversationContent;
-    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs','conversationContent'].includes(key)) ||
+    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs','conversationContent','skillCommands'].includes(key)) ||
       !['claude','codex'].includes(String(source.provider)) ||
       !['sourceId','sourceVersion','projectId','accountRef'].every(key => typeof source[key] === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(source[key] as string)) ||
       typeof source.filePath !== 'string' || !path.isAbsolute(source.filePath) ||
       (source.staleAfterMs !== undefined && (!Number.isSafeInteger(source.staleAfterMs) || (source.staleAfterMs as number) < 1000 || (source.staleAfterMs as number) > 86400000)) ||
+      (source.skillCommands !== undefined && (source.provider !== 'claude' || !Array.isArray(source.skillCommands) || source.skillCommands.length === 0 || source.skillCommands.length > 32 ||
+        source.skillCommands.some(command => typeof command !== 'string' || !/^[A-Za-z][A-Za-z0-9._:-]{0,79}$/.test(command)) ||
+        new Set(source.skillCommands).size !== source.skillCommands.length)) ||
       (content !== undefined && (!content || typeof content !== 'object' || Array.isArray(content) ||
         Object.keys(content).some(key => !['consentRef','retentionDays'].includes(key)) ||
         typeof (content as {consentRef?:unknown}).consentRef !== 'string' ||

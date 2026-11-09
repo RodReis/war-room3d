@@ -1,8 +1,11 @@
 # War-Room3D
 
-Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infraestrutura relacionada. Há uma demonstração Unity e fatias técnicas de serviço/infraestrutura/histórico/interação; isso não representa a experiência visual completa. A próxima entrega é uma sala de referência acabada e funcional no Player, antes de replicar. Ver [estado e limites](docs/STATUS.md).
+Quartel-general virtual desktop para acompanhar projetos, agentes de IA e infraestrutura relacionada. Há uma demonstração Unity e fatias técnicas de serviço/infraestrutura/histórico/interação; isso não representa a experiência visual completa. A prioridade é o quartel vivo no Player, com dois projetos reais visíveis de uma vez. Ver [estado e limites](docs/STATUS.md).
 
-- [Próxima entrega — sala completa no Player (#28)](https://github.com/RodReis/war-room3d/issues/28)
+- [Próxima entrega — quartel vivo no Player (#46)](https://github.com/RodReis/war-room3d/issues/46)
+- [Especificação do quartel vivo](docs/specs/2026-11-09-quartel-vivo-design.md)
+- [Plano do quartel vivo](docs/superpowers/plans/2026-11-09-quartel-vivo-player.md)
+- [Entrega anterior — sala de referência (#28)](https://github.com/RodReis/war-room3d/issues/28)
 - [Especificação da sala de referência](docs/specs/2026-11-08-sala-referencia-design.md)
 - [Plano da sala de referência](docs/superpowers/plans/2026-11-08-sala-referencia-player.md)
 - [PRD — requisitos do produto](PRD.md)

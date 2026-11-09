@@ -1,24 +1,24 @@
 # #28/#35 — consolidação da sala de referência
 
-> Atualização de 09/11/2026: o candidato em validação tem árvore `0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58` ([manifesto](player-build-manifest-final.json)), confirmada novamente após os ensaios. O PI confirmou seleção por lista/avatar, vínculo pai/filho, foco Tab, rolagem, Esc, contexto longo M4, bloqueio por capacidade ausente, perda/recuperação de fonte e arrasto direito iniciado dentro do painel sem mover a câmera. A [matriz física](escala-player-final.json) passou nas sete células de 100/125/150% (DPI 96/120/144); DISPLAY2 foi restaurado a 96 DPI. [G3 foi reproduzido](issue-35-replay-proof-current.json) neste hash com os spools autorizados já gravados, sem criar nova sessão/contêiner. RNF-01 passou nos três perfis de 600 s; RNF-02 falhou sem CSV válido após perda de eventos ETW. [Métricas deste build](metricas-player-final.json). G4 e integração permanecem pendentes. As tabelas abaixo sobre `e997da1c…18f087` são histórico do candidato anterior, não prova transferível ao hash atual.
+> Atualização de 09/11/2026: o candidato em validação tem árvore `0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58` ([manifesto](player-build-manifest-final.json)), confirmada novamente após os ensaios. O PI confirmou seleção por lista/avatar, vínculo pai/filho, foco Tab, rolagem, Esc, contexto longo M4, bloqueio por capacidade ausente, perda/recuperação de fonte e arrasto direito iniciado dentro do painel sem mover a câmera. A [matriz física](escala-player-final.json) passou nas sete células de 100/125/150% (DPI 96/120/144); DISPLAY2 foi restaurado a 96 DPI. [G3 foi reproduzido](issue-35-replay-proof-current.json) neste hash com os spools autorizados já gravados, sem criar nova sessão/contêiner. Após reinício autorizado do Windows, RNF-01/02 passaram nos três perfis de 600 s do mesmo Player; [métricas atuais](metricas-player-final.json). G4 aguarda decisão explícita do PI e integração. As medições sobre `e997da1c…18f087` são histórico do candidato anterior, sem transferência ao hash atual.
 
 ## Identidade e estado
 
-Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [primeiro build](player-build-manifest.json) tinha árvore `c54d1fcd…ecab5`; o candidato atual tem 304 arquivos/175.678.228 bytes e árvore `0640cb73…eb1fa58` no [manifesto final](player-build-manifest-final.json). A [medição anterior](metricas-player-candidato-e997.json) pertence ao hash `e997da1c…18f087`; [o arquivo final](metricas-player-final.json) registra a falha no build atual. Commit/PR final e decisão do PI permanecem pendentes; **este documento não é recibo de aceite**. [Roteiro](aceite-player.md).
+Baseline do código: `origin/main` `dc583a643f89428068cf7382b1b96760dda5d2db` (08/11/2026). O [primeiro build](player-build-manifest.json) tinha árvore `c54d1fcd…ecab5`; o candidato atual tem 304 arquivos/175.678.228 bytes e árvore `0640cb73…eb1fa58` no [manifesto final](player-build-manifest-final.json). A [medição anterior](metricas-player-candidato-e997.json) pertence ao hash `e997da1c…18f087`; [a medição atual](metricas-player-final.json) pertence ao hash `0640cb73…eb1fa58`. PR #45 está em rascunho; decisão G4 do PI pendente. **Este documento não é recibo de aceite.** [Roteiro](aceite-player.md).
 
 | Gate | Estado no candidato `0640cb73…eb1fa58` | Evidência | Falta na #35 |
 |---|---|---|---|
 | G1 — arte | `pass` específico da #29, segundo decisão do PI em 08/11/2026 | [Arte](arte.md), [issue #29](https://github.com/RodReis/war-room3d/issues/29) | Reinspecionar no build final com avatares/HUD/logs, sem alterar aceite anterior. |
 | G2 — fluxo controlado | `pass` pontual, sintético, com revisão humana assistida | Automação `Logs/issue-35-v2-g2-auto/`; PI confirmou seleção por lista/avatar, vínculo pai/filho, Tab, roda sobre painel, Esc, contexto longo M4, capacidade ausente e fonte perdida/recuperada. Arrasto direito iniciado no painel permaneceu bloqueado após restauração da câmera; logs distinguem giros iniciados na cena. Demo sem comando passou no retry `Logs/issue-35-v2-demo-retry/`. | Registrar decisão G4 sobre esse conjunto e seus limites. |
 | G3 — operação | `pass` pontual no hash atual, **com dispensa PI para tarefa/skill Codex CLI 0.166.0** | [Recibo do replay atual](issue-35-replay-proof-current.json): skill/chat Claude, chat Codex e log Docker no Player; quatro capturas com saída 0 e sem exceção. | Operação contínua e novas versões continuam fora da prova. |
-| G4 — aceite final | `not_run` | G1 aprovado na #29; manifesto, escala física e replay G3 no hash atual. | Medição RNF válida e decisão explícita do PI sobre este SHA/build e dispensa Codex restrita. |
+| G4 — aceite final | `not_run` (decisão PI pendente) | G1 específico da #29, G2/G3 pontuais, matriz física e [RNF-01/02 de 600 s](metricas-player-final.json) no hash atual. | Decisão explícita do PI sobre este SHA/build, arte, fluxo e dispensa Codex restrita. |
 
 ## Critérios transversais
 
 | Critério | Estado | Base e limite |
 |---|---|---|
-| RNF-01, 10 eventos/s, p95 ≤2 s | `pass` visual/reduzido/setor, p95 271/273/269 ms no hash atual | [Resumo atual](metricas-player-final.json): cada perfil cobriu 7.000/7.000 eventos em 600 s, sem desconexão; rajadas de 1.000 eventos com p95 252/256/244 ms. Brutos locais `Logs/issue-35-v3-rnf-visual/` e `Logs/issue-35-v10-rnf01-{reduced,sector}/`. Hash de árvore conferido novamente após os ensaios. |
-| RNF-02 visual/reduzido, 1080p/600 s | visual `fail`, reduzido/setor `not_run` no hash atual | PresentMon 2.6.0 não gerou CSV após informar 30.302.123 eventos ETW perdidos no visual 600 s. Após corrigir ordem de inicialização e desligar captura de input, smoke de 5 s também não gerou CSV e perdeu 3.065.808 eventos. Não há p95 físico deste hash. A [#16](../m2/issue-16-fps.md) permanece reprovada no seu build anterior (24,663 ms). |
+| RNF-01, 10 eventos/s, p95 ≤2 s | `pass` visual/reduzido/setor, p95 275/278/285 ms no hash atual | [Resumo atual](metricas-player-final.json): cada perfil cobriu 7.000/7.000 eventos em 600 s, sem desconexão; validade interna completa. Brutos locais `Logs/issue-35-v11-rnf-{visual,reduced,sector}/`. Hash de árvore conferido novamente após os ensaios. |
+| RNF-02 visual/reduzido, 1080p/600 s | `pass` visual/reduzido/setor, p95 apresentado 2,5457/2,4871/1,9868 ms | PresentMon 2.6.0 após reinício: três CSVs completos, duração 599,999/599,997/599,998 s, sem aviso de perda ETW. Alvos 16,67/33,33/16,67 ms. Intervalos indisponíveis 39.405/15.614/5.758, separados dos válidos; p95 calcula somente intervalos válidos. [Medição](metricas-player-final.json). A [#16](../m2/issue-16-fps.md) permanece reprovada no seu build anterior (24,663 ms). |
 | RNF-06, 100/125/150% físicos | `pass` nas sete células do hash atual | [Matriz final](escala-player-final.json): DPI 96/120/144 em DISPLAY2; 1920×1080 e 1440×900 nas três escalas, mais 1366×768 em 100%. DISPLAY2 restaurado a 96 DPI. |
 | Negativos de fonte/comando | `pass` pontual no hash atual | Perda/recuperação de fonte com causa e estado explícitos, sem inventar atividade; M4 sintético bloqueou replay/troca de projeto e projeto sem capacidade; demo não expôs comando. |
 
@@ -34,9 +34,19 @@ O [replay G3 no hash atual](issue-35-replay-proof-current.json) copiou apenas o 
 
 Primeira medição elevada do candidato atual: smoke de 5 s passou 1.050/1.050 em `Logs/issue-35-v2-smoke-elevated/`; o perfil visual de 600 s recebeu 6.000 eventos regulares e gravou CSV, mas o Player encerrou com código 0 sem `trace.jsonl` nem relatório final. `m2-performance-proof.mjs` falhou ao ler o arquivo ausente (`ENOENT`); o runner interrompeu reduzido/setor. O diagnóstico independente de 120 s no mesmo hash passou 2.200/2.200, duração amostrada 138 s, conexão e validade completas em `Logs/issue-35-v2-diagnostic-120/`. **Nenhuma dessas execuções aprova RNF-01/02 de 600 s**. A causa do encerramento incompleto de 600 s segue indeterminada; não reaproveitar o CSV como prova isolada.
 
+O ensaio seguinte perdeu 30.302.123 eventos ETW no visual de 600 s; outro smoke perdeu 3.065.808 eventos em 5 s, ambos sem CSV válido. O PI informou que não fechou as janelas nem viu alerta no encerramento simultâneo de um ensaio intermediário; a causa desse encerramento continua indeterminada. Com autorização do PI, o Windows reiniciou às 16:00:54 (hora de São Paulo). O [lançador com UAC](../../TESTING.md) executou `Logs/issue-35-v11-rnf`: smoke 5 s `pass` (1.050/1.050, apresentação p95 1,9671 ms), seguido de visual/reduzido/setor 600 s cada, `state=complete`. Os três `presentmon.err.txt` estão vazios, e os CSVs e resumos brutos ficaram apenas em `Logs/`. A árvore do Player permaneceu `0640cb73…eb1fa58` após o ensaio.
+
+| Perfil atual | Propagação p95 | Apresentação p95 / alvo | Apresentações / intervalos válidos / indisponíveis | Memória pontual |
+|---|---:|---:|---:|---:|
+| Visual | 275 ms | 2,5457 / 16,67 ms | 469.331 / 429.926 / 39.405 | 726.863.872 bytes |
+| Reduzido | 278 ms | 2,4871 / 33,33 ms | 476.031 / 460.417 / 15.614 | 352.657.408 bytes |
+| Setor | 285 ms | 1,9868 / 16,67 ms | 513.377 / 507.619 / 5.758 | 690.061.312 bytes |
+
+`Hardware: Independent Flip` e tearing predominam; esses intervalos medem mudanças de apresentação observáveis, sem equivaler à varredura física de 60 Hz. CPU/GPU estão na [medição sanitizada](metricas-player-final.json) como média por apresentação; memória é um ponto próximo ao fim, sem série de vazamento. A viewport visual contém uma sala selecionada, não seis interiores simultâneos. Nenhum dado real de cliente ou produção entrou na prova.
+
 ## Histórico de medições do candidato anterior
 
-As medições até a seção "Candidato final identificado" abaixo foram feitas em builds anteriores. Permanecem como trilha de auditoria e não validam o hash atual.
+As medições até a seção "Candidato anterior identificado" abaixo foram feitas em builds anteriores. Permanecem como trilha de auditoria e não validam o hash atual.
 
 ### Medição visual no Player anterior
 

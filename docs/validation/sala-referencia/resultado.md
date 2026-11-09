@@ -112,7 +112,7 @@ O PI escolheu completar os gates e autorizou preparar um [novo ensaio G2/G3](ens
 
 | Campo | Valor |
 |---|---|
-| Código da PR | branch `feat/35-player-acceptance`; SHA remoto e CI após publicação desta continuação |
+| Código da PR | [PR #45](https://github.com/RodReis/war-room3d/pull/45) em rascunho na branch `feat/35-player-acceptance`; HEAD e checks atuais no PR |
 | Unity / perfil / cenas | 6000.3.27f1, Development, M2 Live e Quartel M0; pacotes do projeto no baseline `dc583a6` |
 | Build local | `unity/Builds/WarRoom3D-M5-Final/WarRoom3D.exe`; 304 arquivos/175.674.363 bytes; árvore SHA-256 `e997da1cacd98abfe21b5ff54f1c60e65431fce6a4726599a9e625f7c218f087` ([manifesto](player-build-manifest-final.json)) |
 | Executável / Runtime SHA-256 | `93043e47abfce89ae9d048dbf34108e101edb367150e6203e0bcee27cd5a623d` / `29faf2a8d1250709cc1f8782f203a6f829b8a936e2972fe48650f8edafc5b44d` |

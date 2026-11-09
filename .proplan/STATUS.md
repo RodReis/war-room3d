@@ -1,6 +1,6 @@
 ---
 proplan: v1
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 <!-- gerado pelo ProPlan a partir das Issues — não edite à mão -->
 # Status
@@ -11,10 +11,7 @@ _(vazio)_
 
 ## A Fazer
 
-### Sem épico
-
-- Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35)
-- Sala de referência — experiência completa no Unity Player antes da replicação (#28)
+_(vazio)_
 
 ## Em Andamento
 
@@ -28,6 +25,8 @@ _(vazio)_
 
 ### Sem épico
 
+- Sala de referência — experiência completa no Unity Player antes da replicação (#28, finalizado em: 2026-11-09)
+- Sala de referência — gates visuais, fluxo completo e aceite no Player Windows (#35, finalizado em: 2026-11-09)
 - Sala de referência — logs e evidências correlacionados ao agente e ao projeto (#34, finalizado em: 2026-11-08)
 - Sala de referência — chat por sessão, histórico e interação assistida (#33, finalizado em: 2026-11-08)
 - Sala de referência — avatares, estações e atividade vinculados à observação (#32, finalizado em: 2026-11-08)

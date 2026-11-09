@@ -5,6 +5,24 @@
             <ui:Label name="breadcrumb" text="Quartel / Setor 01" class="heading" />
             <ui:Label name="demo-seal" text="CONCEITO · DADOS ILUSTRATIVOS" class="seal" />
         </ui:VisualElement>
+        <ui:VisualElement name="overview" class="overview" picking-mode="Ignore">
+            <ui:VisualElement name="overview-heading" class="overview-heading">
+                <ui:Label text="SETOR 01   /   VISÃO DE OPERAÇÕES" class="overview-kicker" />
+                <ui:Label text="Projetos do setor" class="overview-title" />
+                <ui:Label name="overview-service" class="overview-meta" />
+                <ui:Label name="overview-source" class="overview-meta" />
+            </ui:VisualElement>
+            <ui:VisualElement name="overview-actions" class="overview-actions">
+                <ui:Button name="overview-center" text="Data center" class="overview-tool" />
+                <ui:Button name="overview-tools" text="Câmera e ações" class="overview-tool" />
+            </ui:VisualElement>
+            <ui:VisualElement name="overview-dock" class="overview-dock">
+                <ui:Label name="overview-empty" text="Aguardando projetos do serviço local." class="overview-meta" />
+                <ui:ScrollView name="overview-scroll" mode="Horizontal" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Auto">
+                    <ui:VisualElement name="overview-cards" class="overview-cards" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:Label name="effect-banner" text="" class="effect-banner" />
         <ui:Label name="room-label" text="SELECIONE UMA SALA" class="room-label" />
         <ui:Button name="summary-toggle" text="Recolher resumo" class="summary-toggle" />

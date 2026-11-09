@@ -35,8 +35,10 @@ namespace WarRoom3D.Tests
                 var document = Object.FindAnyObjectByType<UIDocument>();
                 Assert.That(client, Is.Not.Null);
                 Assert.That(hud, Is.Not.Null);
-                Assert.That(hud.IsPointerOverHud(new Vector2(Screen.width - 40f, Screen.height * 0.5f)), Is.True,
-                    "Painel lateral live deve bloquear input da câmera");
+                Assert.That(hud.IsPointerOverHud(new Vector2(40f, Screen.height - 35f)), Is.True,
+                    "Cabeçalho deve bloquear input da câmera");
+                Assert.That(hud.IsPointerOverHud(new Vector2(Screen.width - 40f, Screen.height * 0.5f)), Is.False,
+                    "A vista geral deixa livre o espaço do painel recolhido");
                 Assert.That(Object.FindAnyObjectByType<DemoLoader>(), Is.Null);
                 Assert.That(Object.FindAnyObjectByType<InfrastructureDemoLoader>(), Is.Null);
                 Assert.That(client.Snapshot, Is.Null);
@@ -62,7 +64,9 @@ namespace WarRoom3D.Tests
             var hud = Object.FindAnyObjectByType<LiveHudPresenter>();
             var root = Object.FindAnyObjectByType<UIDocument>().rootVisualElement;
             client.AcceptSnapshot(Snapshot);
-            Assert.That(root.Q<Label>("demo-seal").text, Does.Contain("AO VIVO"));
+            Assert.That(root.Q<Label>("demo-seal").text, Is.EqualTo("OBSERVAÇÃO LOCAL"));
+            Assert.That(root.Q<Label>("overview-source").text, Is.EqualTo("Fonte sem confirmação"));
+            Assert.That(root.Q<Button>("overview-card-slot-01").Q<Label>("overview-alert").text, Does.Contain("1 incidente"));
             Assert.That(root.Q<Label>("project-name").text, Is.EqualTo("Projeto sintético"));
             Assert.That(root.Q<Label>("agents").text, Does.Contain("0 agentes"));
             Assert.That(root.Q<Label>("infrastructure-alert").text, Does.Contain("Impacto potencial"));

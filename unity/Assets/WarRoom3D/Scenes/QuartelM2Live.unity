@@ -154,6 +154,7 @@ MonoBehaviour:
   glassMaterial: {fileID: 2100000, guid: 5a5fb31bc79da7445a141c9065748203, type: 2}
   goldMaterial: {fileID: 2100000, guid: 68f695d8fec2c4a4c87d0baf930054f5, type: 2}
   referenceRoomPrefab: {fileID: 5736271940393122747, guid: 0d64365ea766108449ae63c1a9bb43df, type: 3}
+  overviewLayout: 1
 --- !u!4 &437082791
 Transform:
   m_ObjectHideFlags: 0

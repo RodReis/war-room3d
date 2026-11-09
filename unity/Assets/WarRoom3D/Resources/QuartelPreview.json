@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0",
+  "mode": "demo",
+  "revision": 1,
+  "streamSequence": 0,
+  "projects": [
+    {
+      "projectId": "preview-atlas",
+      "name": "Plataforma Atlas"
+    },
+    {
+      "projectId": "preview-orion",
+      "name": "Aplicativo Orion"
+    }
+  ],
+  "roomPlacements": [
+    {
+      "projectId": "preview-atlas",
+      "sectorId": "setor-01",
+      "slotId": "slot-01"
+    },
+    {
+      "projectId": "preview-orion",
+      "sectorId": "setor-01",
+      "slotId": "slot-02"
+    }
+  ],
+  "sessions": [
+    {
+      "projectId": "preview-atlas",
+      "sessionKey": "atlas-1",
+      "provider": "claude",
+      "presence": "trabalhando",
+      "freshness": "atual",
+      "lastSeen": "2026-11-09T20:41:34Z"
+    },
+    {
+      "projectId": "preview-orion",
+      "sessionKey": "orion-1",
+      "provider": "codex",
+      "presence": "aguardando",
+      "freshness": "atual",
+      "lastSeen": "2026-11-09T20:39:12Z"
+    }
+  ],
+  "agents": [
+    {
+      "agentKey": "preview-atlas-agent",
+      "sessionKey": "atlas-1",
+      "presence": "trabalhando"
+    },
+    {
+      "agentKey": "preview-orion-agent",
+      "sessionKey": "orion-1",
+      "presence": "aguardando"
+    }
+  ],
+  "tasks": [
+    {
+      "taskId": "preview-atlas-task",
+      "sessionKey": "atlas-1",
+      "agentKey": "preview-atlas-agent",
+      "title": "Revisar contrato da API",
+      "status": "em_andamento",
+      "provenance": "synthetic"
+    }
+  ],
+  "invocations": [],
+  "sources": [],
+  "feed": [],
+  "resources": [
+    {
+      "resourceId": "preview-orion-api",
+      "environmentId": "demo",
+      "kind": "api",
+      "name": "API de exemplo"
+    }
+  ],
+  "projectResources": [
+    {
+      "projectId": "preview-orion",
+      "resourceId": "preview-orion-api"
+    }
+  ],
+  "resourceStates": [],
+  "incidents": [
+    {
+      "incidentId": "preview-orion-incident",
+      "resourceId": "preview-orion-api",
+      "projectIds": [
+        "preview-orion"
+      ]
+    }
+  ]
+}

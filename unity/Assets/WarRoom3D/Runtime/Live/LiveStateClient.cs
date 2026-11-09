@@ -36,6 +36,15 @@ namespace WarRoom3D
 
         private void Start()
         {
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-wr3d-quartel-demo") >= 0)
+            {
+                configured = false;
+                var fixture = Resources.Load<TextAsset>("QuartelPreview");
+                if (fixture == null) { SetConnection(false, "Demonstração do quartel indisponível"); return; }
+                Snapshot = LiveSnapshot.Parse(fixture.text, "demo");
+                SnapshotChanged?.Invoke(Snapshot);
+                return;
+            }
             if (!configured)
             {
                 try { Configure(Environment.GetEnvironmentVariable("WR3D_SERVICE_URL"), Environment.GetEnvironmentVariable("WR3D_SERVICE_TOKEN")); }

@@ -10,8 +10,12 @@ import type { Observation } from '../src/operations/operations-store.ts';
 const player = process.env.WR3D_35_PLAYER;
 const output = process.env.WR3D_35_PROOF_DIR;
 const captureView = process.env.WR3D_35_CAPTURE_VIEW;
+const interactiveTimeoutMs = Number(process.env.WR3D_35_INTERACTIVE_TIMEOUT_MS ?? 180000);
 if (captureView && !['chat', 'logs', 'interactive'].includes(captureView))
   throw new Error('WR3D_35_CAPTURE_VIEW aceita chat, logs ou interactive');
+if (captureView === 'interactive' && (!Number.isInteger(interactiveTimeoutMs) ||
+  interactiveTimeoutMs < 180000 || interactiveTimeoutMs > 1800000))
+  throw new Error('WR3D_35_INTERACTIVE_TIMEOUT_MS aceita 180000 a 1800000 ms');
 if (!player || !existsSync(player) || !output) throw new Error('Informe WR3D_35_PLAYER e WR3D_35_PROOF_DIR');
 const resolvedOutput = path.resolve(output);
 const captureName = captureView && captureView !== 'interactive' ? `issue-35-${captureView}` : '';
@@ -110,7 +114,7 @@ try {
       if (existsSync(path.join(resolvedOutput, 'stop.signal'))) child?.kill();
     }, 200) : undefined;
     const timeout = setTimeout(() => { child?.kill(); resolve({ error: 'timeout' }); },
-      captureView === 'interactive' ? 180000 : 60000);
+      captureView === 'interactive' ? interactiveTimeoutMs : 60000);
     child.once('exit', code => { clearTimeout(timeout); if (stop) clearInterval(stop);
       resolve({ code: captureView === 'interactive' && existsSync(path.join(resolvedOutput, 'stop.signal')) ? 0 : code ?? -1 }); });
     child.once('error', error => { clearTimeout(timeout); if (stop) clearInterval(stop);

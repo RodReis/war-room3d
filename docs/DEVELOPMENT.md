@@ -4,7 +4,7 @@
 
 Direção autorizada pelo PI em 08/11/2026: [#28](https://github.com/RodReis/war-room3d/issues/28), [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). #29 arte/luz, #30 layout, #31 hooks/observação, #32 avatares/atividade, #33 chat, #34 logs e #35 Player/aceite. Uma sala acabada e funcional deve passar por revisão visual inicial e aceite final no Player; replicação do acabamento fica bloqueada até decisão explícita do PI.
 
-O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #1–#6 e #16 estão fechadas. As PRs #27 e #39 foram integradas; RNF-02 segue reprovado e o laboratório real G3 da #31 permanece pendente. A PR #26 acrescenta a base técnica M5, ainda sem prova visual ou aceite próprio. A sala de referência segue em execução por fatias, sem aceite final do Player.
+O fechamento remoto de M0–M5 não comprova essa experiência. Em 08/11/2026, #1–#6 e #16 estavam fechadas. As PRs #27 e #39 foram integradas; RNF-02 foi reprovado no build da #16. O laboratório G3 da #35 observou Claude/Codex/Docker de forma pontual e a dispensa de tarefa/skill Codex CLI 0.166.0 foi registrada pelo PI. No [build atual da sala](validation/sala-referencia/resultado.md), G2, G3, escala física e RNF-01/02 passaram com limites; a medição física de três perfis foi concluída após reinício autorizado do Windows. O PI aprovou G4 para esse executável em 09/11/2026 e autorizou integrar a PR #45; merge e estado técnico das issues são verificados separadamente no GitHub. A PR #26 acrescentou base técnica M5, sem aceite visual próprio.
 
 ## Registro técnico das etapas anteriores
 

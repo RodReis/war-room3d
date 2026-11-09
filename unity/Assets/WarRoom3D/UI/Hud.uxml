@@ -79,6 +79,7 @@
               <ui:VisualElement name="page-sources">
                 <ui:Label text="FONTES E INFRAESTRUTURA" class="eyebrow section-space" />
                 <ui:Label name="infrastructure-alert" text="Sem dados de infraestrutura" class="activity" />
+                <ui:Label name="source-session-status" text="Selecione um agente para consultar a fonte da sessão." class="activity" />
                 <ui:Label text="○ Estado do hook e cobertura por fonte: indisponíveis nesta fatia." class="hint" />
               </ui:VisualElement>
             </ui:ScrollView>

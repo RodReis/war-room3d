@@ -1,0 +1,258 @@
+{
+  "date": "2026-11-09",
+  "unityVersion": "6000.3.27f1",
+  "nodeVersion": "v24.22.2",
+  "buildTreeSha256": "0640cb73a624f398e2807e4caa66618faefc3e2937f5c73a374df46c5eb1fa58",
+  "source": "synthetic-local",
+  "scenarios": {
+    "visual": {
+      "view": "room",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "physicalDpi": 96,
+      "monitorHz": 60,
+      "baseline": {
+        "projects": 30,
+        "visibleRooms": 6,
+        "agents": 50,
+        "resources": 200,
+        "burstEvents": 1000,
+        "burstDurationMs": 10043.550799999968,
+        "burstMaxScheduleLagMs": 98.34600000001956,
+        "burstCoveredEvents": 1000,
+        "burstLatencyP95Ms": 257
+      },
+      "durationSeconds": 600,
+      "plannedEvents": 7000,
+      "acceptedEvents": 7000,
+      "sequenceCoveredEvents": 7000,
+      "disconnectCount": 0,
+      "latency": {
+        "p50Ms": 134,
+        "p95Ms": 275,
+        "p99Ms": 301,
+        "maxMs": 1097,
+        "over2s": 0,
+        "sampleCount": 6000
+      },
+      "presentTargetMs": 16.67,
+      "presentP95Ms": 2.5457,
+      "presentWithinTarget": true,
+      "internalFrameP95Ms": 1.9901998043060303,
+      "internalFrameIsNotPresentMetric": true,
+      "external": {
+        "source": "PresentMon 2.6.0 ETW",
+        "processId": 9256,
+        "requestedSeconds": 600,
+        "capturedSpanSeconds": 599.999,
+        "firstFrameLocal": "2026-11-09T17:39:38.182 local-clock",
+        "lastFrameLocal": "2026-11-09T17:49:38.181 local-clock",
+        "csvClockOffsetHours": 3,
+        "observedPresents": 469331,
+        "displayedIntervals": 429926,
+        "intervalUnavailable": 39405,
+        "framesWithoutDisplayTimestamp": 829,
+        "presentModes": {
+          "Hardware: Independent Flip": 468456,
+          "Composed: Flip": 866,
+          "Hardware Composed: Independent Flip": 9
+        },
+        "allowsTearing": {
+          "0": 866,
+          "1": 468465
+        },
+        "intervalMs": {
+          "p50": 1.138,
+          "p95": 2.5457,
+          "p99": 7.5651,
+          "max": 1184.8966,
+          "over16_67": 257,
+          "over33_33": 20
+        },
+        "gpuTimeMs": {
+          "mean": 1.2779355917252444,
+          "max": 1164.17
+        },
+        "cpuBusyMs": {
+          "mean": 1.1305654599845314
+        },
+        "fullDuration": true,
+        "sourceFile": "presentmon.csv"
+      },
+      "processWorkingSetPointInTimeBytes": 726863872,
+      "raw": {
+        "directory": "Logs/issue-35-v11-rnf-visual",
+        "csvSha256": "d49cea8034dc2eef930206b03adb341c8c39696f6867703dc4a21e6ac9119125",
+        "internalSummarySha256": "5d7aa1d006cc98677ed1e11dfa8c29b87571d515c049ae04d9b60c98aa50b5f1"
+      }
+    },
+    "reduced": {
+      "view": "room-reduced",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "physicalDpi": 96,
+      "monitorHz": 60,
+      "baseline": {
+        "projects": 30,
+        "visibleRooms": 6,
+        "agents": 50,
+        "resources": 200,
+        "burstEvents": 1000,
+        "burstDurationMs": 9996.537999999942,
+        "burstMaxScheduleLagMs": 118.55249999999069,
+        "burstCoveredEvents": 1000,
+        "burstLatencyP95Ms": 255
+      },
+      "durationSeconds": 600,
+      "plannedEvents": 7000,
+      "acceptedEvents": 7000,
+      "sequenceCoveredEvents": 7000,
+      "disconnectCount": 0,
+      "latency": {
+        "p50Ms": 136,
+        "p95Ms": 278,
+        "p99Ms": 528,
+        "maxMs": 2450,
+        "over2s": 5,
+        "sampleCount": 6000
+      },
+      "presentTargetMs": 33.33,
+      "presentP95Ms": 2.4871,
+      "presentWithinTarget": true,
+      "internalFrameP95Ms": 2.0798044204711914,
+      "internalFrameIsNotPresentMetric": true,
+      "external": {
+        "source": "PresentMon 2.6.0 ETW",
+        "processId": 37588,
+        "requestedSeconds": 600,
+        "capturedSpanSeconds": 599.997,
+        "firstFrameLocal": "2026-11-09T17:51:04.881 local-clock",
+        "lastFrameLocal": "2026-11-09T18:01:04.878 local-clock",
+        "csvClockOffsetHours": 3,
+        "observedPresents": 476031,
+        "displayedIntervals": 460417,
+        "intervalUnavailable": 15614,
+        "framesWithoutDisplayTimestamp": 34,
+        "presentModes": {
+          "Hardware: Independent Flip": 475923,
+          "Composed: Flip": 90,
+          "Hardware Composed: Independent Flip": 18
+        },
+        "allowsTearing": {
+          "0": 91,
+          "1": 475940
+        },
+        "intervalMs": {
+          "p50": 1.1083,
+          "p95": 2.4871,
+          "p99": 4.5179,
+          "max": 2195.4113,
+          "over16_67": 263,
+          "over33_33": 20
+        },
+        "gpuTimeMs": {
+          "mean": 1.2596952129168426,
+          "max": 2195.4113
+        },
+        "cpuBusyMs": {
+          "mean": 1.0980167131972571
+        },
+        "fullDuration": true,
+        "sourceFile": "presentmon.csv"
+      },
+      "processWorkingSetPointInTimeBytes": 352657408,
+      "raw": {
+        "directory": "Logs/issue-35-v11-rnf-reduced",
+        "csvSha256": "7a19ae894c9235f97744e0a83550c5f55ed41596c4e1f132fe4409fc1db08f8b",
+        "internalSummarySha256": "9a834221846b1642a5a8b9a99b1716a3683031ad1a0a55d8804bb958ea49237a"
+      }
+    },
+    "sector": {
+      "view": "center",
+      "resolution": [
+        1920,
+        1080
+      ],
+      "physicalDpi": 96,
+      "monitorHz": 60,
+      "baseline": {
+        "projects": 30,
+        "visibleRooms": 6,
+        "agents": 50,
+        "resources": 200,
+        "burstEvents": 1000,
+        "burstDurationMs": 9995.466299999971,
+        "burstMaxScheduleLagMs": 336.53779999993276,
+        "burstCoveredEvents": 1000,
+        "burstLatencyP95Ms": 486
+      },
+      "durationSeconds": 600,
+      "plannedEvents": 7000,
+      "acceptedEvents": 7000,
+      "sequenceCoveredEvents": 7000,
+      "disconnectCount": 0,
+      "latency": {
+        "p50Ms": 143,
+        "p95Ms": 285,
+        "p99Ms": 782,
+        "maxMs": 1373,
+        "over2s": 0,
+        "sampleCount": 6000
+      },
+      "presentTargetMs": 16.67,
+      "presentP95Ms": 1.9868,
+      "presentWithinTarget": true,
+      "internalFrameP95Ms": 1.868296504020691,
+      "internalFrameIsNotPresentMetric": true,
+      "external": {
+        "source": "PresentMon 2.6.0 ETW",
+        "processId": 39872,
+        "requestedSeconds": 600,
+        "capturedSpanSeconds": 599.998,
+        "firstFrameLocal": "2026-11-09T18:02:55.772 local-clock",
+        "lastFrameLocal": "2026-11-09T18:12:55.770 local-clock",
+        "csvClockOffsetHours": 3,
+        "observedPresents": 513377,
+        "displayedIntervals": 507619,
+        "intervalUnavailable": 5758,
+        "framesWithoutDisplayTimestamp": 4,
+        "presentModes": {
+          "Hardware: Independent Flip": 513365,
+          "Composed: Flip": 10,
+          "Hardware Composed: Independent Flip": 2
+        },
+        "allowsTearing": {
+          "0": 10,
+          "1": 513367
+        },
+        "intervalMs": {
+          "p50": 1.0661,
+          "p95": 1.9868,
+          "p99": 3.3369,
+          "max": 65.3409,
+          "over16_67": 12,
+          "over33_33": 4
+        },
+        "gpuTimeMs": {
+          "mean": 1.1686447848267656,
+          "max": 50.6938
+        },
+        "cpuBusyMs": {
+          "mean": 1.0186429530345293
+        },
+        "fullDuration": true,
+        "sourceFile": "presentmon.csv"
+      },
+      "processWorkingSetPointInTimeBytes": 690061312,
+      "raw": {
+        "directory": "Logs/issue-35-v11-rnf-sector",
+        "csvSha256": "312224457bfafc946115b7cbbbf7fdfc27ecd3d11ff4c09a18642a107123b32a",
+        "internalSummarySha256": "a9dea888a03df8f93e959530cb2ef6c45b85b4807962ab6282afcaded629d195"
+      }
+    }
+  }
+}

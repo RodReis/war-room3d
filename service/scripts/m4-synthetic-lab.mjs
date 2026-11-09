@@ -24,6 +24,12 @@ fixture.observedAt=fixture.receivedAt=new Date(now).toISOString();fixture.source
 const projectName=interactive?`LAB M4 SINTÉTICO · ${roundId}`:'LABORATÓRIO SINTÉTICO M4';
 store.registerProject({projectId:'m4-lab',name:projectName,canonicalPath:directory});
 store.apply(fixture,{sourceId:fixture.sourceId,fileKey:'synthetic.jsonl',generation:1,offset:1});
+if(interactive){
+  store.registerProject({projectId:'m4-no-capability',name:'LAB M4 · SEM CAPACIDADE',canonicalPath:path.join(directory,'no-capability')});
+  const unavailable={...fixture,eventId:randomUUID(),sourceEventId:`synthetic-no-capability-${roundId}`,
+    projectId:'m4-no-capability',sessionKey:`session-m4-no-capability-${roundId}`};
+  store.apply(unavailable,{sourceId:fixture.sourceId,fileKey:'synthetic.jsonl',generation:1,offset:2});
+}
 const target={projectId:'m4-lab',sessionKey:fixture.sessionKey,provider:'codex',providerVersion:'synthetic-1',active:true};
 const registry=new CapabilityRegistry();
 for(const action of ['send_message','answer_question','decide_permission'])registry.prove({
@@ -55,7 +61,7 @@ if(interactive)server.on('request',(request,response)=>{
 });
 process.stdout.write('Laboratório M4 ativo em loopback com tokens efêmeros não exibidos. Dados e adaptador sintéticos.\n');
 if(interactive)process.stdout.write(JSON.stringify({synthetic:true,interactive:true,artifactDirectory:directory,durationMs,projectName,sessionKey:fixture.sessionKey})+'\n');
-let heartbeatOffset=1;
+let heartbeatOffset=interactive?2:1;
 const heartbeat=interactive?setInterval(()=>{
   fixture.eventId=randomUUID();fixture.sourceEventId=`synthetic-heartbeat-${++heartbeatOffset}`;
   fixture.observedAt=fixture.receivedAt=new Date().toISOString();

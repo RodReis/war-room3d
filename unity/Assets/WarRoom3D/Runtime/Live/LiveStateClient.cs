@@ -21,6 +21,7 @@ namespace WarRoom3D
         public string ConnectionMessage { get; private set; } = "Aguardando configuração live";
         public event Action<LiveSnapshot> SnapshotChanged;
         public event Action<bool, string> ConnectionChanged;
+        private bool applicationQuitting;
 
         public void Configure(string serviceUrl, string bearerToken)
         {
@@ -216,11 +217,16 @@ namespace WarRoom3D
             return request;
         }
 
+        private void OnApplicationQuit()
+        {
+            applicationQuitting = true;
+        }
+
         private void OnDisable()
         {
             activeRequest?.Abort();
             StopAllCoroutines();
-            SetConnection(false, "Conexão encerrada");
+            if (!applicationQuitting) SetConnection(false, "Conexão encerrada");
         }
 
         private void SetConnection(bool value, string message)

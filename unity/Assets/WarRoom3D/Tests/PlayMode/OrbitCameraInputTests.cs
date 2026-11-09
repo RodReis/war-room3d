@@ -82,6 +82,21 @@ namespace WarRoom3D.Tests
             InputSystem.Update();
             camera.SendMessage("Update");
             Assert.That(camera.Yaw, Is.EqualTo(45f), "Arraste iniciado na cena deve parar ao entrar na UI");
+
+            Release(mouse.rightButton);
+            InputSystem.Update();
+            camera.SendMessage("Update");
+            Move(mouse.position, point, Vector2.zero);
+            InputSystem.Update();
+            var scenePoint = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            Move(mouse.position, scenePoint, scenePoint - point);
+            Press(mouse.rightButton);
+            InputSystem.Update();
+            camera.SendMessage("Update");
+            Move(mouse.position, scenePoint + new Vector2(-60f, 0f), new Vector2(-60f, 0f));
+            InputSystem.Update();
+            camera.SendMessage("Update");
+            Assert.That(camera.Yaw, Is.EqualTo(45f), "Arraste iniciado na UI deve continuar bloqueado ao sair dela");
         }
     }
 }

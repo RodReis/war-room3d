@@ -23,6 +23,8 @@ namespace WarRoom3D
         };
         private readonly HashSet<string> occupied = new HashSet<string>();
         private readonly HashSet<string> incoming = new HashSet<string>();
+        private string renderedSectorId;
+        public string CurrentSectorId => renderedSectorId ?? "setor-01";
         private Material overviewFloor;
         private Material overviewGraphite;
         private Material overviewCyan;
@@ -86,15 +88,16 @@ namespace WarRoom3D
             }
         }
 
-        public void ApplyOverviewPlacements(LiveRoomPlacement[] placements)
+        public void ApplyOverviewPlacements(LiveRoomPlacement[] placements, string sectorId = "setor-01")
         {
-            if (!overviewLayout || overviewFloor == null) return;
+            if (roomsRoot == null) return;
             incoming.Clear();
             if (placements != null)
                 foreach (var placement in placements)
-                    if (placement.sectorId == "setor-01" && rooms.ContainsKey(placement.slotId))
+                    if (placement.sectorId == sectorId && rooms.ContainsKey(placement.slotId))
                         incoming.Add(placement.slotId);
-            if (occupied.SetEquals(incoming)) return;
+            if (occupied.SetEquals(incoming) && renderedSectorId == sectorId) return;
+            renderedSectorId = sectorId;
 
             occupied.Clear();
             var ordered = new List<string>();
@@ -104,13 +107,13 @@ namespace WarRoom3D
                 var room = entry.Value;
                 if (show)
                 {
-                    if (room.childCount == 0) BuildOverviewRoom(room);
+                    if (overviewLayout && overviewFloor != null && room.childCount == 0) BuildOverviewRoom(room);
                     occupied.Add(entry.Key);
                     ordered.Add(entry.Key);
                 }
                 room.gameObject.SetActive(show);
             }
-            OverviewRoomsKey = string.Join("/", ordered);
+            OverviewRoomsKey = sectorId + "/" + string.Join("/", ordered);
         }
 
         public void GetOverviewBounds(out Vector3 center, out float width, out float depth)

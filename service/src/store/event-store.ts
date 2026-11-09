@@ -39,7 +39,7 @@ export interface NormalizedEvent {
   agentKey?: string;
   provenance: string;
   ingestionMode: string;
-  payload: { parentAgentKey?: string; parentStatus?: 'vinculo_pendente'; taskId?: string; invocationId?: string; messageId?: string; title?: string; name?: string; reason?: string; errorCode?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
+  payload: { parentAgentKey?: string; parentStatus?: 'vinculo_pendente'; taskId?: string; invocationId?: string; messageId?: string; workspaceKey?: string; title?: string; name?: string; reason?: string; errorCode?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
   evidenceRefs: string[];
   [key: string]: unknown;
 }
@@ -76,7 +76,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 20) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 21) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -138,6 +138,9 @@ export class EventStore {
     if (schemaVersion < 20) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0020_conversations.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 21) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0021_workspace_presence.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
     this.commands = new CommandAudit(this.db);
@@ -161,6 +164,7 @@ export class EventStore {
 
   reconcileSessionSourceBindings(configured: readonly SessionSource[]): void {
     this.db.transaction(() => {
+      this.db.prepare("UPDATE meta SET value=1 WHERE key='session_source_authorization_enabled'").run();
       const current = this.db.prepare('SELECT source_id,source_version,project_id,provider,account_ref FROM session_source_bindings').all() as
         {source_id:string;source_version:string;project_id:string;provider:string;account_ref:string}[];
       const next = new Map(configured.map(source => [source.sourceId,source]));
@@ -221,16 +225,28 @@ export class EventStore {
         .run(record.projectId,knownAt);
       const addPath = this.db.prepare('INSERT INTO project_paths(path, project_id) VALUES (?, ?)');
       for (const candidate of paths) addPath.run(candidate, record.projectId);
-      const index = (this.db.prepare('SELECT COUNT(*) AS count FROM room_placements').get() as { count: number }).count;
-      const sectorId = `setor-${String(Math.floor(index / 6) + 1).padStart(2, '0')}`;
-      const slotId = `slot-${String((index % 6) + 1).padStart(2, '0')}`;
-      this.db.prepare('INSERT INTO room_placements VALUES (?, ?, ?, ?)').run(record.projectId, sectorId, slotId, '1');
-      this.db.prepare('INSERT INTO room_placement_versions(project_id,sector_id,slot_id,layout_version,known_at) VALUES (?,?,?,?,?)')
-        .run(record.projectId,sectorId,slotId,'1',knownAt);
       this.db.prepare("UPDATE meta SET value = value + 1 WHERE key = 'revision'").run();
       appendStateChange(this.db, 'project.changed', record.projectId, knownAt);
     });
     operation();
+  }
+
+  private ensurePlacement(projectId: string, knownAt: string): void {
+    if (this.db.prepare('SELECT 1 FROM room_placements WHERE project_id=?').get(projectId)) return;
+    const occupied = new Set((this.db.prepare('SELECT sector_id,slot_id FROM room_placements').all() as {sector_id:string;slot_id:string}[])
+      .map(row => `${row.sector_id}/${row.slot_id}`));
+    let index = 0;
+    let sectorId: string;
+    let slotId: string;
+    do {
+      sectorId = `setor-${String(Math.floor(index / 6) + 1).padStart(2, '0')}`;
+      slotId = `slot-${String((index % 6) + 1).padStart(2, '0')}`;
+      index++;
+    } while (occupied.has(`${sectorId}/${slotId}`));
+    this.db.prepare('INSERT INTO room_placements(project_id,sector_id,slot_id,layout_version) VALUES (?,?,?,?)')
+      .run(projectId,sectorId,slotId,'1');
+    this.db.prepare('INSERT INTO room_placement_versions(project_id,sector_id,slot_id,layout_version,known_at) VALUES (?,?,?,?,?)')
+      .run(projectId,sectorId,slotId,'1',knownAt);
   }
 
   resolveProject(cwd: string | null | undefined): string | null {
@@ -301,7 +317,13 @@ export class EventStore {
     if (event?.ingestionMode === 'demo') throw new Error('Demonstração não entra no store live');
     const operation = this.db.transaction((): ApplyResult => {
       const state = (): ApplyResult => ({ applied: false, revision: this.number('revision'), streamSequence: this.number('stream_sequence') });
-      if (!event || (event.projectId && !this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId))) {
+      const boundProject = event?.projectId && this.db.prepare('SELECT project_id,source_version,provider FROM session_source_bindings WHERE source_id = ?')
+        .get(event.sourceId) as { project_id: string;source_version:string;provider:string } | undefined;
+      const sessionEvent = event && /^(workspace|session|agent|task|tool|skill|message|request)\./.test(event.type);
+      if (!event || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
+        (boundProject && (boundProject.project_id !== event.projectId || (sessionEvent &&
+          (boundProject.source_version !== event.sourceVersion || (event.provider && boundProject.provider !== event.provider))))) ||
+        (sessionEvent && !boundProject && (event.type.startsWith('workspace.') || this.number('session_source_authorization_enabled') === 1))))) {
         const reason = !event ? 'schema_invalid' : 'unknown_project';
         this.db.prepare('INSERT OR IGNORE INTO quarantine(source_id, file_key, generation, offset, reason, recorded_at) VALUES (?, ?, ?, ?, ?, ?)')
           .run(cursor.sourceId, cursor.fileKey, cursor.generation, cursor.offset, reason, new Date().toISOString());
@@ -345,6 +367,16 @@ export class EventStore {
   private applyState(event: NormalizedEvent): void {
     if (event.type === 'github.observed') {
       this.history.recordGithubObservation({eventId:event.eventId,sourceId:event.sourceId,projectId:event.projectId!,repositoryId:event.payload.repositoryId!,entityType:event.payload.entityType!,entityId:event.payload.entityId!,transition:event.payload.transition!,observedAt:event.observedAt});
+    } else if (event.type === 'workspace.opened' || event.type === 'workspace.closed') {
+      if (this.isOlderThanSourceLoss(event)) return;
+      const row = this.db.prepare('SELECT project_id,observed_at FROM workspace_presence WHERE source_id=? AND workspace_key=?')
+        .get(event.sourceId,event.payload.workspaceKey) as {project_id:string;observed_at:string}|undefined;
+      if (row && row.project_id !== event.projectId) throw new Error('Workspace aponta para outro projeto');
+      if (row && compareTimestamp(event.observedAt,row.observed_at) < 0) return;
+      this.db.prepare(`INSERT INTO workspace_presence(source_id,workspace_key,project_id,status,observed_at) VALUES(?,?,?,?,?)
+        ON CONFLICT(source_id,workspace_key) DO UPDATE SET status=excluded.status,observed_at=excluded.observed_at`)
+        .run(event.sourceId,event.payload.workspaceKey,event.projectId,event.type === 'workspace.opened'?'open':'closed',event.observedAt);
+      if (event.type === 'workspace.opened') this.ensurePlacement(event.projectId!,event.observedAt);
     } else if (event.type.startsWith('session.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const row = this.db.prepare('SELECT project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE session_key = ?').get(event.sessionKey) as { project_id: string; source_id: string; provider: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null } | undefined;
@@ -355,6 +387,7 @@ export class EventStore {
       this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(session_key) DO UPDATE SET presence = excluded.presence, freshness = excluded.freshness, last_seen = excluded.last_seen, source_unavailable_at = excluded.source_unavailable_at`)
         .run(event.sessionKey, event.projectId, event.sourceId, provider, next.presence, next.freshness, next.lastSeen, next.sourceUnavailableAt);
+      if (next.presence !== 'encerrada') this.ensurePlacement(event.projectId!,event.observedAt);
       if (next.presence === 'encerrada') {
         this.db.prepare("UPDATE agents SET presence = 'encerrada' WHERE session_key = ? AND presence != 'encerrada'").run(event.sessionKey);
         this.db.prepare("UPDATE session_tasks SET status = 'desconhecida' WHERE session_key = ? AND status != 'concluida_declarada'").run(event.sessionKey);
@@ -370,6 +403,7 @@ export class EventStore {
         this.db.prepare(`INSERT INTO sessions(session_key, project_id, source_id, provider, presence, freshness, last_seen, source_unavailable_at)
           VALUES (?, ?, ?, ?, 'desconhecida', 'desconhecido', ?, NULL)`).run(event.sessionKey, event.projectId, event.sourceId, provider, event.observedAt);
       }
+      this.ensurePlacement(event.projectId!,event.observedAt);
       const known = new Set((this.db.prepare(`SELECT a.agent_key FROM agents a JOIN sessions s ON s.session_key = a.session_key
         WHERE s.source_id = ? AND s.project_id = ? AND s.provider = ?`).all(event.sourceId,event.projectId,event.provider) as { agent_key: string }[]).map(row => row.agent_key));
       const presence = event.type.replace('agent.', '') === 'ended' ? 'encerrada' : event.type.replace('agent.', '') === 'working' ? 'trabalhando' : event.type.replace('agent.', '') === 'waiting' ? 'aguardando' : 'observada';
@@ -411,6 +445,8 @@ export class EventStore {
           .run(event.payload.invocationId,event.sessionKey,event.agentKey??null,kind,event.payload.name,status,event.observedAt);
       }
     } else if (event.type === 'source.unavailable') {
+      this.db.prepare("UPDATE workspace_presence SET status='uncertain' WHERE source_id=? AND status='open' AND observed_at<=?")
+        .run(event.sourceId,event.observedAt);
       const rows = this.db.prepare("SELECT session_key, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE source_id = ? AND presence != 'encerrada'").all(event.sourceId) as { session_key: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null }[];
       for (const row of rows) {
         const next = reduceSession({ presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen, sourceUnavailableAt: row.source_unavailable_at }, 'source.unavailable', event.observedAt);
@@ -517,6 +553,8 @@ export class EventStore {
       for (const row of historicalEvents) {
         projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
       }
+      for (const row of projection.db.prepare('SELECT project_id FROM room_placements').all() as {project_id:string}[])
+        if (!placements.has(row.project_id)) projection.db.prepare('DELETE FROM room_placements WHERE project_id=?').run(row.project_id);
       const state = projection.snapshot(at);
       const activeSourceLosses=projection.db.prepare("SELECT source_id,last_unavailable_at FROM sources WHERE status='indisponivel' AND last_unavailable_at IS NOT NULL ORDER BY source_id")
         .all() as {source_id:string;last_unavailable_at:string}[];
@@ -530,8 +568,32 @@ export class EventStore {
 
   private snapshotInsideTransaction(now: string): Row {
     const projects = (this.db.prepare('SELECT project_id, name FROM projects ORDER BY project_id').all() as { project_id: string; name: string }[]).map(row => ({ projectId: row.project_id, name: row.name }));
-    const roomPlacements = (this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[]).map(row => ({ projectId: row.project_id, sectorId: row.sector_id, slotId: row.slot_id, layoutVersion: row.layout_version }));
-    const sessions = (this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[]).map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, sourceId: row.source_id, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));
+    const registeredPlacements = this.db.prepare('SELECT * FROM room_placements ORDER BY sector_id, slot_id').all() as Row[];
+    const workspacePresence = this.db.prepare("SELECT project_id,status,observed_at FROM workspace_presence WHERE status!='closed'").all() as {project_id:string;status:string;observed_at:string}[];
+    const sessionRows = this.db.prepare('SELECT * FROM sessions ORDER BY session_key').all() as Row[];
+    const workspaceByProject = new Map<string,typeof workspacePresence>();
+    for (const item of workspacePresence) {
+      const entries = workspaceByProject.get(item.project_id) ?? [];
+      entries.push(item);
+      workspaceByProject.set(item.project_id,entries);
+    }
+    const sessionsByProject = new Map<string,Row[]>();
+    for (const item of sessionRows) {
+      const projectId = item.project_id as string;
+      const entries = sessionsByProject.get(projectId) ?? [];
+      entries.push(item);
+      sessionsByProject.set(projectId,entries);
+    }
+    const roomPlacements = registeredPlacements.flatMap(row => {
+      const workspaces = workspaceByProject.get(row.project_id as string) ?? [];
+      const liveSessions = (sessionsByProject.get(row.project_id as string) ?? []).filter(item => item.presence !== 'encerrada');
+      const active = workspaces.some(item => item.status === 'open') || liveSessions.some(item => item.freshness === 'atual' && item.presence !== 'desconhecida');
+      const uncertain = workspaces.some(item => item.status === 'uncertain') || liveSessions.length > 0;
+      const signals = [...workspaces.map(item => item.observed_at),...liveSessions.map(item => item.last_seen as string)];
+      const lastSignalAt = signals.reduce<string | null>((latest,signal) => !latest || compareTimestamp(signal,latest)>0 ? signal : latest,null);
+      return active || uncertain ? [{projectId:row.project_id,sectorId:row.sector_id,slotId:row.slot_id,layoutVersion:row.layout_version,status:active?'active':'uncertain',...(lastSignalAt?{lastSignalAt}:{})}] : [];
+    });
+    const sessions = sessionRows.map(row => ({ sessionKey: row.session_key, projectId: row.project_id, provider: row.provider, sourceId: row.source_id, presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen }));
     const agents = (this.db.prepare('SELECT * FROM agents ORDER BY agent_key').all() as Row[]).map(row => ({ agentKey: row.agent_key, sessionKey: row.session_key, ...(row.parent_agent_key ? { parentAgentKey: row.parent_agent_key } : {}), presence: row.presence, parentStatus: row.parent_status }));
     const tasks = (this.db.prepare('SELECT * FROM session_tasks ORDER BY task_id').all() as Row[]).map(row => ({ taskId: row.task_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), title: row.title, status: row.status, provenance: row.provenance }));
     const invocations = (this.db.prepare('SELECT * FROM session_invocations ORDER BY invocation_id').all() as Row[]).map(row => ({ invocationId: row.invocation_id, sessionKey: row.session_key, ...(row.agent_key ? { agentKey: row.agent_key } : {}), kind: row.kind, name: row.name, status: row.status }));

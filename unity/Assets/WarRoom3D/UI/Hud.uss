@@ -110,6 +110,10 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .overview-kicker { color: rgb(135, 211, 208); font-size: 12px; -unity-font-style: bold; letter-spacing: 1px; }
 .overview-title { color: rgb(234, 247, 245); font-size: 25px; -unity-font-style: bold; margin-bottom: 2px; }
 .overview-meta { color: rgb(181, 208, 214); font-size: 13px; margin-top: 1px; }
+.overview-search { width: 270px; margin-top: 7px; color: rgb(223, 244, 242); }
+.overview-search .unity-text-field__input { background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); border-color: rgb(66, 110, 118); }
+.overview-search-results { max-height: 118px; width: 270px; }
+.overview-search-results Button { min-height: 30px; white-space: normal; background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); }
 .overview-actions { position: absolute; flex-direction: row; top: 82px; right: 22px; }
 .overview-tool { height: 34px; padding-left: 13px; padding-right: 13px; margin-left: 8px; background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); font-size: 13px; border-color: rgb(66, 110, 118); border-radius: 5px; }
 .overview-dock { position: absolute; left: 24px; right: 24px; bottom: 20px; align-items: center; }
@@ -126,7 +130,7 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 
 .overview-dock #overview-scroll { width: 100%; max-width: 676px; height: 168px; }
 .overview-card Label { flex-shrink: 0; margin: 0; padding: 0; }
-.overview-card .overview-kicker { height: 17px; }
+.overview-card .overview-kicker { height: 17px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .overview-card .overview-project { height: 28px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .overview-card .overview-status { height: 20px; }
 .overview-card .overview-meta { height: 19px; }

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,6 +18,37 @@ namespace WarRoom3D.Tests
             "\"projectResources\":[{\"projectId\":\"p1\",\"resourceId\":\"r1\",\"origin\":\"configured\",\"confidence\":\"confirmed\"}]," +
             "\"resourceStates\":[{\"resourceId\":\"r1\",\"dependentProjectIds\":[\"p1\"],\"health\":\"degradado\",\"freshness\":\"atual\",\"coverage\":\"atual\",\"observedAt\":\"2026-11-06T16:00:00Z\"}]," +
             "\"incidents\":[{\"incidentId\":\"i1\",\"resourceId\":\"r1\",\"projectIds\":[\"p1\"]}]}";
+
+        [UnityTest]
+        public IEnumerator GlobalSearchFindsSeventhProjectAndShowsItsSecondSectorRoom()
+        {
+            SceneManager.LoadScene("QuartelM2Live");
+            yield return null;
+            yield return null;
+            var projects = new StringBuilder("[");
+            var placements = new StringBuilder("[");
+            for (var index = 1; index <= 7; index++)
+            {
+                if (index > 1) { projects.Append(','); placements.Append(','); }
+                projects.Append($"{{\"projectId\":\"p{index}\",\"name\":\"API\"}}");
+                placements.Append($"{{\"projectId\":\"p{index}\",\"sectorId\":\"setor-{(index <= 6 ? 1 : 2):00}\",\"slotId\":\"slot-{(index <= 6 ? index : 1):00}\",\"status\":\"active\"}}");
+            }
+            projects.Append(']');
+            placements.Append(']');
+            var data = Snapshot.Replace("\"projects\":[{\"projectId\":\"p1\",\"name\":\"Projeto sintético\"}]", "\"projects\":" + projects)
+                .Replace("\"roomPlacements\":[{\"projectId\":\"p1\",\"sectorId\":\"setor-01\",\"slotId\":\"slot-01\"}]", "\"roomPlacements\":" + placements);
+            Object.FindAnyObjectByType<LiveStateClient>().AcceptSnapshot(data);
+            var root = Object.FindAnyObjectByType<UIDocument>().rootVisualElement;
+            Assert.That(root.Q("overview-cards").childCount, Is.EqualTo(6));
+            root.Q<TextField>("overview-search").value = "p7";
+            var results = root.Q<ScrollView>("overview-search-results");
+            Assert.That(results.contentContainer.childCount, Is.EqualTo(1));
+            Assert.That(results.Q<Button>().text, Does.Contain("setor-02"));
+            Object.FindAnyObjectByType<LiveHudPresenter>().SendMessage("SelectProjectForValidation", "p7");
+            Assert.That(root.Q<Label>("overview-sector").text, Does.Contain("SETOR 02"));
+            Assert.That(root.Q("overview-cards").childCount, Is.EqualTo(1));
+            Assert.That(root.Q<Label>("overview-project").text, Is.EqualTo("API"));
+        }
 
         [UnityTest]
         public IEnumerator LiveSceneHasNoDemoLoaderAndStartsUnknownWithoutService()

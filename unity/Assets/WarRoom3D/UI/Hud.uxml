@@ -7,10 +7,12 @@
         </ui:VisualElement>
         <ui:VisualElement name="overview" class="overview" picking-mode="Ignore">
             <ui:VisualElement name="overview-heading" class="overview-heading">
-                <ui:Label text="SETOR 01   /   VISÃO DE OPERAÇÕES" class="overview-kicker" />
+                <ui:Label name="overview-sector" text="SETOR 01   /   VISÃO DE OPERAÇÕES" class="overview-kicker" />
                 <ui:Label text="Projetos do setor" class="overview-title" />
                 <ui:Label name="overview-service" class="overview-meta" />
                 <ui:Label name="overview-source" class="overview-meta" />
+                <ui:TextField name="overview-search" label="Buscar projeto" class="overview-search" />
+                <ui:ScrollView name="overview-search-results" class="overview-search-results" />
             </ui:VisualElement>
             <ui:VisualElement name="overview-actions" class="overview-actions">
                 <ui:Button name="overview-center" text="Data center" class="overview-tool" />

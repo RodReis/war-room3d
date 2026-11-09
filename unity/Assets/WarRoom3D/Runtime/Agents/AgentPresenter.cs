@@ -70,10 +70,11 @@ namespace WarRoom3D
                     else if (roomView != null) OverflowCount++;
                 }
             var remove = new List<string>();
-            foreach (var key in views.Keys) if (!desired.Contains(key)) remove.Add(key);
+            foreach (var pair in views)
+                if (!desired.Contains(pair.Key) || pair.Value == null) remove.Add(pair.Key);
             foreach (var key in remove)
             {
-                Destroy(views[key].gameObject);
+                if (views[key] != null) Destroy(views[key].gameObject);
                 views.Remove(key);
                 slots.Remove(key);
             }

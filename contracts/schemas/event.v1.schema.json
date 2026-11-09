@@ -13,7 +13,7 @@
     "sourceVersion": { "$ref": "#/$defs/id" },
     "sourceSequence": { "type": "integer", "minimum": 0 },
     "streamSequence": { "type": "integer", "minimum": 1 },
-    "type": { "enum": ["session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "resource.observed", "github.observed"] },
+    "type": { "enum": ["workspace.opened", "workspace.closed", "session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "resource.observed", "github.observed"] },
     "observedAt": { "$ref": "#/$defs/time" },
     "occurredAt": { "$ref": "#/$defs/time" },
     "receivedAt": { "$ref": "#/$defs/time" },
@@ -36,6 +36,7 @@
         "taskId": { "$ref": "#/$defs/id" },
         "invocationId": { "$ref": "#/$defs/id" },
         "messageId": { "$ref": "#/$defs/id" },
+        "workspaceKey": { "$ref": "#/$defs/id" },
         "title": { "type": "string", "maxLength": 160 },
         "name": { "type": "string", "minLength": 1, "maxLength": 80 },
         "reason": { "enum": ["explicit", "source_lost", "source_recovered"] },
@@ -49,6 +50,7 @@
     "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/id" }, "maxItems": 16 }
   },
   "allOf": [
+    { "if": { "properties": { "type": { "type": "string", "pattern": "^workspace\\." } } }, "then": { "required": ["projectId"], "properties": { "payload": { "type": "object", "required": ["workspaceKey"] } } } },
     { "if": { "properties": { "type": { "type": "string", "pattern": "^(session|agent)\\." } } }, "then": { "required": ["projectId", "sessionKey", "provider"] } },
     { "if": { "properties": { "type": { "type": "string", "pattern": "^agent\\." } } }, "then": { "required": ["agentKey"] } },
     { "if": { "properties": { "type": { "type": "string", "pattern": "^(task|tool|skill|message|request)\\." } } }, "then": { "required": ["projectId", "sessionKey", "provider"] } },

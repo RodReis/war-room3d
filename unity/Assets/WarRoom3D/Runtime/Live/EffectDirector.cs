@@ -131,7 +131,7 @@ namespace WarRoom3D
             ClearBeacon();
             var snapshot = client.Snapshot;
             if (snapshot?.roomPlacements == null || string.IsNullOrEmpty(effect.projectId)) return;
-            var placement = Array.Find(snapshot.roomPlacements, item => item.projectId == effect.projectId && item.sectorId == "setor-01");
+            var placement = Array.Find(snapshot.roomPlacements, item => item.projectId == effect.projectId && item.sectorId == sector.CurrentSectorId);
             if (placement == null || !sector.Rooms.TryGetValue(placement.slotId, out var room)) return;
             beacon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             beacon.name = "EffectBeacon:" + effect.projectId;

@@ -18,6 +18,7 @@ namespace WarRoom3D
         private VisualElement root;
         private LiveSnapshot snapshot;
         private string selectedProjectId;
+        private string currentSectorId = "setor-01";
         private string selectedResourceId;
         private bool insideRoom;
         private bool insideDataCenter;
@@ -51,6 +52,7 @@ namespace WarRoom3D
             root.Q<Button>("overview-center").clicked += ShowDataCenter;
             root.Q<Button>("overview-tools").clicked += () =>
                 root.EnableInClassList("overview-tools-open", !root.ClassListContains("overview-tools-open"));
+            root.Q<TextField>("overview-search").RegisterValueChangedCallback(_ => RefreshOverview());
             root.Q<Label>("project-list-heading").text = "PROJETOS OBSERVADOS";
             root.Q<Label>("activity-heading").text = "ATIVIDADE OBSERVADA";
             root.Q<Label>("agents-heading").text = "AGENTES OBSERVADOS";
@@ -143,15 +145,17 @@ namespace WarRoom3D
             if (root == null) return;
             var list = root.Q<ScrollView>("project-list");
             list.Clear();
-            foreach (var project in snapshot.projects)
+            foreach (var project in QuartelOverview.FindProjects(snapshot, ""))
             {
                 var entry = project;
                 var button = new Button(() => SelectProject(entry.projectId)) { text = project.name, tooltip = project.name, userData = project.projectId };
                 button.AddToClassList("project-button");
                 list.Add(button);
             }
-            if (snapshot.projects.Length == 0) selectedProjectId = null;
-            else if (Array.Find(snapshot.projects, item => item.projectId == selectedProjectId) == null) selectedProjectId = snapshot.projects[0].projectId;
+            var activeProjects = QuartelOverview.FindProjects(snapshot, "");
+            if (activeProjects.Count == 0) selectedProjectId = null;
+            else if (activeProjects.Find(item => item.projectId == selectedProjectId) == null) selectedProjectId = activeProjects[0].projectId;
+            SelectSectorForProject(selectedProjectId);
             RefreshProject();
             RefreshResources();
             RefreshOverview();
@@ -189,6 +193,7 @@ namespace WarRoom3D
         {
             if (!replayMode) return;
             ClearReplayMarkers();
+            currentSectorId = "setor-01";
             snapshot = state;
             if (dataCenter != null) dataCenter.ShowReplayInfrastructure(state);
             if (state == null) { ShowReplayUnavailable(); return; }
@@ -258,10 +263,40 @@ namespace WarRoom3D
         private void SelectProject(string projectId)
         {
             selectedProjectId = projectId;
+            SelectSectorForProject(projectId);
             RefreshProject();
             if (insideDataCenter) SetResourceFilter(true);
             if (insideRoom) FocusSelectedRoom();
             RefreshOverview();
+        }
+
+        private void SelectSectorForProject(string projectId)
+        {
+            var placement = Array.Find(snapshot?.roomPlacements ?? Array.Empty<LiveRoomPlacement>(), item => item.projectId == projectId);
+            if (placement != null) currentSectorId = placement.sectorId;
+            else if (snapshot?.roomPlacements != null &&
+                     Array.Find(snapshot.roomPlacements, item => item.sectorId == currentSectorId) == null && snapshot.roomPlacements.Length > 0)
+                currentSectorId = snapshot.roomPlacements[0].sectorId;
+        }
+
+        private void RefreshGlobalSearch()
+        {
+            var query = root.Q<TextField>("overview-search").value?.Trim() ?? "";
+            var results = root.Q<ScrollView>("overview-search-results");
+            results.Clear();
+            results.style.display = query.Length == 0 ? DisplayStyle.None : DisplayStyle.Flex;
+            if (query.Length == 0) return;
+            foreach (var project in QuartelOverview.FindProjects(snapshot, query))
+            {
+                var entry = project;
+                var placement = Array.Find(snapshot.roomPlacements, item => item.projectId == entry.projectId);
+                results.Add(new Button(() => OpenOverviewProject(entry.projectId))
+                {
+                    text = $"{entry.name} · {placement?.sectorId} · {entry.projectId}",
+                    tooltip = entry.projectId
+                });
+            }
+            if (results.childCount == 0) results.Add(new Label("Nenhum projeto ativo encontrado."));
         }
 
         private void OpenOverviewProject(string projectId)
@@ -274,8 +309,10 @@ namespace WarRoom3D
         {
             if (replayMode) { SetOverviewVisible(); return; }
             var placements = snapshot?.roomPlacements;
-            sector.ApplyOverviewPlacements(placements);
-            overview.Render(snapshot, HasCurrentData, selectedProjectId);
+            sector.ApplyOverviewPlacements(placements, currentSectorId);
+            overview.Render(snapshot, HasCurrentData, selectedProjectId, currentSectorId);
+            root.Q<Label>("overview-sector").text = currentSectorId.ToUpperInvariant().Replace("-", " ") + "   /   VISÃO DE OPERAÇÕES";
+            RefreshGlobalSearch();
             root.Q("overview-empty").style.display = root.Q("overview-cards").childCount == 0
                 ? DisplayStyle.Flex : DisplayStyle.None;
             root.Q<Label>("overview-empty").text = snapshot == null
@@ -318,7 +355,7 @@ namespace WarRoom3D
         {
             GetComponent<CommandPresenter>()?.SelectProject(selectedProjectId);
             if (snapshot == null) { ShowEmpty(); return; }
-            sector.ApplyOverviewPlacements(snapshot.roomPlacements);
+            sector.ApplyOverviewPlacements(snapshot.roomPlacements, currentSectorId);
             var project = Array.Find(snapshot.projects, item => item.projectId == selectedProjectId);
             if (project == null) { ShowEmpty(); return; }
             root.Q<Label>("project-name").text = project.name;
@@ -409,7 +446,7 @@ namespace WarRoom3D
 
         private LiveRoomPlacement PlacementFor(string projectId)
         {
-            return Array.Find(snapshot.roomPlacements, item => item.projectId == projectId && item.sectorId == "setor-01" &&
+            return Array.Find(snapshot.roomPlacements, item => item.projectId == projectId && item.sectorId == currentSectorId &&
                 sector.Rooms.TryGetValue(item.slotId, out var room) && room != null);
         }
 
@@ -598,7 +635,7 @@ namespace WarRoom3D
             if (insideRoom || insideDataCenter || snapshot == null) return;
             if (!RoomSceneSelection.TryPickSlot(Camera.main, sector, this, out var slotId)) return;
             foreach (var placement in snapshot.roomPlacements)
-                if (placement.slotId == slotId && placement.sectorId == "setor-01")
+                if (placement.slotId == slotId && placement.sectorId == currentSectorId)
                 {
                     if (AtOverview) OpenOverviewProject(placement.projectId);
                     else SelectProject(placement.projectId);
@@ -644,7 +681,7 @@ namespace WarRoom3D
             label.text = sourceState + " · " + session.sourceId + "\n" + sessionState;
         }
 
-#if DEVELOPMENT_BUILD && !UNITY_EDITOR
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
         public string SelectedAgentKeyForValidation => navigation?.SelectedAgentKey;
         private void SelectProjectForValidation(string projectId) => SelectProject(projectId);
         private void SelectAgentForValidation(string key) => navigation?.SelectAgent(key);

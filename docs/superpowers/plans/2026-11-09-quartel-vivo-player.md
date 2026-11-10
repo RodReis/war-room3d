@@ -16,7 +16,7 @@
 |---|---|---|---|
 | 1 | [#47](https://github.com/RodReis/war-room3d/issues/47) Vista geral 3D e UX | Base atual | Dois cartões legíveis sem clique, cena navegável e comparação com o conceito no Player. |
 | 2 | [#48](https://github.com/RodReis/war-room3d/issues/48) Salas dinâmicas | Base atual | Criação, estabilidade, fechamento e reconexão com duas identidades e sem duplicação. |
-| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Claude Code no VS Code local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Sessão real de `arenahub` chegou ao serviço; Player e segundo projeto permanecem pendentes. Ensaio Codex no VS Code sem evento. |
+| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Claude Code no VS Code local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Dois projetos reais chegaram ao mesmo Player; perda/reconexão da fonte do forja comprovada. Aceite funcional do PI pendente. Ensaio Codex no VS Code sem evento. |
 | 4 | [#50](https://github.com/RodReis/war-room3d/issues/50) Avatares | [#47](https://github.com/RodReis/war-room3d/issues/47), [#48](https://github.com/RodReis/war-room3d/issues/48) | Nomes, roupas distintas, movimento e seleção com estados verificáveis. |
 | 5 | [#51](https://github.com/RodReis/war-room3d/issues/51) Gráfico | [#48](https://github.com/RodReis/war-room3d/issues/48), [#49](https://github.com/RodReis/war-room3d/issues/49) | Ação real isolada por projeto, lacuna quando falta cobertura e drill-down para evidência. |
 | Gate | [#52](https://github.com/RodReis/war-room3d/issues/52) Validação integrada | 1–5 | Aceite do PI no mesmo Player Windows com arte e jornada real. |
@@ -47,12 +47,12 @@ Pontos de entrada: `service/src/domain/identity.ts`, `service/src/store/event-st
 
 ### 3 · Primeira fonte real [#49](https://github.com/RodReis/war-room3d/issues/49)
 
-Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais Claude](https://code.claude.com/docs/en/hooks). O PI autorizou a prova do Claude Code no VS Code em `arenahub` após o ensaio sem evento do Codex em `rrb-forjaOS`; Claude Code Desktop fica para etapa posterior.
+Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais Claude](https://code.claude.com/docs/en/hooks). O PI autorizou a prova do Claude Code no VS Code em `arenahub` e `rrb-forja` após o ensaio sem evento do Codex em `rrb-forjaOS`; Claude Code Desktop fica para etapa posterior.
 
-- [x] Conferir versão do plugin e runtime Claude Code `2.1.322`; observar início, atividade e `Stop` nativos em uma sessão de `arenahub`. Subagente, tarefa e skill não foram observados.
-- [x] Configurar hook opt-in só no projeto autorizado, sanitizar antes da persistência e restaurar o arquivo local original byte a byte após o ensaio.
-- [ ] Observar fonte → spool sanitizado → store → API → Player. Fonte até API passou para um projeto; Player e segundo projeto continuam pendentes. Não atribuir à IDE eventos de CLI, app separado ou fixture.
-- [ ] Exercitar perda e reconexão; reinício do serviço com o mesmo banco e spool não duplicou a sessão. Relatar eventos, deduplicação e revogação em `docs/validation/quartel-vivo/claude-vscode-arenahub.md`.
+- [x] Conferir runtime Claude Code `2.1.322`; observar início, submissão e `Stop` nativos nos dois projetos. Subagente, ferramenta, tarefa e skill não foram observados.
+- [x] Configurar hooks opt-in somente nos dois projetos autorizados, sanitizar antes da persistência e restaurar os arquivos locais originais byte a byte após o ensaio.
+- [x] Observar fonte → spool sanitizado → store → API → Player em duas salas independentes. A atribuição ao painel VS Code depende da ação controlada pelo PI e da correlação temporal; o hook não informa o aplicativo hospedeiro.
+- [x] Exercitar perda e reconexão da fonte do forja com novo sinal nativo; reinício anterior do serviço com o mesmo banco e spool não duplicou a sessão. [Relatório dos dois projetos](../../validation/quartel-vivo/claude-dual-arenahub-forja.md). Aceite funcional do PI ainda pendente.
 
 ### 4 · Agentes humanos [#50](https://github.com/RodReis/war-room3d/issues/50)
 

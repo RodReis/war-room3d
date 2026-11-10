@@ -8,7 +8,7 @@ A #28/#35 aprovou uma sala em um Player identificado e com prova operacional pon
 
 ## Primeira entrega
 
-O Unity Player Windows abre no quartel com **dois projetos ativos, independentes e autorizados**, observados pela mesma integração real. Por decisão do PI em 10/11/2026, a primeira fonte a validar é o **plugin Codex no VS Code local Windows**, começando pelo projeto `rrb-forjaOS`. A prova de um projeto não completa o critério de dois projetos; a CLI, o app separado e a fixture não provam origem no plugin. [Claude Code Desktop fica para a #59](https://github.com/RodReis/war-room3d/issues/59). Se o plugin instalado não emitir o sinal necessário, registrar o limite e devolver a decisão da primeira fonte ao PI.
+O Unity Player Windows abre no quartel com **dois projetos ativos, independentes e autorizados**, observados pela mesma integração real. Por decisão do PI em 10/11/2026, a primeira fonte passou do plugin Codex no VS Code em `rrb-forjaOS`, cujo ensaio não produziu evento, para o **Claude Code no VS Code local Windows** em `arenahub`. Uma sessão real desta fonte chegou ao serviço, ainda sem prova no Player nem segundo projeto. A CLI, o app separado e a fixture não provam origem na extensão. [Claude Code Desktop fica para a #59](https://github.com/RodReis/war-room3d/issues/59).
 
 ### Vista geral e referência visual
 

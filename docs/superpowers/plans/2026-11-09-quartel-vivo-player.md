@@ -16,7 +16,7 @@
 |---|---|---|---|
 | 1 | [#47](https://github.com/RodReis/war-room3d/issues/47) Vista geral 3D e UX | Base atual | Dois cartões legíveis sem clique, cena navegável e comparação com o conceito no Player. |
 | 2 | [#48](https://github.com/RodReis/war-room3d/issues/48) Salas dinâmicas | Base atual | Criação, estabilidade, fechamento e reconexão com duas identidades e sem duplicação. |
-| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Codex no VS Code local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Origem do plugin e versão confirmadas em `rrb-forjaOS`; um projeto é prova parcial, dois projetos ficam para o gate. |
+| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Claude Code no VS Code local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Sessão real de `arenahub` chegou ao serviço; Player e segundo projeto permanecem pendentes. Ensaio Codex no VS Code sem evento. |
 | 4 | [#50](https://github.com/RodReis/war-room3d/issues/50) Avatares | [#47](https://github.com/RodReis/war-room3d/issues/47), [#48](https://github.com/RodReis/war-room3d/issues/48) | Nomes, roupas distintas, movimento e seleção com estados verificáveis. |
 | 5 | [#51](https://github.com/RodReis/war-room3d/issues/51) Gráfico | [#48](https://github.com/RodReis/war-room3d/issues/48), [#49](https://github.com/RodReis/war-room3d/issues/49) | Ação real isolada por projeto, lacuna quando falta cobertura e drill-down para evidência. |
 | Gate | [#52](https://github.com/RodReis/war-room3d/issues/52) Validação integrada | 1–5 | Aceite do PI no mesmo Player Windows com arte e jornada real. |
@@ -47,12 +47,12 @@ Pontos de entrada: `service/src/domain/identity.ts`, `service/src/store/event-st
 
 ### 3 · Primeira fonte real [#49](https://github.com/RodReis/war-room3d/issues/49)
 
-Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais Codex](https://learn.chatgpt.com/docs/hooks). A prova inicial autorizada pelo PI em 10/11/2026 usa somente `rrb-forjaOS` no plugin Codex do VS Code; Claude Code Desktop fica para etapa posterior.
+Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais Claude](https://code.claude.com/docs/en/hooks). O PI autorizou a prova do Claude Code no VS Code em `arenahub` após o ensaio sem evento do Codex em `rrb-forjaOS`; Claude Code Desktop fica para etapa posterior.
 
-- [ ] Conferir versões do VS Code, plugin e runtime Codex. Definir mecanismo mínimo comprovável para início e atividade; registrar encerramento, subagente, tarefa e skill somente se sinais nativos aparecerem.
-- [ ] Implementar/configurar hook opt-in de projeto, com escopo canônico, revisão de confiança do hash atual, configuração reversível e descarte de conteúdo antes da persistência. A prova inicial usa apenas o projeto autorizado `rrb-forjaOS`.
-- [ ] Reproduzir sessão nova no próprio plugin do VS Code. Observar fonte → spool sanitizado → store → API → Player; não atribuir à IDE eventos de CLI, app separado ou fixture. A meta de dois projetos da primeira entrega continua pendente após uma prova de um projeto.
-- [ ] Exercitar parada, reconexão e reinício quando houver evento real. Relatar versão, eventos observados, deduplicação, último evento aplicado e revogação em `docs/validation/quartel-vivo/codex-vscode.md`. Se o plugin não emitir o sinal, registrar bloqueio e devolver a decisão da fonte ao PI.
+- [x] Conferir versão do plugin e runtime Claude Code `2.1.322`; observar início, atividade e `Stop` nativos em uma sessão de `arenahub`. Subagente, tarefa e skill não foram observados.
+- [x] Configurar hook opt-in só no projeto autorizado, sanitizar antes da persistência e restaurar o arquivo local original byte a byte após o ensaio.
+- [ ] Observar fonte → spool sanitizado → store → API → Player. Fonte até API passou para um projeto; Player e segundo projeto continuam pendentes. Não atribuir à IDE eventos de CLI, app separado ou fixture.
+- [ ] Exercitar perda e reconexão; reinício do serviço com o mesmo banco e spool não duplicou a sessão. Relatar eventos, deduplicação e revogação em `docs/validation/quartel-vivo/claude-vscode-arenahub.md`.
 
 ### 4 · Agentes humanos [#50](https://github.com/RodReis/war-room3d/issues/50)
 

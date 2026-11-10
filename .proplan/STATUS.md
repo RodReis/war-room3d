@@ -1,27 +1,42 @@
 ---
 proplan: v1
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 <!-- gerado pelo ProPlan a partir das Issues — não edite à mão -->
 # Status
 
 ## Backlog
 
-_(vazio)_
+### Quartel vivo — dois projetos reais no Player e expansão por fonte (#46)
+
+- Quartel vivo — descoberta de projetos e atividade do Codex Desktop (#55)
+- Quartel vivo — descoberta autorizada de projetos ativos no VS Code (#54)
+- Quartel vivo — cafeteria e sala de reunião fixa do PI (#53)
+- Quartel vivo — aceite no Player Windows com dois projetos e uma fonte real (#52)
 
 ## A Fazer
 
-_(vazio)_
+### Quartel vivo — dois projetos reais no Player e expansão por fonte (#46)
+
+- Quartel vivo — gráfico de atividade observada por projeto (#51)
+- Quartel vivo — agentes humanos identificáveis com roupas distintas e movimento (#50)
 
 ## Em Andamento
 
-_(vazio)_
+### Quartel vivo — dois projetos reais no Player e expansão por fonte (#46)
+
+- Quartel vivo — primeira fonte real no Claude Code Desktop local (#49)
 
 ## Feito
 
 _(vazio)_
 
 ## Finalizado
+
+### Quartel vivo — dois projetos reais no Player e expansão por fonte (#46)
+
+- Quartel vivo — ciclo de vida das salas dinâmicas por projeto (#48, finalizado em: 2026-11-10)
+- Quartel vivo — vista geral 3D e leitura imediata dos dois projetos (#47, finalizado em: 2026-11-09)
 
 ### Sem épico
 

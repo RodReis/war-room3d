@@ -28,7 +28,9 @@ O `capture-source.ts` agora sanitiza o payload dos hooks Codex; `adapters.ts` tr
 | Serviço completo, Node `24.22.2` | **pass**, 184/184 |
 | `npm run typecheck` | **pass** |
 | Serviço HTTP local antes da interação real | Um projeto cadastrado, fonte `file_missing`, zero sessões; estado correto sem evento |
-| Novo chat Codex em `rrb-forjaOS`, confiança no hook e evento nativo | **not_run**, aguarda interação do PI no plugin; a skill de controle do Windows proíbe automatizar a extensão Codex |
+| Primeiro chat Codex em `rrb-forjaOS` e confiança no hook | **executado pelo PI**, mas **sem evento observado** no spool após o término; a confiança pode ter ocorrido depois do disparo de `SessionStart` |
+| Segundo chat novo após a confiança | **pendente de confirmação do PI**; necessário para distinguir a ordem da confiança de uma falha de execução do hook |
+| Comando de captura executado isoladamente com evento sintético | **pass** no Node instalado; gravou uma linha no spool de diagnóstico separado, depois removido. Não prova disparo pelo plugin. |
 | Evento real → store/API → Player, perda/reinício/retomada/deduplicação/revogação | **not_run** |
 
 Nenhum resultado sintético ou presença visual do plugin é apresentado como evento real. Subagente, término, tarefa e skill só serão afirmados se seus sinais surgirem e puderem ser vinculados à sessão autorizada.

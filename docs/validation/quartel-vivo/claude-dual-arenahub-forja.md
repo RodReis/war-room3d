@@ -1,6 +1,6 @@
 # #49 — ensaio conjunto Claude local: ArenaHub e rrb-forja
 
-Data: 10/11/2026. Estado: **ArenaHub confirmado até o Player; segundo projeto não confirmado**. O PI selecionou `arenahub` no Claude Code do VS Code e `rrb-forja` no Claude do terminal. São duas superfícies distintas do mesmo protocolo de hooks; o payload nativo não declara qual aplicativo hospedou a sessão. A atribuição de cada superfície depende da interação controlada pelo PI e do processo local observado.
+Data: 10/11/2026. Estado atual: **dois projetos confirmados no mesmo Player Windows; aceite funcional do PI pendente**. O primeiro ensaio abaixo usou `arenahub` no Claude Code do VS Code e `rrb-forja` no Claude do terminal, sem evento do segundo projeto. Um ensaio posterior, descrito ao final, usou o painel Claude Code do VS Code em ambos. O payload nativo não declara qual aplicativo hospedou a sessão: a atribuição à interface depende da interação controlada pelo PI e da correlação temporal, e não é uma propriedade verificada pelo hook.
 
 ## Preparação
 
@@ -9,7 +9,7 @@ Data: 10/11/2026. Estado: **ArenaHub confirmado até o Player; segundo projeto n
 - O comando exato de captura de cada projeto foi executado sob Git Bash com entrada **sintética separada** e saiu com código 0. O campo de prompt do ensaio não apareceu no spool; esses arquivos sintéticos foram removidos. Isso valida o comando e a sanitização, sem substituir a prova nativa.
 - Após uma sessão de terminal sem evento, o hook local do `rrb-forja` foi mudado para `args`, sem shell, para eliminar a interpretação do comando como variável. A definição nova também saiu com código 0 em ensaio sintético separado e não persistiu o campo de prompt. Essa mudança ainda não comprova que o terminal a executa nativamente.
 
-## Resultado real até o momento
+## Resultado do primeiro ensaio
 
 | Etapa | ArenaHub, Claude VS Code | rrb-forja, Claude terminal |
 |---|---|---|
@@ -23,7 +23,7 @@ A captura de um projeto saiu do Player com código 0, `connected=true`, `session
 
 O serviço foi reiniciado com o mesmo banco, configuração e spool reais. Antes e depois, revisão `9`, sequência `9`, uma sessão, sete entradas no feed e uma sala ativa; não houve duplicação no replay.
 
-## Pendências e revogação
+## Pendências e revogação do primeiro ensaio
 
 Faltam evento nativo do `rrb-forja`, duas salas simultâneas no mesmo Player, perda/reconexão das fontes e aceite funcional do PI. Após o segundo ensaio sem spool no terminal, não foi recebido um estado verificável da última execução em `/hooks`; a causa segue indeterminada. Não se atribui a falha ao Claude nem ao shell sem evidência. A configuração temporária dos dois projetos foi restaurada byte a byte aos hashes originais, o serviço foi parado e spools, banco, token, backups e configuração temporária foram removidos. Permanecem locais apenas o relatório e a imagem do Player de um projeto para revisão; nenhum conteúdo de conversa foi publicado.
 
@@ -32,3 +32,15 @@ Faltam evento nativo do `rrb-forja`, duas salas simultâneas no mesmo Player, pe
 Uma captura de `/hooks` enviada pelo PI mostrou `SessionStart` de fontes User, Project e Plugin, sem o capturador. O arquivo de imagem foi criado às 18:57, **depois** da restauração do `settings.local.json` às 17:40, quando o hash original já não tinha `hooks`; portanto essa imagem comprova o estado revogado, não o estado durante o ensaio sem eventos. O rótulo visual da fonte local não foi assumido como critério: o identificador esperado seria `capture-source.ts` ou `probe-start.mjs`, e `/status` deveria listar `Project local settings`.
 
 Foi feito um terceiro ensaio estritamente local no `rrb-forja`: `SessionStart` com matcher `startup`, capturador por execução direta e segundo handler que gravava somente `SessionStart` e horário, sem ler `stdin`. O arquivo temporário tinha SHA-256 `D77523C1C0FC5C140CE4223361B8DC97B86A5069126EA929897C65257E09E5C6`; o script de marcador tinha SHA-256 `9676788F06D3BB3434DDCEF2D2293DC010769316767AF602BAB81B5CE99DC83B`. Ambos passaram isoladamente com entrada sintética sanitizada. Processos Claude novos foram observados após a instalação, mas **nem marcador nem spool reais apareceram**. Não houve confirmação de `/status` ou `/hooks` enquanto o hook estava instalado, nem leitura do diretório efetivo dos processos; assim não se sabe se o hook foi carregado, confiado ou disparado nesses processos. O arquivo foi restaurado byte a byte ao hash original `8B284272DC60A3E7FAE62D394ECDAF96D64E2195433B74A9FC79BFB4C1836448`, e os arquivos do diagnóstico foram removidos. Nenhuma nova sessão do forja foi contabilizada.
+
+## Ensaio posterior: dois painéis Claude Code no VS Code
+
+O PI recarregou as janelas e concluiu chats **novos** no painel Claude Code dos workspaces `D:\Desenvolvimento\Projetos\arenahub` e `D:\Desenvolvimento\Projetos\rrb-forja`. Os hooks locais temporários foram instalados somente nesses projetos, com hashes `D0B5985C7E09D6C3DC10270F49258D57A4911E43B83D1341EC52F29DE86B260A` (ArenaHub) e `23917A7628A64123E3A6988777AD25E5B2590BDEACDADDF1509F2578F80EC377` (forja). Um marcador independente gravou apenas projeto, `SessionStart` e horário, sem ler a entrada do hook. Capturador e marcador passaram antes em ensaio sintético separado; os arquivos sintéticos não foram ingeridos pelo serviço real.
+
+Os dois marcadores e os dois spools receberam `SessionStart` nativos após a interação do PI. Em um ponto de conferência, o spool do ArenaHub tinha 17 eventos (`SessionStart:6`, `UserPromptSubmit:6`, `Stop:5`) e o do forja tinha três (`SessionStart:1`, `UserPromptSubmit:1`, `Stop:1`). Cada registro persistido tinha **somente** `hook_event_name`, `session_id`, `cwdHash`, `source` e `capturedAt`. O serviço validou o hash do diretório de cada projeto, sem ler prompts, transcrições, comandos, respostas ou credenciais. No snapshot antes do Player havia duas salas ativas, duas sessões, dois agentes e as duas fontes `atual`; durante a execução chegaram mais eventos do ArenaHub.
+
+O mesmo build Windows de hash `93043E47ABFCE89AE9D048DBF34108E101EDB367150E6203E0BCEE27CD5A623D` saiu com código 0. O relatório local `player-connected.json` registrou `connected=true`, `sessionCount=5`, `agentCount=5`, vista `project`, imagem 1280×720 e zero desconexões durante essa captura. A imagem mostra **duas salas no mesmo setor**, identificadas como `rrb-forja` e `ArenaHub`, com o aviso de origem não verificada. SHA-256 da imagem: `A00067B52FE4694A41D21BD4F3FD1603E0FE84E716395BBA017963850D71FB19`. Relatório e imagem permanecem apenas em `%TEMP%\wr3d-issue49-two-vscode-20261110\player-two`; a imagem não foi publicada por conter nomes de projetos reais.
+
+Para ensaiar perda de fonte, o spool do forja foi retirado **temporariamente** do caminho observado, dentro da mesma pasta temporária. O serviço marcou somente `claude-vscode-forja` como `indisponivel/file_missing`; o ArenaHub permaneceu `atual` e sua sala ativa, enquanto a sala do forja deixou de ser ativa. O spool foi recolocado sem alteração. A mera volta do arquivo não foi contabilizada como reconexão: a fonte continuou indisponível até o PI abrir outro chat novo no painel Claude Code do forja. Depois desse `SessionStart` nativo, o spool do forja tinha cinco eventos, a fonte voltou a `atual` e o snapshot voltou a ter duas salas ativas. Não houve emissão de comandos reais pelo Quartel.
+
+Ao terminar, os dois `.claude/settings.local.json` foram restaurados **byte a byte** aos hashes originais `2775CB1496D074C037F5572DBF4C90291602C7A621927AEE2933C20017A0FAD2` (ArenaHub) e `8B284272DC60A3E7FAE62D394ECDAF96D64E2195433B74A9FC79BFB4C1836448` (forja). O serviço foi parado; spools, marcadores, banco, token, backups e configuração temporária foram removidos. O ensaio comprova os metadados nativos de dois projetos até o Player e a perda/reconexão controlada de uma fonte. **Não comprova** que o payload identifica o aplicativo hospedeiro, nem sinais de subagente, ferramenta, tarefa ou skill que não ocorreram nesses chats. O aceite funcional do PI segue pendente.

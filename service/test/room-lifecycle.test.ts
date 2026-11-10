@@ -62,18 +62,19 @@ test('perda preserva sala incerta; evento antigo e projeto fora do vínculo não
   store.reconcileSessionSourceBindings([source('a','fonte-1')]);
   assert.equal(apply(store,event('fonte-1','b','workspace.opened','fora',1),1).reason,'unknown_project');
   assert.equal(apply(store,{...event('fonte-1','a','workspace.opened','versao-fora',1),sourceVersion:'fixture-antiga'},2).reason,'unknown_project');
+  assert.equal(apply(store,{...event('fonte-1','a','workspace.opened','provedor-fora',1),provider:'codex'},3).reason,'unknown_project');
   assert.equal(apply(store,{...event('nao-autorizada','a','session.observed','sessao-fora',1),provider:'claude',sessionKey:'s-fora'},1).reason,'unknown_project');
   assert.deepEqual(placements(store),[]);
-  apply(store,event('fonte-1','a','workspace.opened','abre',2),2);
-  apply(store,event('fonte-1',undefined,'source.unavailable','perda',4),3);
+  apply(store,event('fonte-1','a','workspace.opened','abre',2),4);
+  apply(store,event('fonte-1',undefined,'source.unavailable','perda',4),5);
   assert.equal(placements(store)[0]?.status,'uncertain');
-  apply(store,event('fonte-1','a','workspace.opened','atrasado',3),4);
+  apply(store,event('fonte-1','a','workspace.opened','atrasado',3),6);
   assert.equal(placements(store)[0]?.status,'uncertain');
-  apply(store,event('fonte-1','a','workspace.opened','retorna',5),5);
+  apply(store,event('fonte-1','a','workspace.opened','retorna',5),7);
   assert.equal(placements(store)[0]?.status,'active');
-  apply(store,event('fonte-1','a','workspace.closed','fecha',6),6);
+  apply(store,event('fonte-1','a','workspace.closed','fecha',6),8);
   assert.deepEqual(placements(store),[]);
-  assert.equal(store.quarantineCount(),3);
+  assert.equal(store.quarantineCount(),4);
 });
 
 test('sessões paralelas mantêm uma sala até o último encerramento observado', t => {
@@ -116,4 +117,37 @@ test('projetos só configurados não empurram o primeiro projeto ativo ao segund
   apply(store,event('fonte-7','p7','workspace.opened','primeiro-ativo',1),1);
   assert.deepEqual(placements(store).map(item=>[item.projectId,item.sectorId,item.slotId]),
     [['p7','setor-01','slot-01']]);
+});
+
+test('replay conserva sala aberta apenas por workspace e a retira após fechamento', t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'wr3d-rooms-'));
+  const store = new EventStore(path.join(directory, 'state.sqlite'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  store.registerProject({projectId:'a',name:'API',canonicalPath:'C:\\Projetos\\a'});
+  store.reconcileSessionSourceBindings([source('a','fonte-1')]);
+  const base = Date.now() + 1000;
+  const openedAt = new Date(base).toISOString();
+  const during = new Date(base + 1000).toISOString();
+  const closedAt = new Date(base + 2000).toISOString();
+  const after = new Date(base + 3000).toISOString();
+  apply(store,{...event('fonte-1','a','workspace.opened','abre-replay',1),observedAt:openedAt,receivedAt:openedAt},1);
+  assert.deepEqual((store.historicalSnapshot(during).roomPlacements as {projectId:string;status:string}[])
+    .map(room=>[room.projectId,room.status]),[['a','active']]);
+  apply(store,{...event('fonte-1','a','workspace.closed','fecha-replay',2),observedAt:closedAt,receivedAt:closedAt},2);
+  assert.deepEqual(store.historicalSnapshot(after).roomPlacements,[]);
+});
+
+test('perda usa ordem cronológica com timestamps de precisão diferente', t => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'wr3d-rooms-'));
+  const store = new EventStore(path.join(directory, 'state.sqlite'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  store.registerProject({projectId:'a',name:'API',canonicalPath:'C:\\Projetos\\a'});
+  store.reconcileSessionSourceBindings([source('a','fonte-1')]);
+  apply(store,event('fonte-1','a','workspace.opened','abre-inteiro',2),1);
+  apply(store,{...event('fonte-1',undefined,'source.unavailable','perda-fracao',2),observedAt:'2026-11-09T20:00:02.500Z'},2);
+  assert.equal(placements(store)[0]?.status,'uncertain');
+  apply(store,{...event('fonte-1','a','workspace.opened','reabre-fracao',3),observedAt:'2026-11-09T20:00:03.500Z'},3);
+  assert.equal(placements(store)[0]?.status,'active');
+  apply(store,event('fonte-1',undefined,'source.unavailable','perda-antiga',3),4);
+  assert.equal(placements(store)[0]?.status,'active');
 });

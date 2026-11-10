@@ -14,7 +14,7 @@ Estado: **pass técnico local** para serviço, contratos, Unity e Player com fix
 | Prova | Resultado | Evidência |
 |---|---|---|
 | Contratos, Node 24 | **pass**, 17/17 | `npm test` em `contracts/` |
-| Serviço, Node 24 | **pass**, 180/180 | `npm test` em `service/` |
+| Serviço, Node 24 | **pass**, 182/182 | `npm test` em `service/` |
 | Tipagem | **pass** | `npm run typecheck` em `service/` |
 | Unity EditMode, 6000.3.27f1 | **pass**, 15/15 | `Logs/issue-48-editmode-final.xml` |
 | Unity PlayMode, 6000.3.27f1 | **pass**, 26/26 | `Logs/issue-48-playmode-sector-r2.xml` |
@@ -22,6 +22,10 @@ Estado: **pass técnico local** para serviço, contratos, Unity e Player com fix
 | Player 1280×720, dois projetos fictícios homônimos `API` | **pass**, duas salas `atlas` e `orion` no setor 01, HTTP conectado, processo exit 0 | [Captura sintética](issue-48-two-rooms.png); recibo local `Logs/issue-48-player-final/issue-48-two-rooms.json` |
 
 O ensaio do Player usa `service/scripts/issue-48-player-proof.mjs`, SQLite em memória, origem `fixture-48` e token efêmero. Não acessa checkout, sessão ou log de projeto real. A captura mostra as duas salas com IDs distintos; o teste PlayMode verifica a busca por um sétimo projeto e a troca para o setor 02. O recibo mede apenas 120 frames de captura, portanto não comprova RNF-02.
+
+A [regressão de isolamento por fonte](seguranca-issue-48.md) registra a rejeição de projeto, versão e provedor divergentes, além da revisão do diff em `AgentPresenter.cs`.
+
+A revisão da PR #58 identificou duas falhas corrigidas no serviço: replay de sala sustentada apenas por workspace e ordenação de perda de fonte com timestamps de precisões diferentes. Ambas tiveram reprodução falhando antes da correção e passaram depois; o conjunto focado de histórico e salas passou 45/45.
 
 ## Limites e continuidade
 

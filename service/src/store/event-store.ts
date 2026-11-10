@@ -62,6 +62,7 @@ type Row = Record<string, unknown>;
 
 export class EventStore {
   private readonly db: Database.Database;
+  private readonly trustedReplayEventIds = new Set<string>();
   readonly infrastructure: InfrastructureStore;
   readonly history: HistoryStore;
   readonly commands: CommandAudit;
@@ -313,6 +314,7 @@ export class EventStore {
     }
     const valid = validateEvent(input);
     const event = valid ? input as NormalizedEvent : null;
+    const trustedReplay = Boolean(event && this.trustedReplayEventIds.has(event.eventId));
     if (event && event.sourceId !== cursor.sourceId) throw new Error('Fonte do evento difere do cursor');
     if (event?.ingestionMode === 'demo') throw new Error('Demonstração não entra no store live');
     const operation = this.db.transaction((): ApplyResult => {
@@ -321,9 +323,9 @@ export class EventStore {
         .get(event.sourceId) as { project_id: string;source_version:string;provider:string } | undefined;
       const sessionEvent = event && /^(workspace|session|agent|task|tool|skill|message|request)\./.test(event.type);
       if (!event || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
-        (boundProject && (boundProject.project_id !== event.projectId || (sessionEvent &&
+        (!trustedReplay && ((boundProject && (boundProject.project_id !== event.projectId || (sessionEvent &&
           (boundProject.source_version !== event.sourceVersion || (event.provider && boundProject.provider !== event.provider))))) ||
-        (sessionEvent && !boundProject && (event.type.startsWith('workspace.') || this.number('session_source_authorization_enabled') === 1))))) {
+        (sessionEvent && !boundProject && (event.type.startsWith('workspace.') || this.number('session_source_authorization_enabled') === 1))))))) {
         const reason = !event ? 'schema_invalid' : 'unknown_project';
         this.db.prepare('INSERT OR IGNORE INTO quarantine(source_id, file_key, generation, offset, reason, recorded_at) VALUES (?, ?, ?, ?, ?, ?)')
           .run(cursor.sourceId, cursor.fileKey, cursor.generation, cursor.offset, reason, new Date().toISOString());
@@ -445,8 +447,12 @@ export class EventStore {
           .run(event.payload.invocationId,event.sessionKey,event.agentKey??null,kind,event.payload.name,status,event.observedAt);
       }
     } else if (event.type === 'source.unavailable') {
-      this.db.prepare("UPDATE workspace_presence SET status='uncertain' WHERE source_id=? AND status='open' AND observed_at<=?")
-        .run(event.sourceId,event.observedAt);
+      const openWorkspaces = this.db.prepare("SELECT workspace_key,observed_at FROM workspace_presence WHERE source_id=? AND status='open'")
+        .all(event.sourceId) as {workspace_key:string;observed_at:string}[];
+      const markUncertain = this.db.prepare("UPDATE workspace_presence SET status='uncertain' WHERE source_id=? AND workspace_key=?");
+      for (const workspace of openWorkspaces)
+        if (compareTimestamp(workspace.observed_at,event.observedAt) <= 0)
+          markUncertain.run(event.sourceId,workspace.workspace_key);
       const rows = this.db.prepare("SELECT session_key, presence, freshness, last_seen, source_unavailable_at FROM sessions WHERE source_id = ? AND presence != 'encerrada'").all(event.sourceId) as { session_key: string; presence: SessionState['presence']; freshness: SessionState['freshness']; last_seen: string; source_unavailable_at: string | null }[];
       for (const row of rows) {
         const next = reduceSession({ presence: row.presence, freshness: row.freshness, lastSeen: row.last_seen, sourceUnavailableAt: row.source_unavailable_at }, 'source.unavailable', event.observedAt);
@@ -551,7 +557,12 @@ export class EventStore {
       })();
       let replayOffset = 0;
       for (const row of historicalEvents) {
-        projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
+        projection.trustedReplayEventIds.add(row.event.eventId);
+        try {
+          projection.apply(row.event,{sourceId:row.event.sourceId,fileKey:'historical-replay',generation:0,offset:++replayOffset});
+        } finally {
+          projection.trustedReplayEventIds.delete(row.event.eventId);
+        }
       }
       for (const row of projection.db.prepare('SELECT project_id FROM room_placements').all() as {project_id:string}[])
         if (!placements.has(row.project_id)) projection.db.prepare('DELETE FROM room_placements WHERE project_id=?').run(row.project_id);

@@ -8,7 +8,7 @@ A #28/#35 aprovou uma sala em um Player identificado e com prova operacional pon
 
 ## Primeira entrega
 
-O Unity Player Windows abre no quartel com **dois projetos ativos, independentes e autorizados**, observados pela mesma integração real. O primeiro alvo proposto é **Claude Code Desktop local no Windows**, na versão instalada. A escolha reaproveita a captura Claude do serviço; a prova da CLI da #31 não substitui a prova no aplicativo desktop. Se a versão disponível não emitir o sinal necessário, registrar o limite e submeter a troca da primeira fonte ao PI.
+O Unity Player Windows abre no quartel com **dois projetos ativos, independentes e autorizados**, observados pela mesma integração real. Por decisão do PI em 10/11/2026, a primeira fonte passou do plugin Codex no VS Code em `rrb-forjaOS`, cujo ensaio não produziu evento, para o **Claude Code no VS Code local Windows** em `arenahub`. Uma sessão real desta fonte chegou ao serviço, ainda sem prova no Player nem segundo projeto. A CLI, o app separado e a fixture não provam origem na extensão. [Claude Code Desktop fica para a #59](https://github.com/RodReis/war-room3d/issues/59).
 
 ### Vista geral e referência visual
 
@@ -48,4 +48,4 @@ Distinguir serviço acessível, fonte configurada, evento recebido, evento aplic
 
 ## Expansão após a primeira entrega
 
-Abrir a cafeteria e a sala de reunião do PI. Integrar **VS Code** e **Codex Desktop** em provas independentes no Windows e provar que a mesma identidade de projeto reaproveita a sala em várias fontes. VS Code deve distinguir contexto de workspace, agente do Chat e extensão de terceiros. Codex Desktop deve provar origem no aplicativo e as capacidades da versão instalada. Claude Code Desktop mantém a cobertura validada na primeira entrega. Sessão em nuvem, leitura de chat e capacidade de envio requerem evidência e autorização próprias.
+Abrir a cafeteria e a sala de reunião do PI. Integrar a **descoberta de workspaces do VS Code**, **Claude Code Desktop** e **Codex Desktop** em provas independentes no Windows e provar que a mesma identidade de projeto reaproveita a sala em várias fontes. A descoberta de workspace no VS Code deve ser separada da sessão do plugin Codex e do agente do Chat. Codex Desktop e Claude Code Desktop devem provar origem no próprio aplicativo e capacidades da versão instalada. Sessão em nuvem, leitura de chat e capacidade de envio requerem evidência e autorização próprias.

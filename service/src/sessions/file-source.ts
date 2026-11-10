@@ -150,15 +150,22 @@ export class SessionFileCollector {
                 !this.store.matchesProjectPathHash(source.projectId,(record as {cwdHash:string}).cwdHash)))
               throw new SourceInputError('invalid_scope');
             if (source.provider === 'codex') {
-              const envelope = record as {method?:string;params?:{threadId?:string;thread?:{id?:string;cwdHash?:string}}};
-              const thread = envelope?.params?.thread;
-              if (envelope?.method === 'thread/started') {
-                if (!thread?.id || !thread.cwdHash || !this.store.matchesProjectPathHash(source.projectId,thread.cwdHash))
+              const envelope = record as {hook_event_name?:string;session_id?:string;cwdHash?:string;method?:string;params?:{threadId?:string;thread?:{id?:string;cwdHash?:string}}};
+              if (envelope?.hook_event_name) {
+                if (!envelope.session_id || !envelope.cwdHash || !this.store.matchesProjectPathHash(source.projectId,envelope.cwdHash) ||
+                  (envelope.hook_event_name !== 'SessionStart' &&
+                    !this.store.hasSessionContext(sessionKey('codex',source.accountRef,envelope.session_id),source.sourceId,source.projectId,'codex')))
                   throw new SourceInputError('invalid_scope');
-              } else if (envelope?.method && ['turn/started','turn/completed','item/started','item/completed'].includes(envelope.method)) {
-                const native = envelope.params?.threadId;
-                if (!native || !this.store.hasSessionContext(sessionKey('codex',source.accountRef,native),source.sourceId,source.projectId,'codex'))
-                  throw new SourceInputError('invalid_scope');
+              } else {
+                const thread = envelope?.params?.thread;
+                if (envelope?.method === 'thread/started') {
+                  if (!thread?.id || !thread.cwdHash || !this.store.matchesProjectPathHash(source.projectId,thread.cwdHash))
+                    throw new SourceInputError('invalid_scope');
+                } else if (envelope?.method && ['turn/started','turn/completed','item/started','item/completed'].includes(envelope.method)) {
+                  const native = envelope.params?.threadId;
+                  if (!native || !this.store.hasSessionContext(sessionKey('codex',source.accountRef,native),source.sourceId,source.projectId,'codex'))
+                    throw new SourceInputError('invalid_scope');
+                }
               }
             }
             const recordId = `${fileKey}:${generation}:${cursor.offset}`;

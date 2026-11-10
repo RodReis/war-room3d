@@ -16,13 +16,14 @@
 |---|---|---|---|
 | 1 | [#47](https://github.com/RodReis/war-room3d/issues/47) Vista geral 3D e UX | Base atual | Dois cartões legíveis sem clique, cena navegável e comparação com o conceito no Player. |
 | 2 | [#48](https://github.com/RodReis/war-room3d/issues/48) Salas dinâmicas | Base atual | Criação, estabilidade, fechamento e reconexão com duas identidades e sem duplicação. |
-| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Claude Code Desktop local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Origem desktop e versão confirmadas, metadados de dois projetos no Player. |
+| 3 | [#49](https://github.com/RodReis/war-room3d/issues/49) Claude Code no VS Code local | [#48](https://github.com/RodReis/war-room3d/issues/48) | Dois projetos reais chegaram ao mesmo Player; perda/reconexão da fonte do forja comprovada. Aceite funcional do PI registrado. Ensaio Codex no VS Code sem evento. |
 | 4 | [#50](https://github.com/RodReis/war-room3d/issues/50) Avatares | [#47](https://github.com/RodReis/war-room3d/issues/47), [#48](https://github.com/RodReis/war-room3d/issues/48) | Nomes, roupas distintas, movimento e seleção com estados verificáveis. |
 | 5 | [#51](https://github.com/RodReis/war-room3d/issues/51) Gráfico | [#48](https://github.com/RodReis/war-room3d/issues/48), [#49](https://github.com/RodReis/war-room3d/issues/49) | Ação real isolada por projeto, lacuna quando falta cobertura e drill-down para evidência. |
 | Gate | [#52](https://github.com/RodReis/war-room3d/issues/52) Validação integrada | 1–5 | Aceite do PI no mesmo Player Windows com arte e jornada real. |
 | Expansão | [#53](https://github.com/RodReis/war-room3d/issues/53) Cafeteria e sala do PI | [#52](https://github.com/RodReis/war-room3d/issues/52) | Dois espaços fixos navegáveis, disponíveis com e sem projetos. |
-| Expansão | [#54](https://github.com/RodReis/war-room3d/issues/54) VS Code | [#52](https://github.com/RodReis/war-room3d/issues/52) | Workspace aberto cria sala e fechamento concilia outras fontes. |
+| Expansão | [#54](https://github.com/RodReis/war-room3d/issues/54) Workspaces VS Code | [#52](https://github.com/RodReis/war-room3d/issues/52) | Workspace aberto cria sala e fechamento concilia outras fontes, sem confundir com o plugin Codex. |
 | Expansão | [#55](https://github.com/RodReis/war-room3d/issues/55) Codex Desktop | [#52](https://github.com/RodReis/war-room3d/issues/52) | Fonte comprovada no aplicativo desktop atualiza a sala existente sem duplicação. |
+| Expansão | [#59](https://github.com/RodReis/war-room3d/issues/59) Claude Code Desktop | [#49](https://github.com/RodReis/war-room3d/issues/49) e decisão do PI | Prova independente na aba Code local do aplicativo, sem transferir a prova do VS Code. |
 
 ## Primeira entrega
 
@@ -46,12 +47,12 @@ Pontos de entrada: `service/src/domain/identity.ts`, `service/src/store/event-st
 
 ### 3 · Primeira fonte real [#49](https://github.com/RodReis/war-room3d/issues/49)
 
-Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais](https://code.claude.com/docs/en/hooks).
+Pontos de entrada: `service/src/sessions/capture-source.ts`, `adapters.ts`, `file-source.ts` e `service/test/session-sources.test.ts`. Referência do mecanismo e dos limites atuais: [#31](../../validation/sala-referencia/issue-31-observacao.md) e [hooks oficiais Claude](https://code.claude.com/docs/en/hooks). O PI autorizou a prova do Claude Code no VS Code em `arenahub` e `rrb-forja` após o ensaio sem evento do Codex em `rrb-forjaOS`; Claude Code Desktop fica para etapa posterior.
 
-- [ ] Conferir versão, Windows e modalidade local do Claude Code Desktop. Definir mecanismo mínimo comprovável para início, atividade e encerramento, registrando separadamente a capacidade de subagente, tarefa e skill. O aplicativo precisa expor sinal verificável.
-- [ ] Implementar/configurar captura opt-in compatível, com escopo canônico, configuração reversível e descarte de conteúdo antes da persistência. Instalar somente após autorização específica para os dois projetos.
-- [ ] Reproduzir duas sessões no próprio desktop. Observar fonte → spool sanitizado quando aplicável → store → API → Player. Confirmar que uma atividade em A não altera B e que origem do evento aparece na interface.
-- [ ] Exercitar parada, reconexão e reinício. Relatar versão, eventos observados, deduplicação, último evento aplicado e procedimento de revogação em `docs/validation/quartel-vivo/claude-desktop.md`. Se não houver suporte, registrar o bloqueio da versão e pedir decisão sobre a primeira fonte.
+- [x] Conferir runtime Claude Code `2.1.322`; observar início, submissão e `Stop` nativos nos dois projetos. Subagente, ferramenta, tarefa e skill não foram observados.
+- [x] Configurar hooks opt-in somente nos dois projetos autorizados, sanitizar antes da persistência e restaurar os arquivos locais originais byte a byte após o ensaio.
+- [x] Observar fonte → spool sanitizado → store → API → Player em duas salas independentes. A atribuição ao painel VS Code depende da ação controlada pelo PI e da correlação temporal; o hook não informa o aplicativo hospedeiro.
+- [x] Exercitar perda e reconexão da fonte do forja com novo sinal nativo; reinício anterior do serviço com o mesmo banco e spool não duplicou a sessão. [Relatório dos dois projetos](../../validation/quartel-vivo/claude-dual-arenahub-forja.md). [Aceite funcional do PI](https://github.com/RodReis/war-room3d/issues/49#issuecomment-6782348465) registrado em 10/11/2026.
 
 ### 4 · Agentes humanos [#50](https://github.com/RodReis/war-room3d/issues/50)
 
@@ -81,5 +82,6 @@ Pontos de entrada: `service/src/http/server.ts`, `service/src/store/event-store.
 ## Expansão
 
 - [ ] [#53](https://github.com/RodReis/war-room3d/issues/53) Criar prefabs e navegação da cafeteria e da sala de reunião do PI. Conferir posição estável, existência com zero projetos e isolamento das vagas dinâmicas.
-- [ ] [#54](https://github.com/RodReis/war-room3d/issues/54) Validar a [interface do VS Code](https://code.visualstudio.com/api) e o mecanismo documentado da versão. Abrir/fechar workspace autorizado, separar presença de trabalho e demonstrar coexistência com a fonte Claude. Testar multi-root e reinstalação/remoção apenas no escopo acordado.
+- [ ] [#54](https://github.com/RodReis/war-room3d/issues/54) Validar a [interface do VS Code](https://code.visualstudio.com/api) e o mecanismo documentado da versão. Abrir/fechar workspace autorizado, separar presença de trabalho de sessões do plugin Codex e demonstrar coexistência com outras fontes. Testar multi-root e reinstalação/remoção apenas no escopo acordado.
 - [ ] [#55](https://github.com/RodReis/war-room3d/issues/55) Confirmar as capacidades documentadas da versão do [Codex](https://github.com/openai/codex). Provar no desktop real o fluxo de projeto/sessão, trust e revogação, reconexão e coexistência com outras fontes. Declarar limitações com evidência; não transferir prova de CLI ou App Server próprio para o desktop.
+- [ ] [#59](https://github.com/RodReis/war-room3d/issues/59) Validar Claude Code Desktop na aba Code local, com autorização própria de projetos/sessões, hash do aplicativo e versão interna; não transferir prova de terminal ou VS Code.

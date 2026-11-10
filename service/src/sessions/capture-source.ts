@@ -1,4 +1,4 @@
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -13,20 +13,24 @@ const contentText = (value:unknown):string|null => typeof value === 'string' && 
 export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, includeConversationContent=false): RecordValue | null {
   const input = object(raw);
   if (!input) return null;
-  if (provider === 'claude') {
+  if (provider === 'claude' || typeof input.hook_event_name === 'string') {
     const hook = string(input.hook_event_name);
     const session = string(input.session_id);
-    if (!hook || !session || typeof input.cwd !== 'string' || !['SessionStart','SessionEnd','UserPromptSubmit','UserPromptExpansion','Stop','SubagentStart','SubagentStop','PreToolUse','PostToolUse','PostToolUseFailure','TaskCreated','TaskCompleted','PermissionRequest'].includes(hook)) return null;
+    const allowed = provider === 'claude'
+      ? ['SessionStart','SessionEnd','UserPromptSubmit','UserPromptExpansion','Stop','SubagentStart','SubagentStop','PreToolUse','PostToolUse','PostToolUseFailure','TaskCreated','TaskCompleted','PermissionRequest']
+      : ['SessionStart','SessionEnd','UserPromptSubmit','Stop','SubagentStart','SubagentStop','PreToolUse','PostToolUse','PermissionRequest','Interrupt'];
+    if (!hook || !session || typeof input.cwd !== 'string' || !allowed.includes(hook)) return null;
     let cwdHash: string;
     try { cwdHash = createHash('sha256').update(normalizeProjectPath(input.cwd)).digest('hex'); }
     catch { return null; }
     return {hook_event_name:hook,session_id:session,cwdHash,
       ...(string(input.prompt_id) ? {prompt_id:string(input.prompt_id)} : {}),
-      ...(string(input.source) ? {source:string(input.source)} : {}),
+      ...(string(input.turn_id) ? {turn_id:string(input.turn_id)} : {}),
+      ...(['startup','resume','clear','compact','fork'].includes(String(input.source)) ? {source:input.source} : {}),
       ...(string(input.agent_id) ? {agent_id:string(input.agent_id)} : {}),
       ...(string(input.parent_agent_id) ? {parent_agent_id:string(input.parent_agent_id)} : {}),
       ...(string(input.tool_use_id) ? {tool_use_id:string(input.tool_use_id)} : {}),
-      ...(string(input.tool_name) ? {tool_name:string(input.tool_name)} : {}),
+      ...(commandName(input.tool_name) ? {tool_name:commandName(input.tool_name)} : {}),
       ...(string(input.task_id) ? {task_id:string(input.task_id)} : {}),
       ...(hook === 'UserPromptExpansion' && ['slash_command','mcp_prompt'].includes(String(input.expansion_type)) ? {expansion_type:input.expansion_type} : {}),
       ...(hook === 'UserPromptExpansion' && commandName(input.command_name) ? {command_name:commandName(input.command_name)} : {}),
@@ -35,7 +39,7 @@ export function sanitizeSourceRecord(provider: 'claude'|'codex', raw: unknown, i
       ...(includeConversationContent && hook === 'Stop' && contentText(input.last_assistant_message) ? {last_assistant_message:contentText(input.last_assistant_message)} : {}),
       ...(includeConversationContent && ((hook === 'UserPromptSubmit' && typeof input.prompt === 'string' && input.prompt.length > 8000) ||
         (hook === 'Stop' && typeof input.last_assistant_message === 'string' && input.last_assistant_message.length > 8000)) ? {contentTruncated:true} : {}),
-      ...(string(object(input.tool_input)?.skill) ? {tool_input:{skill:string(object(input.tool_input)?.skill)}} : {})};
+      ...(commandName(object(input.tool_input)?.skill) ? {tool_input:{skill:commandName(object(input.tool_input)?.skill)}} : {})};
   }
   const method = string(input.method);
   const params = object(input.params);
@@ -72,13 +76,30 @@ async function capture(): Promise<void> {
   const [provider,filename,mode,contentMode] = process.argv.slice(2);
   if ((provider !== 'claude' && provider !== 'codex') || !filename || !path.isAbsolute(filename)) throw new Error('Provedor e arquivo absoluto obrigatórios');
   if (contentMode !== undefined && contentMode !== '--content') throw new Error('Modo de conteúdo inválido');
-  if (provider === 'claude' && mode !== undefined && mode !== '--content') throw new Error('Modo de captura inválido');
+  if (provider === 'claude' && mode !== undefined && mode !== '--content' && mode !== '--new-sessions') throw new Error('Modo de captura inválido');
+  if (provider === 'codex' && mode !== undefined && mode !== '--stream' && mode !== '--new-sessions') throw new Error('Modo de captura inválido');
+  if (mode === '--new-sessions' && contentMode !== undefined) throw new Error('Modo de conteúdo incompatível');
   const includeConversationContent=mode === '--content' || contentMode === '--content';
+  const sessionDirectory = `${filename}.sessions`;
   const persist = (raw: Buffer): void => {
     if (raw.length > 64*1024) throw new Error('Evento de fonte excede limite');
     const input = JSON.parse(raw.toString('utf8')) as unknown;
+    const record = object(input);
+    const nativeSessionId = record && string(record.session_id);
+    const startup = record?.hook_event_name === 'SessionStart' && record.source === 'startup';
+    if (mode === '--new-sessions') {
+      if (!nativeSessionId) return;
+      const marker = path.join(sessionDirectory,createHash('sha256').update(nativeSessionId).digest('hex'));
+      if (!startup && !existsSync(marker)) return;
+    }
     const safe = sanitizeSourceRecord(provider,input,includeConversationContent);
-    if (safe) appendFileSync(filename,`${JSON.stringify({...safe,capturedAt:safe.capturedAt ?? new Date().toISOString()})}\n`,{encoding:'utf8',flag:'a',mode:0o600});
+    if (safe) {
+      appendFileSync(filename,`${JSON.stringify({...safe,capturedAt:safe.capturedAt ?? new Date().toISOString()})}\n`,{encoding:'utf8',flag:'a',mode:0o600});
+      if (mode === '--new-sessions' && startup && nativeSessionId) {
+        mkdirSync(sessionDirectory,{recursive:true});
+        writeFileSync(path.join(sessionDirectory,createHash('sha256').update(nativeSessionId).digest('hex')),'',{flag:'a',mode:0o600});
+      }
+    }
   };
   if (mode === '--stream' && provider === 'codex') {
     let pending = Buffer.alloc(0);
@@ -96,7 +117,6 @@ async function capture(): Promise<void> {
     if (pending.length) persist(pending);
     return;
   }
-  if (provider === 'codex' && mode !== undefined) throw new Error('Modo de captura inválido');
   const chunks: Buffer[] = [];
   let size = 0;
   for await (const chunk of process.stdin) {

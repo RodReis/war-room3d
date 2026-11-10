@@ -72,18 +72,19 @@ export function adaptConversationRecord(source: SessionSource, raw: unknown, rec
 export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId: string, receivedAt: string): NormalizedEvent[] {
   const input = object(raw);
   if (!input || !recordId) return [];
-  const params = source.provider === 'codex' ? object(input.params) : input;
+  const codexHook = source.provider === 'codex' && typeof input.hook_event_name === 'string';
+  const params = source.provider === 'codex' && !codexHook ? object(input.params) : input;
   if (!params) return [];
-  const method = source.provider === 'codex' ? string(input.method) : string(input.hook_event_name);
-  const thread = source.provider === 'codex' ? object(params.thread) : null;
-  const nativeSessionId = source.provider === 'codex' ? string(params.threadId) ?? string(thread?.id) : string(params.session_id);
+  const method = source.provider === 'codex' && !codexHook ? string(input.method) : string(input.hook_event_name);
+  const thread = source.provider === 'codex' && !codexHook ? object(params.thread) : null;
+  const nativeSessionId = source.provider === 'codex' && !codexHook ? string(params.threadId) ?? string(thread?.id) : string(params.session_id);
   if (!nativeSessionId || !method) return [];
   const capturedAt = string(input.capturedAt);
   const observedAt = capturedAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(capturedAt) && Number.isFinite(Date.parse(capturedAt)) ? capturedAt : receivedAt;
-  const item = source.provider === 'codex' ? object(params.item) : null;
-  const stableNativeId = source.provider === 'codex'
+  const item = source.provider === 'codex' && !codexHook ? object(params.item) : null;
+  const stableNativeId = source.provider === 'codex' && !codexHook
     ? string(item?.id) ?? string(params.turnId) ?? string(object(params.turn)?.id)
-    : string(input.tool_use_id) ?? string(input.task_id) ?? string(input.agent_id) ?? string(input.prompt_id);
+    : string(input.tool_use_id) ?? string(input.task_id) ?? string(input.agent_id) ?? string(input.turn_id) ?? string(input.prompt_id);
   const eventRecordId = stableNativeId ? `native-${id(nativeSessionId,method,stableNativeId)}` : recordId;
   const key = sessionKey(source.provider, source.accountRef, nativeSessionId);
   const base = (type: string, suffix: string, payload: NormalizedEvent['payload'] = {}, agentKey?: string): NormalizedEvent => ({
@@ -95,7 +96,7 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
   const mainAgent = `a-${id(key,nativeSessionId)}`;
   const agent = (native: string) => `a-${id(key,native)}`;
   const codexAgent = (native: string) => `a-${id(sessionKey('codex',source.accountRef,native),native)}`;
-  if (source.provider === 'claude') {
+  if (source.provider === 'claude' || codexHook) {
     const subagentId = string(input.agent_id);
     const currentAgent = subagentId ? agent(subagentId) : mainAgent;
     if (method === 'SessionStart') return [base('session.observed','session',input.source === 'resume' ? {reason:'source_recovered'} : {}),base('agent.observed','main-agent',input.source === 'resume' ? {reason:'source_recovered'} : {},mainAgent)];
@@ -117,7 +118,7 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
       const toolUseId = string(input.tool_use_id);
       if (!toolName || !toolUseId) return [];
       const invocationId = `i-${id(key,toolUseId)}`;
-      if (toolName === 'Skill' && method === 'PreToolUse') {
+      if (source.provider === 'claude' && toolName === 'Skill' && method === 'PreToolUse') {
         const skill = safeName(object(input.tool_input)?.skill);
         return skill ? [base('skill.observed','skill',{invocationId,name:skill},currentAgent)] : [];
       }

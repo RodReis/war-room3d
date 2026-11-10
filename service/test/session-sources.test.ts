@@ -90,6 +90,68 @@ test('comando de hook grava somente campos permitidos', t => {
   assert.equal(saved.includes('segredo-sintetico'),false);
 });
 
+test('captura delimitada aceita apenas sessões iniciadas após a ativação', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-new-sessions-'));
+  t.after(() => rmSync(directory,{recursive:true,force:true}));
+  const filePath = path.join(directory,'claude.jsonl');
+  const script = new URL('../src/sessions/capture-source.ts',import.meta.url);
+  const scriptPath = process.platform === 'win32' ? decodeURIComponent(script.pathname.slice(1)) : decodeURIComponent(script.pathname);
+  const send = (event: object) => {
+    const result = spawnSync(process.execPath,[scriptPath,'claude',filePath,'--new-sessions'],{
+      input:JSON.stringify(event),encoding:'utf8'
+    });
+    assert.equal(result.status,0,result.stderr);
+  };
+  const base = {cwd:'C:\\projeto',prompt:'conteúdo privado',tool_input:{command:'segredo'}};
+  send({...base,hook_event_name:'UserPromptSubmit',session_id:'antiga'});
+  send({...base,hook_event_name:'SessionStart',session_id:'antiga',source:'resume'});
+  send({...base,hook_event_name:'SessionStart',session_id:'nova',source:'startup'});
+  send({...base,hook_event_name:'UserPromptSubmit',session_id:'antiga'});
+  send({...base,hook_event_name:'UserPromptSubmit',session_id:'nova'});
+  const saved = readFileSync(filePath,'utf8');
+  const records = saved.trim().split('\n').map(line => JSON.parse(line) as {session_id:string;hook_event_name:string});
+  assert.deepEqual(records.map(record => [record.session_id,record.hook_event_name]),
+    [['nova','SessionStart'],['nova','UserPromptSubmit']]);
+  assert.equal(saved.includes('conteúdo privado'),false);
+  assert.equal(saved.includes('segredo'),false);
+});
+
+test('hooks Codex de sessão nova atravessam captura e store sem conteúdo', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-codex-hook-'));
+  const store = new EventStore(path.join(directory,'events.db'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  const filePath = path.join(directory,'codex.jsonl');
+  const projectPath = 'D:\\projetos\\forjaOS';
+  const source = {sourceId:'codex-vscode',sourceVersion:'0.164.0-alpha.11.1',provider:'codex' as const,
+    projectId:'forjaOS',accountRef:'vscode-local',filePath};
+  store.registerProject({projectId:'forjaOS',name:'ForjaOS',canonicalPath:projectPath});
+  const collector = new SessionFileCollector(store,[source]);
+  const script = new URL('../src/sessions/capture-source.ts',import.meta.url);
+  const scriptPath = process.platform === 'win32' ? decodeURIComponent(script.pathname.slice(1)) : decodeURIComponent(script.pathname);
+  const send = (event: object) => {
+    const result = spawnSync(process.execPath,[scriptPath,'codex',filePath,'--new-sessions'],{
+      input:JSON.stringify(event),encoding:'utf8'
+    });
+    assert.equal(result.status,0,result.stderr);
+  };
+  const base = {session_id:'thread-1',cwd:projectPath,transcript_path:'D:\\privado\\history.jsonl'};
+  send({...base,hook_event_name:'UserPromptSubmit',turn_id:'old',prompt:'não coletar'});
+  send({...base,hook_event_name:'SessionStart',source:'startup'});
+  send({...base,hook_event_name:'UserPromptSubmit',turn_id:'turn-1',prompt:'não coletar'});
+  send({...base,hook_event_name:'PreToolUse',turn_id:'turn-1',tool_name:'Bash',tool_use_id:'tool-1',tool_input:{command:'segredo'}});
+  send({...base,hook_event_name:'PostToolUse',turn_id:'turn-1',tool_name:'Bash',tool_use_id:'tool-1',tool_response:{text:'segredo'}});
+  send({...base,hook_event_name:'Stop',turn_id:'turn-1',last_assistant_message:'não coletar'});
+  const saved = readFileSync(filePath,'utf8');
+  assert.equal(saved.trim().split('\n').length,5);
+  assert.equal(saved.includes('não coletar') || saved.includes('segredo') || saved.includes('history.jsonl'),false);
+  collector.poll();
+  const snapshot = store.snapshot();
+  assert.equal((snapshot.sources as {status:string}[])[0].status,'atual');
+  assert.equal((snapshot.sessions as {projectId:string;presence:string}[])[0].projectId,'forjaOS');
+  assert.equal((snapshot.sessions as {projectId:string;presence:string}[])[0].presence,'aguardando');
+  assert.deepEqual((snapshot.invocations as {name:string;status:string}[]).map(item=>[item.name,item.status]),[['Bash','resultado_observado']]);
+});
+
 test('captura Codex em fluxo não persiste conteúdo nem resposta RPC', t => {
   const directory = mkdtempSync(path.join(tmpdir(),'wr3d-codex-capture-'));
   t.after(() => rmSync(directory,{recursive:true,force:true}));

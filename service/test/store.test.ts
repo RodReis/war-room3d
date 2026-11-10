@@ -33,12 +33,12 @@ test('serviço inerte não abre porta e snapshot inicial é compatível', t => {
   service.close();
 });
 
-test('projetos e posições persistem, com sétimo projeto em outro setor', t => {
+test('cadastro não ocupa vagas dinâmicas antes de vínculo observado', t => {
   const { store } = temporaryStore(t);
   for (let i = 1; i <= 7; i++) store.registerProject({ projectId: `p${i}`, name: 'api', canonicalPath: `C:\\Projetos\\api-${i}` });
   const snapshot = store.snapshot();
   assert.equal((snapshot.projects as unknown[]).length, 7);
-  assert.deepEqual((snapshot.roomPlacements as unknown[])[6], { projectId: 'p7', sectorId: 'setor-02', slotId: 'slot-01', layoutVersion: '1' });
+  assert.deepEqual(snapshot.roomPlacements, []);
   assert.equal(store.resolveProject('c:/projetos/api-1'), 'p1');
   assert.equal(store.resolveProject('c:/projetos/nao-cadastrado'), null);
   assert.equal(validateSnapshot(snapshot), true, JSON.stringify(validateSnapshot.errors));

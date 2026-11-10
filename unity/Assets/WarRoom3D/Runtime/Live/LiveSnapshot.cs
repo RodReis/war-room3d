@@ -44,6 +44,14 @@ namespace WarRoom3D
             foreach (var project in snapshot.projects)
                 if (project == null || string.IsNullOrWhiteSpace(project.projectId) || string.IsNullOrWhiteSpace(project.name) || !projects.Add(project.projectId))
                     throw new ArgumentException("Projeto live inválido");
+            var placements = new HashSet<string>();
+            var projectPlacements = new HashSet<string>();
+            foreach (var placement in snapshot.roomPlacements)
+                if (placement == null || !projects.Contains(placement.projectId) || string.IsNullOrWhiteSpace(placement.sectorId) ||
+                    string.IsNullOrWhiteSpace(placement.slotId) || !placements.Add(placement.sectorId + "/" + placement.slotId) ||
+                    !projectPlacements.Add(placement.projectId) ||
+                    (!string.IsNullOrEmpty(placement.status) && placement.status != "active" && placement.status != "uncertain"))
+                    throw new ArgumentException("Sala live inválida");
             var resources = new HashSet<string>();
             foreach (var resource in snapshot.resources)
                 if (resource == null || string.IsNullOrWhiteSpace(resource.resourceId) || string.IsNullOrWhiteSpace(resource.environmentId) ||
@@ -71,7 +79,7 @@ namespace WarRoom3D
     }
 
     [Serializable] public sealed class LiveProject { public string projectId; public string name; }
-    [Serializable] public sealed class LiveRoomPlacement { public string projectId; public string sectorId; public string slotId; }
+    [Serializable] public sealed class LiveRoomPlacement { public string projectId; public string sectorId; public string slotId; public string status; public string lastSignalAt; }
     [Serializable] public sealed class LiveSession { public string sessionKey; public string projectId; public string provider; public string sourceId; public string presence; public string freshness; public string lastSeen; }
     [Serializable] public sealed class LiveAgent { public string agentKey; public string sessionKey; public string parentAgentKey; public string presence; public string parentStatus; }
     [Serializable] public sealed class LiveTask { public string taskId; public string sessionKey; public string agentKey; public string title; public string status; public string provenance; }

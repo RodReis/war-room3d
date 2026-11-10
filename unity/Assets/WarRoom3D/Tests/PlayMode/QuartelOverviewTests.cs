@@ -49,5 +49,28 @@ namespace WarRoom3D.Tests
             Assert.That(QuartelOverview.SourceLabel(new LiveSnapshot { mode = "demo" }, false, false), Is.EqualTo("Dados ilustrativos"));
             Assert.That(QuartelOverview.SourceLabel(new LiveSnapshot(), true, true), Is.EqualTo("Dados históricos"));
         }
+
+        [Test]
+        public void GlobalSearchFindsActiveProjectInSecondSectorAndKeepsHomonymsDistinct()
+        {
+            var state = new LiveSnapshot
+            {
+                projects = new[]
+                {
+                    new LiveProject { projectId = "api-a", name = "API" },
+                    new LiveProject { projectId = "api-b", name = "API" },
+                    new LiveProject { projectId = "inactive", name = "API" }
+                },
+                roomPlacements = new[]
+                {
+                    new LiveRoomPlacement { projectId = "api-a", sectorId = "setor-01", slotId = "slot-01", status = "active" },
+                    new LiveRoomPlacement { projectId = "api-b", sectorId = "setor-02", slotId = "slot-01", status = "uncertain" }
+                }
+            };
+            Assert.That(QuartelOverview.FindProjects(state, "api").ConvertAll(item => item.projectId),
+                Is.EqualTo(new[] { "api-a", "api-b" }));
+            Assert.That(QuartelOverview.FindProjects(state, "api-b").ConvertAll(item => item.projectId),
+                Is.EqualTo(new[] { "api-b" }));
+        }
     }
 }

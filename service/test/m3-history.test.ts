@@ -264,8 +264,8 @@ test('replay omite projeto futuro e inclui projeto evidenciado por evento ou Git
     {sourceId:'source1',fileKey:'synthetic',generation:1,offset:1});
   const replay=store.historicalSnapshot(at) as {projects:{projectId:string}[];roomPlacements:{projectId:string}[];layoutReference:string};
   assert.deepEqual(replay.projects.map(project=>project.projectId),['p1']);
-  assert.deepEqual(replay.roomPlacements,[]);
-  assert.equal(replay.layoutReference,'unavailable');
+  assert.deepEqual(replay.roomPlacements.map(placement=>placement.projectId),['p1']);
+  assert.equal(replay.layoutReference,'recorded');
   store.history.linkRepository({repositoryId:'42',owner:'owner-a',name:'same',projectId:'p2'});
   store.history.recordGithubMilestone({repositoryId:'42',projectId:'p2',entityType:'pull_request',entityId:'1',transition:'merged',
     occurredAt:eventAt,payload:{number:1}});
@@ -273,8 +273,8 @@ test('replay omite projeto futuro e inclui projeto evidenciado por evento ou Git
   assert.deepEqual(withGithub.projects.map(project=>project.projectId),['p1','p2']);
   const after=store.historicalSnapshot(new Date(Date.now()+3600000).toISOString()) as {projects:{projectId:string}[];roomPlacements:{projectId:string}[];layoutReference:string};
   assert.deepEqual(after.projects.map(project=>project.projectId),['p1','p2']);
-  assert.deepEqual(after.roomPlacements.map(placement=>placement.projectId),['p1','p2']);
-  assert.equal(after.layoutReference,'recorded');
+  assert.deepEqual(after.roomPlacements.map(placement=>placement.projectId),['p1']);
+  assert.equal(after.layoutReference,'partial');
 });
 
 test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
@@ -283,6 +283,11 @@ test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
   let store=new EventStore(dbPath);
   t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
   store.registerProject({projectId:'legacy',name:'Legado',canonicalPath:'C:\\legacy-layout'});
+  const observedAt=new Date().toISOString();
+  store.apply({schemaVersion:'1.0',eventId:'legacy-session',sourceEventId:'legacy-session',sourceId:'legacy-source',sourceVersion:'test',
+    type:'session.observed',observedAt,receivedAt:observedAt,projectId:'legacy',provider:'codex',sessionKey:'legacy-session',
+    provenance:'observed',ingestionMode:'live',payload:{},evidenceRefs:[]},
+    {sourceId:'legacy-source',fileKey:'legacy',generation:1,offset:1});
   store.close();
   const db=new Database(dbPath);
   db.exec("DROP TABLE github_entity_cursors; DROP TABLE history_github_observations; DROP TABLE room_placement_versions; UPDATE meta SET value=11 WHERE key='schema_version'");

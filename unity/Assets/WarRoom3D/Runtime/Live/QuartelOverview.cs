@@ -17,11 +17,11 @@ namespace WarRoom3D
             this.openProject = openProject;
         }
 
-        public void Render(LiveSnapshot state, bool current, string selectedProject)
+        public void Render(LiveSnapshot state, bool current, string selectedProject, string sectorId = "setor-01")
         {
             var placements = new List<LiveRoomPlacement>();
             foreach (var placement in state?.roomPlacements ?? Array.Empty<LiveRoomPlacement>())
-                if (placement != null && placement.sectorId == "setor-01") placements.Add(placement);
+                if (placement != null && placement.sectorId == sectorId) placements.Add(placement);
             placements.Sort((left, right) => string.CompareOrdinal(left.slotId, right.slotId));
 
             var active = new HashSet<string>();
@@ -43,7 +43,7 @@ namespace WarRoom3D
                 }
                 card.name = "overview-card-" + placement.slotId;
                 card.EnableInClassList("overview-selected", project.projectId == selectedProject);
-                UpdateCard(card, project, state, current, placement.slotId);
+                UpdateCard(card, project, state, current, placement);
                 index++;
             }
             foreach (var key in new List<string>(cards.Keys))
@@ -52,6 +52,20 @@ namespace WarRoom3D
                 cards[key].RemoveFromHierarchy();
                 cards.Remove(key);
             }
+        }
+
+        public static List<LiveProject> FindProjects(LiveSnapshot state, string query)
+        {
+            var found = new List<LiveProject>();
+            if (state?.projects == null || state.roomPlacements == null) return found;
+            var visible = new HashSet<string>();
+            foreach (var placement in state.roomPlacements)
+                if (placement != null) visible.Add(placement.projectId);
+            foreach (var project in state.projects)
+                if (project != null && visible.Contains(project.projectId) &&
+                    (project.name.IndexOf(query ?? "", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     project.projectId.IndexOf(query ?? "", StringComparison.OrdinalIgnoreCase) >= 0)) found.Add(project);
+            return found;
         }
 
         public static string SourceLabel(LiveSnapshot state, bool connected, bool replay)
@@ -85,7 +99,7 @@ namespace WarRoom3D
             card.Add(label);
         }
 
-        private static void UpdateCard(Button card, LiveProject project, LiveSnapshot state, bool current, string slotId)
+        private static void UpdateCard(Button card, LiveProject project, LiveSnapshot state, bool current, LiveRoomPlacement placement)
         {
             var workingAgents = 0;
             var workingSession = false;
@@ -93,6 +107,8 @@ namespace WarRoom3D
             var unknown = false;
             var present = false;
             DateTimeOffset? latest = null;
+            if (DateTimeOffset.TryParse(placement.lastSignalAt, CultureInfo.InvariantCulture, DateTimeStyles.None, out var roomSignal))
+                latest = roomSignal;
             foreach (var session in state.sessions)
             {
                 if (session.projectId != project.projectId) continue;
@@ -106,22 +122,22 @@ namespace WarRoom3D
             }
             foreach (var agent in AgentProjection.ForProject(state, project.projectId, current))
                 if (!agent.Uncertain && !agent.Ended && agent.Presence == "trabalhando") workingAgents++;
-            var status = !current ? "◇ Dados desatualizados" :
+            var status = !current || placement.status == "uncertain" ? "◇ Dados desatualizados" :
                 workingAgents > 0 ? "● Trabalhando" :
                 workingSession ? "● Sessão em atividade" :
                 waiting ? "○ Aguardando" :
                 unknown ? "◇ Fonte indisponível" :
-                present ? "○ Sessão observada" : "○ Sem sessão observada";
+                present ? "○ Sessão observada" : "○ Workspace aberto";
             var incidents = 0;
             foreach (var incident in state.incidents ?? Array.Empty<LiveIncident>())
                 if (Array.IndexOf(incident.projectIds, project.projectId) >= 0) incidents++;
 
-            card.Q<Label>("overview-index").text = $"SALA {slotId.Replace("slot-", "")}   /   ENTRAR";
+            card.Q<Label>("overview-index").text = $"SALA {placement.slotId.Replace("slot-", "")}   /   {project.projectId}";
             card.Q<Label>("overview-project").text = project.name;
             var statusLabel = card.Q<Label>("overview-status");
             statusLabel.text = status;
             statusLabel.EnableInClassList("status-waiting", waiting && !workingSession && workingAgents == 0 && current);
-            statusLabel.EnableInClassList("status-inactive", !current || (!present && !unknown));
+            statusLabel.EnableInClassList("status-inactive", !current || placement.status == "uncertain" || (!present && !unknown));
             card.Q<Label>("overview-agents").text = !current || (unknown && !present) ? "Atividade sem confirmação" :
                 workingAgents == 1 ? "1 agente trabalhando" : $"{workingAgents} agentes trabalhando";
             card.Q<Label>("overview-signal").text = latest.HasValue
@@ -130,7 +146,7 @@ namespace WarRoom3D
             var alert = card.Q<Label>("overview-alert");
             alert.text = incidents > 0 ? $"!  {incidents} incidente(s) observado(s)" : unknown || !current ? "!  Verificar fonte" : "Sem alertas observados";
             alert.EnableInClassList("status-attention", incidents > 0 || unknown || !current);
-            card.tooltip = project.name + " · " + status;
+            card.tooltip = project.name + " · " + project.projectId + " · " + status;
         }
     }
 }

@@ -116,7 +116,7 @@ test('captura delimitada aceita apenas sessões iniciadas após a ativação', t
   assert.equal(saved.includes('segredo'),false);
 });
 
-test('hooks Codex de sessão nova atravessam captura e store sem conteúdo', t => {
+test('hooks Codex repetidos no mesmo turn_id renovam presença após perda da fonte', t => {
   const directory = mkdtempSync(path.join(tmpdir(),'wr3d-codex-hook-'));
   const store = new EventStore(path.join(directory,'events.db'));
   t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
@@ -141,15 +141,39 @@ test('hooks Codex de sessão nova atravessam captura e store sem conteúdo', t =
   send({...base,hook_event_name:'PreToolUse',turn_id:'turn-1',tool_name:'Bash',tool_use_id:'tool-1',tool_input:{command:'segredo'}});
   send({...base,hook_event_name:'PostToolUse',turn_id:'turn-1',tool_name:'Bash',tool_use_id:'tool-1',tool_response:{text:'segredo'}});
   send({...base,hook_event_name:'Stop',turn_id:'turn-1',last_assistant_message:'não coletar'});
+  send({...base,hook_event_name:'UserPromptSubmit',turn_id:'turn-1',prompt:'não coletar de novo'});
   const saved = readFileSync(filePath,'utf8');
-  assert.equal(saved.trim().split('\n').length,5);
+  assert.equal(saved.trim().split('\n').length,6);
   assert.equal(saved.includes('não coletar') || saved.includes('segredo') || saved.includes('history.jsonl'),false);
   collector.poll();
   const snapshot = store.snapshot();
   assert.equal((snapshot.sources as {status:string}[])[0].status,'atual');
   assert.equal((snapshot.sessions as {projectId:string;presence:string}[])[0].projectId,'forjaOS');
-  assert.equal((snapshot.sessions as {projectId:string;presence:string}[])[0].presence,'aguardando');
+  assert.equal((snapshot.sessions as {projectId:string;presence:string}[])[0].presence,'trabalhando');
+  assert.equal((snapshot.agents as {presence:string}[])[0].presence,'trabalhando');
   assert.deepEqual((snapshot.invocations as {name:string;status:string}[]).map(item=>[item.name,item.status]),[['Bash','resultado_observado']]);
+  renameSync(filePath,`${filePath}.hold`);
+  collector.poll();
+  assert.equal((store.snapshot().sessions as {presence:string}[])[0].presence,'desconhecida');
+  renameSync(`${filePath}.hold`,filePath);
+  send({...base,hook_event_name:'UserPromptSubmit',turn_id:'turn-1',prompt:'continuar sem conteúdo'});
+  collector.poll();
+  assert.equal((store.snapshot().sessions as {presence:string}[])[0].presence,'trabalhando');
+  assert.equal((store.snapshot().agents as {presence:string}[])[0].presence,'trabalhando');
+  assert.equal((store.snapshot().sources as {status:string}[])[0].status,'atual');
+});
+
+test('hook Codex preserva identidade na releitura e distingue sinais no mesmo turno', () => {
+  const source = {sourceId:'codex-vscode',sourceVersion:'1',provider:'codex' as const,
+    projectId:'forjaOS',accountRef:'vscode-local',filePath:path.join(tmpdir(),'codex-fixture.jsonl')};
+  const raw = {hook_event_name:'UserPromptSubmit',session_id:'thread-1',turn_id:'turn-1',
+    capturedAt:'2026-11-11T19:00:12.000Z'};
+  const first = adaptSessionRecord(source,raw,'file-a:100','2026-11-11T19:00:13.000Z');
+  const replay = adaptSessionRecord(source,raw,'file-b:200','2026-11-11T19:00:14.000Z');
+  const next = adaptSessionRecord(source,{...raw,capturedAt:'2026-11-11T19:25:37.000Z'},
+    'file-a:300','2026-11-11T19:25:38.000Z');
+  assert.equal(first[0].eventId,replay[0].eventId);
+  assert.notEqual(first[0].eventId,next[0].eventId);
 });
 
 test('captura Codex em fluxo não persiste conteúdo nem resposta RPC', t => {

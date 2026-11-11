@@ -3,13 +3,14 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const [configPath, playerPath, output, name, widthText, heightText, view = 'project', durationText = '30'] = process.argv.slice(2);
+const [configPath, playerPath, output, name, widthText, heightText, view = 'project', durationText = '30', projectId] = process.argv.slice(2);
 const width = Number(widthText), height = Number(heightText), duration = Number(durationText);
 if ([configPath, playerPath, output].some(value => !value || !path.isAbsolute(value)) ||
     !/^[A-Za-z0-9_-]{1,40}$/.test(name ?? '') || !Number.isSafeInteger(width) || !Number.isSafeInteger(height) ||
     width < 800 || height < 600 || !['center','project','project-bottom','room','room-opposite','room-reduced'].includes(view) ||
-    !Number.isSafeInteger(duration) || duration < 5 || duration > 900) {
-  throw new Error('Uso: issue52-player-capture.mjs <service.json> <Player.exe> <saída> <nome> <largura> <altura> [vista] [segundos]');
+    !Number.isSafeInteger(duration) || duration < 5 || duration > 900 ||
+    (projectId !== undefined && !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(projectId))) {
+  throw new Error('Uso: issue52-player-capture.mjs <service.json> <Player.exe> <saída> <nome> <largura> <altura> [vista] [segundos] [projeto]');
 }
 const config = JSON.parse(readFileSync(configPath, 'utf8'));
 if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(config.url) || typeof config.token !== 'string' || config.token.length < 32)
@@ -23,7 +24,8 @@ if (existsSync(imagePath) || existsSync(reportPath)) throw new Error('Captura an
 const child = spawn(playerPath, ['-screen-width',String(width),'-screen-height',String(height),'-logFile',logPath], {
   env:{...process.env,WR3D_SERVICE_URL:config.url,WR3D_SERVICE_TOKEN:config.token,WR3D_COMMAND_TOKEN:'',
     WR3D_VALIDATION_CAPTURE_DIR:output,WR3D_VALIDATION_CAPTURE_NAME:name,
-    WR3D_VALIDATION_VIEW:view,WR3D_VALIDATION_DURATION_SECONDS:String(duration)},
+    WR3D_VALIDATION_VIEW:view,WR3D_VALIDATION_DURATION_SECONDS:String(duration),
+    WR3D_VALIDATION_PROJECT_ID:projectId ?? ''},
   stdio:'ignore',windowsHide:false
 });
 const status = await new Promise(resolve => {

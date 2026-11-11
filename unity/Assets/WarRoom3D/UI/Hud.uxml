@@ -62,6 +62,16 @@
                 <ui:Label name="agent-tree" text="" class="activity" />
                 <ui:Button name="evidence-open" text="Ver detalhe da evidência" class="secondary-button" />
                 <ui:Button name="chat-open-agent" text="Abrir chat desta sessão" class="secondary-button" />
+                <ui:VisualElement name="agent-profile" class="agent-profile">
+                  <ui:Label text="NOME E APARÊNCIA LOCAIS" class="eyebrow section-space" />
+                  <ui:Label name="agent-profile-origin" text="Selecione um agente observado." class="hint" />
+                  <ui:TextField name="agent-alias" label="Apelido (opcional)" />
+                  <ui:DropdownField name="agent-style" label="Apresentação visual" />
+                  <ui:VisualElement class="agent-profile-actions">
+                    <ui:Button name="agent-profile-save" text="Salvar neste computador" class="secondary-button" />
+                    <ui:Button name="agent-profile-clear" text="Restaurar padrão" class="secondary-button" />
+                  </ui:VisualElement>
+                </ui:VisualElement>
               </ui:VisualElement>
               <ui:VisualElement name="page-chat">
                 <ui:Label name="chat-title" text="CHAT · SESSÃO SELECIONADA" class="eyebrow section-space" />

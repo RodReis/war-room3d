@@ -65,7 +65,7 @@ namespace WarRoom3D.Tests
                     if (part.name == "Forearm_L") { forearm = part; break; }
                 Assert.That(forearm, Is.Not.Null);
                 var rest = forearm.localRotation;
-                view.Bind("synthetic-agent", "synthetic-session", "codex", "trabalhando", false, false, false, false);
+                view.Bind("synthetic-agent", "synthetic-session", "Agente sintético", 0, "codex", "trabalhando", false, false, false, false);
                 float maximum = 0;
                 for (int frame = 0; frame < 8; frame++)
                 {
@@ -73,15 +73,80 @@ namespace WarRoom3D.Tests
                     maximum = Mathf.Max(maximum, Quaternion.Angle(rest, forearm.localRotation));
                 }
                 Assert.That(maximum, Is.GreaterThan(.1f));
-                view.Bind("synthetic-agent", "synthetic-session", "codex", "trabalhando", false, false, false, true);
+                view.Bind("synthetic-agent", "synthetic-session", "Agente sintético", 0, "codex", "trabalhando", false, false, false, true);
                 Assert.That(Quaternion.Angle(rest, forearm.localRotation), Is.LessThan(.01f));
                 yield return null;
                 Assert.That(Quaternion.Angle(rest, forearm.localRotation), Is.LessThan(.01f));
-                view.Bind("synthetic-agent", "synthetic-session", "codex", "trabalhando", true, false, false, false);
+                view.Bind("synthetic-agent", "synthetic-session", "Agente sintético", 0, "codex", "trabalhando", true, false, false, false);
                 yield return null;
                 Assert.That(Quaternion.Angle(rest, forearm.localRotation), Is.LessThan(.01f));
+                Assert.That(view.LabelText, Does.Contain("Sem confirmação"));
             }
             finally { Object.Destroy(instance); }
+        }
+
+        [UnityTest]
+        public IEnumerator FourOutfitsHaveDistinctJacketsAndTwoSilhouettes()
+        {
+            var prefab = Resources.Load<GameObject>("Agents/AgentStanding");
+            Assert.That(prefab, Is.Not.Null);
+            var colors = new HashSet<Color>();
+            var widths = new List<float>();
+            for (var style = 0; style < 4; style++)
+            {
+                var instance = Object.Instantiate(prefab);
+                try
+                {
+                    var view = instance.GetComponent<AgentView>();
+                    view.Bind("synthetic-" + style, "session", "Pessoa " + style, style,
+                        "claude", "aguardando", false, false, false, true);
+                    var jacket = System.Array.Find(instance.GetComponentsInChildren<Renderer>(),
+                        renderer => renderer.name == "Jaqueta facetada");
+                    Assert.That(jacket, Is.Not.Null);
+                    var block = new MaterialPropertyBlock();
+                    jacket.GetPropertyBlock(block);
+                    colors.Add(block.GetColor("_BaseColor"));
+                    widths.Add(jacket.transform.localScale.x);
+                    Assert.That(view.LabelText, Does.Contain("Pessoa " + style));
+                    Assert.That(instance.transform.Find(new[] { "Lenço âmbar", "Alça do colete",
+                        "Boina violeta", "Bolsa utilitária" }[style]), Is.Not.Null);
+                }
+                finally { Object.Destroy(instance); }
+                yield return null;
+            }
+            Assert.That(colors.Count, Is.EqualTo(4));
+            Assert.That(widths[0], Is.LessThan(widths[1]));
+            Assert.That(widths[2], Is.LessThan(widths[3]));
+        }
+
+        [UnityTest]
+        public IEnumerator ArrivalMovesFromEntranceToDeskBeforeSeatedPose()
+        {
+            var room = new GameObject("Sala sintética");
+            var anchor = new GameObject("AgentAnchor_1").transform;
+            anchor.SetParent(room.transform, false);
+            anchor.localPosition = new Vector3(1, .9f, 0);
+            room.AddComponent<ReferenceRoomView>();
+            var owner = new GameObject("Projeção sintética");
+            try
+            {
+                var presenter = owner.AddComponent<AgentPresenter>();
+                presenter.Configure(Resources.Load<GameObject>("Agents/AgentSeated"),
+                    Resources.Load<GameObject>("Agents/AgentStanding"));
+                presenter.Show(room.transform, new List<AgentProjectionRecord> {
+                    new AgentProjectionRecord { AgentKey = "agent-entry", SessionKey = "session-entry",
+                        DisplayName = "Pessoa em trânsito", Style = 1, Provider = "claude", Presence = "trabalhando" }
+                }, "agent-entry");
+                var initial = room.GetComponentInChildren<AgentView>();
+                Assert.That(initial.Seated, Is.False);
+                Assert.That(initial.transform.localPosition.z, Is.LessThan(-3f));
+                yield return new WaitForSecondsRealtime(1.5f);
+                var arrived = room.GetComponentInChildren<AgentView>();
+                Assert.That(arrived.Seated, Is.True);
+                Assert.That(arrived.transform.localPosition.x, Is.EqualTo(1f).Within(.05f));
+                Assert.That(arrived.AgentKey, Is.EqualTo("agent-entry"));
+            }
+            finally { Object.Destroy(owner); Object.Destroy(room); }
         }
     }
 }

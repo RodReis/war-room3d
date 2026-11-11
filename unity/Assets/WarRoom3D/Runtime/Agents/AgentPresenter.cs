@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace WarRoom3D
         private ReferenceRoomView roomView;
         private readonly Dictionary<string, AgentView> views = new Dictionary<string, AgentView>();
         private readonly Dictionary<string, int> slots = new Dictionary<string, int>();
+        private readonly Dictionary<string, Coroutine> arrivals = new Dictionary<string, Coroutine>();
         private readonly List<AgentProjectionRecord> records = new List<AgentProjectionRecord>();
         private string selectedKey;
         private GameObject overflowMarker;
@@ -74,6 +76,7 @@ namespace WarRoom3D
                 if (!desired.Contains(pair.Key) || pair.Value == null) remove.Add(pair.Key);
             foreach (var key in remove)
             {
+                if (arrivals.TryGetValue(key, out var arrival)) { StopCoroutine(arrival); arrivals.Remove(key); }
                 if (views[key] != null) Destroy(views[key].gameObject);
                 views.Remove(key);
                 slots.Remove(key);
@@ -88,20 +91,68 @@ namespace WarRoom3D
                 slots[record.AgentKey] = slot;
                 if (roomView == null || seatedPrefab == null || standingPrefab == null) continue;
                 bool seated = slot < 4;
-                var prefab = seated ? seatedPrefab : standingPrefab;
-                var instance = Instantiate(prefab, roomView.transform);
-                instance.name = "Agente:" + record.AgentKey;
-                instance.transform.localPosition = SlotPosition(slot);
-                instance.transform.localRotation = Quaternion.Euler(0, slot < 4 ? 180f + slot * 90f : 180f, 0);
-                var view = instance.GetComponent<AgentView>();
-                if (view != null) views.Add(record.AgentKey, view);
-                else Destroy(instance);
+                var destination = SlotPosition(slot);
+                bool animate = !reduced && !record.Uncertain;
+                var entry = animate ? new Vector3(-1.25f + (slot % 4) * .7f, .02f, -3.25f) : destination;
+                var view = CreateView(record.AgentKey, slot, !animate && seated, entry);
+                if (view == null) continue;
+                views.Add(record.AgentKey, view);
+                if (animate)
+                {
+                    view.SetTraveling(true);
+                    arrivals[record.AgentKey] = StartCoroutine(AnimateArrival(record.AgentKey, slot, entry, destination, seated));
+                }
             }
             foreach (var record in visible)
                 if (views.TryGetValue(record.AgentKey, out var view))
-                    view.Bind(record.AgentKey, record.SessionKey, record.Provider, record.Presence,
+                    view.Bind(record.AgentKey, record.SessionKey, record.DisplayName, record.Style, record.Provider, record.Presence,
                         record.Uncertain, record.Failure, record.AgentKey == selectedKey, reduced);
             UpdateOverflow();
+            UpdateParentLine();
+        }
+
+        private AgentView CreateView(string agentKey, int slot, bool seated, Vector3 position)
+        {
+            var instance = Instantiate(seated ? seatedPrefab : standingPrefab, roomView.transform);
+            instance.name = "Agente:" + agentKey;
+            instance.transform.localPosition = position;
+            instance.transform.localRotation = Quaternion.Euler(0, slot < 4 ? 180f + slot * 90f : 180f, 0);
+            var view = instance.GetComponent<AgentView>();
+            if (view == null) Destroy(instance);
+            return view;
+        }
+
+        // Trajeto e troca de postura são composição visual, nunca um evento operacional.
+        private IEnumerator AnimateArrival(string key, int slot, Vector3 entry, Vector3 destination, bool seatAtDesk)
+        {
+            var elapsed = 0f;
+            while (elapsed < 1.35f && !reduced && records.Find(item => item.AgentKey == key)?.Uncertain != true &&
+                views.TryGetValue(key, out var moving) && moving != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var fraction = Mathf.SmoothStep(0, 1, Mathf.Clamp01(elapsed / 1.35f));
+                moving.transform.localPosition = Vector3.Lerp(entry,
+                    seatAtDesk ? new Vector3(destination.x, .02f, destination.z) : destination, fraction);
+                yield return null;
+            }
+            if (views.TryGetValue(key, out var current) && current != null)
+            {
+                if (seatAtDesk)
+                {
+                    var seatedView = CreateView(key, slot, true, destination);
+                    if (seatedView != null)
+                    {
+                        views[key] = seatedView;
+                        Destroy(current.gameObject);
+                        var record = records.Find(item => item.AgentKey == key);
+                        if (record != null)
+                            seatedView.Bind(record.AgentKey, record.SessionKey, record.DisplayName, record.Style,
+                                record.Provider, record.Presence, record.Uncertain, record.Failure, key == selectedKey, reduced);
+                    }
+                }
+                else { current.transform.localPosition = destination; current.SetTraveling(false); }
+            }
+            arrivals.Remove(key);
             UpdateParentLine();
         }
 
@@ -171,9 +222,16 @@ namespace WarRoom3D
         private void Update()
         {
             bool next = (roomView != null && roomView.Reduced) || GetComponent<EffectDirector>()?.Reduced == true;
-            if (next == reduced) return;
-            reduced = next;
-            Reconcile();
+            if (next != reduced) { reduced = next; Reconcile(); }
+            if (parentLine != null && parentLine.enabled && views.TryGetValue(selectedKey ?? "", out var child))
+            {
+                var selected = records.Find(item => item.AgentKey == selectedKey);
+                if (selected != null && views.TryGetValue(selected.ParentAgentKey ?? "", out var parent))
+                {
+                    parentLine.SetPosition(0, child.transform.position + Vector3.up * .9f);
+                    parentLine.SetPosition(1, parent.transform.position + Vector3.up * .9f);
+                }
+            }
         }
 
         private static Transform FindNamed(Transform root, string name)
@@ -184,6 +242,8 @@ namespace WarRoom3D
 
         private void Clear()
         {
+            foreach (var arrival in arrivals.Values) if (arrival != null) StopCoroutine(arrival);
+            arrivals.Clear();
             foreach (var view in views.Values) if (view != null) Destroy(view.gameObject);
             views.Clear();
             slots.Clear();

@@ -60,5 +60,23 @@ namespace WarRoom3D.Tests
             Assert.That(rows[0].Ended, Is.True);
             Assert.That(rows[1].Ended, Is.True);
         }
+
+        [Test]
+        public void LocalAliasChangesLabelWithoutChangingObservedIdentityOrEvidence()
+        {
+            try
+            {
+                AgentLocalProfile.Save("p1", "s1", "principal", "Joana", 2);
+                var rows = AgentProjection.ForProject(Snapshot(), "p1", true);
+                Assert.That(rows[0].DisplayName, Is.EqualTo("Joana"));
+                Assert.That(rows[0].Style, Is.EqualTo(2));
+                Assert.That(rows[0].LabelOrigin, Is.EqualTo("apelido local"));
+                Assert.That(rows[0].AgentKey, Is.EqualTo("principal"));
+                Assert.That(rows[0].SessionKey, Is.EqualTo("s1"));
+                Assert.That(rows[0].Detail, Does.Contain("Tarefas: não observadas"));
+                Assert.That(rows[1].Detail, Does.Contain("Tarefa sintética"));
+            }
+            finally { AgentLocalProfile.Clear("p1", "s1", "principal"); }
+        }
     }
 }

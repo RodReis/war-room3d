@@ -50,6 +50,27 @@
       "presence": "trabalhando"
     },
     {
+      "agentKey": "preview-atlas-agent-2",
+      "sessionKey": "atlas-1",
+      "parentAgentKey": "preview-atlas-agent",
+      "parentStatus": "vinculado",
+      "presence": "aguardando"
+    },
+    {
+      "agentKey": "preview-atlas-agent-4",
+      "sessionKey": "atlas-1",
+      "parentAgentKey": "preview-atlas-agent",
+      "parentStatus": "vinculado",
+      "presence": "trabalhando"
+    },
+    {
+      "agentKey": "preview-atlas-agent-5",
+      "sessionKey": "atlas-1",
+      "parentAgentKey": "preview-atlas-agent",
+      "parentStatus": "vinculado",
+      "presence": "observada"
+    },
+    {
       "agentKey": "preview-orion-agent",
       "sessionKey": "orion-1",
       "presence": "aguardando"

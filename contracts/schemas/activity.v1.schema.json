@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://war-room3d.local/contracts/activity.v1.schema.json",
+  "title": "Atividade observada por projeto",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mode", "unit", "intervalMinutes", "from", "to", "series"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "mode": { "const": "live" },
+    "unit": { "const": "eventos observados" },
+    "intervalMinutes": { "const": 5 },
+    "from": { "$ref": "#/$defs/time" },
+    "to": { "$ref": "#/$defs/time" },
+    "series": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["projectId", "name", "lastUpdatedAt", "buckets"],
+        "properties": {
+          "projectId": { "$ref": "#/$defs/id" },
+          "name": { "type": "string", "minLength": 1 },
+          "lastUpdatedAt": { "anyOf": [{ "$ref": "#/$defs/time" }, { "type": "null" }] },
+          "buckets": {
+            "type": "array",
+            "minItems": 12,
+            "maxItems": 12,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["start", "end", "count", "coverage"],
+              "properties": {
+                "start": { "$ref": "#/$defs/time" },
+                "end": { "$ref": "#/$defs/time" },
+                "count": { "anyOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+                "coverage": { "enum": ["covered", "partial", "gap"] }
+              },
+              "allOf": [
+                { "if": { "properties": { "coverage": { "const": "gap" } } }, "then": { "properties": { "count": { "type": "null" } } } },
+                { "if": { "properties": { "coverage": { "const": "covered" } } }, "then": { "properties": { "count": { "type": "integer" } } } },
+                { "if": { "properties": { "coverage": { "const": "partial" } } }, "then": { "properties": { "count": { "type": "integer", "minimum": 1 } } } }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "time": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$" }
+  }
+}

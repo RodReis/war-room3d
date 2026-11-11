@@ -18,6 +18,20 @@
                 <ui:Button name="overview-center" text="Data center" class="overview-tool" />
                 <ui:Button name="overview-tools" text="Câmera e ações" class="overview-tool" />
             </ui:VisualElement>
+            <ui:VisualElement name="overview-activity" class="overview-activity">
+                <ui:Label text="ATIVIDADE OBSERVADA POR PROJETO" class="overview-kicker" />
+                <ui:Label name="activity-period" text="Última hora · intervalos de 5 min · eventos observados" class="overview-meta" />
+                <ui:Label name="activity-status" text="Aguardando série do serviço local." class="overview-meta" />
+                <ui:ScrollView name="activity-series" class="activity-series" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Auto" />
+                <ui:Label text="Legenda: 0 = cobertura sem eventos · — = lacuna · * = cobertura parcial. Selecione um intervalo para inspecionar." class="activity-legend" />
+            </ui:VisualElement>
+            <ui:VisualElement name="activity-detail" class="activity-detail">
+                <ui:Button name="activity-detail-close" text="Fechar detalhes" class="secondary-button" />
+                <ui:Label name="activity-detail-title" text="Eventos do intervalo" class="section-title" />
+                <ui:Label name="activity-detail-status" text="" class="overview-meta" />
+                <ui:ScrollView name="activity-detail-events" class="activity-detail-events" />
+                <ui:Label name="activity-event-info" text="" class="overview-meta" />
+            </ui:VisualElement>
             <ui:VisualElement name="overview-dock" class="overview-dock">
                 <ui:Label name="overview-empty" text="Aguardando projetos do serviço local." class="overview-meta" />
                 <ui:ScrollView name="overview-scroll" mode="Horizontal" vertical-scroller-visibility="Hidden" horizontal-scroller-visibility="Auto">

@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 10/11/2026 para a prova de duas fontes do quartel vivo; resultados anteriores mantêm as datas de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
+Atualizado em 11/11/2026 para as provas dos avatares e do gráfico do quartel vivo; resultados anteriores mantêm as datas de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
 
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
@@ -13,7 +13,7 @@ Atualizado em 10/11/2026 para a prova de duas fontes do quartel vivo; resultados
 
 ## Próxima entrega prioritária — quartel vivo
 
-Planejamento autorizado em 09/11/2026 no [épico #46](https://github.com/RodReis/war-room3d/issues/46). [Especificação](specs/2026-11-09-quartel-vivo-design.md) · [Plano](superpowers/plans/2026-11-09-quartel-vivo-player.md). Implementação e aceite do Player pendentes.
+Planejamento autorizado em 09/11/2026 no [épico #46](https://github.com/RodReis/war-room3d/issues/46). [Especificação](specs/2026-11-09-quartel-vivo-design.md) · [Plano](superpowers/plans/2026-11-09-quartel-vivo-player.md). As [provas dos avatares](validation/quartel-vivo/issue-50.md) e do [gráfico](validation/quartel-vivo/issue-51.md) são sintéticas; a jornada integrada #52 e o aceite funcional do PI permanecem separados.
 
 Primeira entrega: [#47](https://github.com/RodReis/war-room3d/issues/47) quartel, [#48](https://github.com/RodReis/war-room3d/issues/48) salas dinâmicas, [#49](https://github.com/RodReis/war-room3d/issues/49) primeira fonte real ([dois projetos Claude Code no VS Code até o mesmo Player, com perda/reconexão; aceite funcional do PI registrado](validation/quartel-vivo/claude-dual-arenahub-forja.md); ensaio anterior [Codex no VS Code sem evento](validation/quartel-vivo/codex-vscode.md)), [#50](https://github.com/RodReis/war-room3d/issues/50) avatares e [#51](https://github.com/RodReis/war-room3d/issues/51) gráfico. [#52](https://github.com/RodReis/war-room3d/issues/52) valida a jornada de dois projetos no mesmo executável. Expansão: [#53](https://github.com/RodReis/war-room3d/issues/53) espaços fixos, [#54](https://github.com/RodReis/war-room3d/issues/54) descoberta de workspaces VS Code, [#55](https://github.com/RodReis/war-room3d/issues/55) Codex Desktop e [#59](https://github.com/RodReis/war-room3d/issues/59) Claude Code Desktop, após o aceite.
 

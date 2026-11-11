@@ -143,6 +143,18 @@ namespace WarRoom3D
             StartCoroutine(RequestSessionEvents(relativePath, completed));
         }
 
+        public void GetActivity(string relativePath, Action<long, string> completed)
+        {
+            if (!configured || completed == null || string.IsNullOrEmpty(relativePath) ||
+                !(relativePath == "/v1/activity" || relativePath.StartsWith("/v1/activity/events?", StringComparison.Ordinal)) ||
+                relativePath.Contains("..") || relativePath.Contains("//") || relativePath.Contains("#") || relativePath.Contains("\\"))
+            {
+                completed?.Invoke(0, "Consulta de atividade indisponível ou rota inválida.");
+                return;
+            }
+            StartCoroutine(RequestSessionEvents(relativePath, completed));
+        }
+
         private IEnumerator RequestSessionEvents(string relativePath, Action<long, string> completed)
         {
             using (var request = UnityWebRequest.Get(baseUrl + relativePath))

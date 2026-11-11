@@ -10,9 +10,15 @@ if (mode !== '--run') {
     seconds: 600, events: 7000, presentMon: '2.6.0', playerVisible: true }));
   process.exit(0);
 }
-if (!['visual', 'reduced', 'sector'].includes(profile) || !playerPath || !path.isAbsolute(playerPath) ||
-    !existsSync(playerPath) || !outputPath || !path.isAbsolute(outputPath) || existsSync(outputPath))
-  throw new Error('Informe perfil, Player absoluto e diretório de saída novo/absoluto');
+const input = {
+  profileValid: ['visual', 'reduced', 'sector'].includes(profile),
+  playerAbsolute: Boolean(playerPath && path.isAbsolute(playerPath)),
+  playerExists: Boolean(playerPath && existsSync(playerPath)),
+  outputAbsolute: Boolean(outputPath && path.isAbsolute(outputPath)),
+  outputUnused: Boolean(outputPath && !existsSync(outputPath))
+};
+if (Object.values(input).some(value => !value))
+  throw new Error(`Perfil, Player ou saída inválidos: ${JSON.stringify(input)}`);
 const seconds = Number(secondsText ?? 600);
 if (!Number.isSafeInteger(seconds) || seconds < 5 || seconds > 600)
   throw new Error('Duração deve estar entre 5 e 600 s');

@@ -38,7 +38,8 @@ $output = [IO.Path]::GetFullPath($OutputPath)
 if (-not $output.StartsWith($logs + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
   throw 'OutputPath deve ficar dentro de Logs/ do projeto.'
 }
-$profiles = if ($Profile -eq 'all') { @('visual', 'reduced', 'sector') } else { @($Profile) }
+if ($Profile -eq 'all') { $profiles = @('visual', 'reduced', 'sector') }
+else { $profiles = @($Profile) }
 $outputs = @($profiles | ForEach-Object { if ($Profile -eq 'all') { "$output-$_" } else { $output } })
 $smokeOutput = if ($Profile -eq 'all') { "$output-smoke" } else { $null }
 foreach ($candidate in @($outputs) + @($smokeOutput | Where-Object { $_ })) {
@@ -94,16 +95,26 @@ try {
   if ($smokeOutput) {
     [pscustomobject]@{state='running';profile='visual-smoke';seconds=5;output=$smokeOutput;at=(Get-Date).ToString('o')} |
       ConvertTo-Json -Compress | Set-Content -LiteralPath $statusPath -Encoding utf8
-    & $node $command --run visual $player $smokeOutput 5 1> "$smokeOutput.out.txt" 2> "$smokeOutput.err.txt"
-    if ($LASTEXITCODE -ne 0) { throw "Smoke visual falhou (exit $LASTEXITCODE). Consulte $smokeOutput." }
+    $previousErrorAction = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = 'Continue'
+      & $node $command --run visual $player $smokeOutput 5 1> "$smokeOutput.out.txt" 2> "$smokeOutput.err.txt"
+      $runExit = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousErrorAction }
+    if ($runExit -ne 0) { throw "Smoke visual falhou (exit $runExit). Consulte $smokeOutput." }
   }
   for ($index = 0; $index -lt $profiles.Count; $index++) {
     $item = $profiles[$index]
     $directory = $outputs[$index]
     [pscustomobject]@{state='running';profile=$item;seconds=$Seconds;output=$directory;at=(Get-Date).ToString('o')} |
       ConvertTo-Json -Compress | Set-Content -LiteralPath $statusPath -Encoding utf8
-    & $node $command --run $item $player $directory $Seconds 1> "$directory.out.txt" 2> "$directory.err.txt"
-    if ($LASTEXITCODE -ne 0) { throw "Perfil $item falhou (exit $LASTEXITCODE). Consulte $directory." }
+    $previousErrorAction = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = 'Continue'
+      & $node $command --run $item $player $directory $Seconds 1> "$directory.out.txt" 2> "$directory.err.txt"
+      $runExit = $LASTEXITCODE
+    } finally { $ErrorActionPreference = $previousErrorAction }
+    if ($runExit -ne 0) { throw "Perfil $item falhou (exit $runExit). Consulte $directory." }
   }
   [pscustomobject]@{state='complete';profiles=$profiles;at=(Get-Date).ToString('o')} |
     ConvertTo-Json -Compress | Set-Content -LiteralPath $statusPath -Encoding utf8

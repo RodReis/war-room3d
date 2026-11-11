@@ -24,7 +24,7 @@ test('eventos de sessão paginam por projeto e agente sem expor payload ou cruza
     return events;
   };
   const started=apply(source,input('SessionStart','session-a'));
-  apply(source,input('UserPromptSubmit','session-a',{prompt:'conteúdo que não pode aparecer',prompt_id:'prompt-1'}));
+  const prompted=apply(source,input('UserPromptSubmit','session-a',{prompt:'conteúdo que não pode aparecer',prompt_id:'prompt-1'}));
   const tool=apply(source,input('PostToolUse','session-a',{tool_name:'Read',tool_use_id:'tool-1'}));
   apply({...source,sourceId:'source-b',projectId:'project-b'},input('SessionStart','session-b'));
   const first=store.pageSessionEvents({projectId:'project-a',limit:2})!;
@@ -33,11 +33,11 @@ test('eventos de sessão paginam por projeto e agente sem expor payload ou cruza
   assert.ok(first.nextBefore);
   assert.equal(first.coverage,'covered');
   const from=at.slice(0,19)+'Z',to=new Date(Date.parse(at)+1000).toISOString().slice(0,19)+'Z';
-  assert.equal(store.pageSessionEvents({projectId:'project-a',from,to})?.items.length,5);
+  assert.equal(store.pageSessionEvents({projectId:'project-a',from,to})?.items.length,6);
   assert.equal(new Set([...first.items,...second.items].map(item=>item.eventId)).size,4);
   assert.equal(JSON.stringify([...first.items,...second.items]).includes('conteúdo que não pode aparecer'),false);
   assert.deepEqual(store.pageSessionEvents({projectId:'project-a',agentKey:tool[0]!.agentKey!})?.items.map(item=>item.eventId),
-    [tool[0]!.eventId,started[1]!.eventId]);
+    [tool[0]!.eventId,prompted[1]!.eventId,started[1]!.eventId]);
   assert.equal(store.getSessionEvent('project-b',tool[0]!.eventId),null);
   const readToken=randomBytes(32).toString('hex'),commandToken=randomBytes(32).toString('hex');
   const server=await startReadOnlyServer(store,readToken,0,{token:commandToken,actor:{actorId:'lab',projectIds:['project-a']}});

@@ -21,6 +21,64 @@ test('captura descarta conteúdo e caminhos privados', () => {
   assert.deepEqual(codex,{method:'item/completed',params:{threadId:'t',item:{type:'commandExecution',id:'i',status:'completed'}}});
 });
 
+test('hook Claude renova presença do agente principal após recuperação da fonte', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-claude-presence-'));
+  const store = new EventStore(path.join(directory,'events.db'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  const filePath = path.join(directory,'claude.jsonl');
+  const source = {sourceId:'claude-vscode',sourceVersion:'2.1.322',provider:'claude' as const,
+    projectId:'arena',accountRef:'vscode-local',filePath};
+  store.registerProject({projectId:'arena',name:'ArenaHub',canonicalPath:'C:\\lab\\arena'});
+  const collector = new SessionFileCollector(store,[source]);
+  const line = (hook_event_name:string, capturedAt:string) =>
+    `${JSON.stringify({...sanitizeSourceRecord('claude',{
+      hook_event_name,session_id:'session-1',cwd:'C:\\lab\\arena',prompt_id:'reused-prompt-id'
+    }),capturedAt})}\n`;
+  writeFileSync(filePath,line('SessionStart','2026-11-11T20:00:00.000Z')+
+    line('UserPromptSubmit','2026-11-11T20:00:01.000Z')+
+    line('Stop','2026-11-11T20:00:02.000Z'));
+  collector.poll();
+  assert.equal((store.snapshot().agents as {presence:string}[])[0].presence,'aguardando');
+  renameSync(filePath,`${filePath}.hold`);
+  collector.poll();
+  assert.equal((store.snapshot().agents as {presence:string}[])[0].presence,'desconhecida');
+  renameSync(`${filePath}.hold`,filePath);
+  const renewedPrompt = line('UserPromptSubmit',new Date(Date.now()+1000).toISOString());
+  appendFileSync(filePath,renewedPrompt);
+  collector.poll();
+  assert.equal((store.snapshot().sessions as {presence:string;freshness:string}[])[0].presence,'trabalhando');
+  assert.equal((store.snapshot().sessions as {presence:string;freshness:string}[])[0].freshness,'atual');
+  assert.equal((store.snapshot().agents as {presence:string}[])[0].presence,'trabalhando');
+  assert.equal((store.snapshot().sources as {status:string}[])[0].status,'atual');
+  const beforeReplay = store.snapshot().streamSequence;
+  appendFileSync(filePath,renewedPrompt);
+  collector.poll();
+  assert.equal(store.snapshot().streamSequence,beforeReplay);
+});
+
+test('ferramenta Claude com agent_id observa subagente mesmo sem SubagentStart', t => {
+  const directory = mkdtempSync(path.join(tmpdir(),'wr3d-claude-tool-agent-'));
+  const store = new EventStore(path.join(directory,'events.db'));
+  t.after(() => { store.close(); rmSync(directory,{recursive:true,force:true}); });
+  const filePath = path.join(directory,'claude.jsonl');
+  const source = {sourceId:'claude-vscode',sourceVersion:'2.1.322',provider:'claude' as const,
+    projectId:'arena',accountRef:'vscode-local',filePath};
+  store.registerProject({projectId:'arena',name:'ArenaHub',canonicalPath:'C:\\lab\\arena'});
+  const collector = new SessionFileCollector(store,[source]);
+  const line = (value:object) => `${JSON.stringify({...sanitizeSourceRecord('claude',{
+    session_id:'session-1',cwd:'C:\\lab\\arena',...value
+  }),capturedAt:'2026-11-11T20:00:00.000Z'})}\n`;
+  writeFileSync(filePath,line({hook_event_name:'SessionStart',source:'startup'})+
+    line({hook_event_name:'PreToolUse',agent_id:'subagent-1',tool_use_id:'tool-1',tool_name:'Read'}));
+  collector.poll();
+  const agents = store.snapshot().agents as {agentKey:string;parentStatus:string}[];
+  const invocation = (store.snapshot().invocations as {agentKey:string;name:string}[])[0];
+  assert.equal(agents.length,2);
+  assert.equal(agents.find(agent => agent.agentKey === invocation.agentKey)?.parentStatus,'vinculo_pendente');
+  assert.equal(invocation.name,'Read');
+  assert.equal((store.snapshot().sources as {status:string}[])[0].status,'atual');
+});
+
 test('expansão de skill guarda só metadados e exige cadastro explícito', () => {
   const raw={hook_event_name:'UserPromptExpansion',session_id:'session-a',cwd:'C:\\privado',
     expansion_type:'slash_command',command_name:'wr3d-35:synthetic',command_source:'plugin',

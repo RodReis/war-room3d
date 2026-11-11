@@ -35,6 +35,8 @@ namespace WarRoom3D
         private RoomLogPresenter logs;
         private QuartelOverview overview;
         private string overviewRoomsKey;
+        private string profileKey;
+        private bool profileDirty;
 
         private bool IsPreview => snapshot?.mode == "demo";
         private bool AtOverview => !insideRoom && !insideDataCenter && !replayMode;
@@ -73,6 +75,11 @@ namespace WarRoom3D
             };
             navigation = new ReferenceRoomNavigation(root, ReturnToSector);
             navigation.AgentSelected += OnAgentSelected;
+            root.Q<DropdownField>("agent-style").choices = new List<string>(AgentLocalProfile.Styles);
+            root.Q<TextField>("agent-alias").RegisterValueChangedCallback(_ => profileDirty = true);
+            root.Q<DropdownField>("agent-style").RegisterValueChangedCallback(_ => profileDirty = true);
+            root.Q<Button>("agent-profile-save").clicked += SaveAgentProfile;
+            root.Q<Button>("agent-profile-clear").clicked += ClearAgentProfile;
             root.Q<Button>("chat-open-agent").clicked += () => navigation.SelectTab(1);
             agentPresenter = gameObject.AddComponent<AgentPresenter>();
             agentPresenter.Configure(seatedAgentPrefab != null ? seatedAgentPrefab : Resources.Load<GameObject>("Agents/AgentSeated"),
@@ -121,6 +128,7 @@ namespace WarRoom3D
             root.Q<Label>("activity").text = "O serviço local ainda não forneceu um snapshot válido.";
             root.Q<Label>("agent-tree").text = "Sem dados";
             navigation.SetAgents(Array.Empty<AgentEntry>());
+            UpdateAgentProfileControls(null);
             ShowSessionSource(null);
             if (agentPresenter != null) agentPresenter.Show(null, null, null);
             root.Q<Label>("feed").text = "Sem eventos";
@@ -389,6 +397,7 @@ namespace WarRoom3D
             }
             navigation.SetAgents(agentEntries);
             var selectedAgent = projection.Find(item => item.AgentKey == navigation.SelectedAgentKey);
+            UpdateAgentProfileControls(selectedAgent);
             ShowSessionSource(selectedAgent);
             chat?.SetTarget(project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
             logs?.SetTarget(snapshot, project.projectId, selectedAgent?.SessionKey, selectedAgent?.AgentKey);
@@ -649,6 +658,7 @@ namespace WarRoom3D
             var projection = AgentProjection.ForProject(snapshot, selectedProjectId, HasCurrentData);
             agentPresenter.Show(AgentPresenterRoom(), projection, key);
             var selected = projection.Find(item => item.AgentKey == key);
+            UpdateAgentProfileControls(selected);
             ShowSessionSource(selected);
             chat?.SetTarget(selectedProjectId, selected?.SessionKey, selected?.AgentKey);
             logs?.SetTarget(snapshot, selectedProjectId, selected?.SessionKey, selected?.AgentKey);
@@ -657,6 +667,50 @@ namespace WarRoom3D
                 var target = agentPresenter.FindAgent(key);
                 if (target != null) orbit.FocusAgent(target);
             }
+        }
+
+        private void UpdateAgentProfileControls(AgentProjectionRecord selected)
+        {
+            var panel = root.Q<VisualElement>("agent-profile");
+            panel.style.display = selected == null ? DisplayStyle.None : DisplayStyle.Flex;
+            if (selected == null) { profileKey = null; profileDirty = false; return; }
+            var key = selectedProjectId + "\0" + selected.SessionKey + "\0" + selected.AgentKey;
+            if (profileKey != key) { profileKey = key; profileDirty = false; }
+            var profile = AgentLocalProfile.Load(selectedProjectId, selected.SessionKey, selected.AgentKey);
+            root.Q<Label>("agent-profile-origin").text = "Rótulo: " + selected.LabelOrigin +
+                " · preferência guardada somente neste computador";
+            if (!profileDirty)
+            {
+                root.Q<TextField>("agent-alias").SetValueWithoutNotify(profile.alias);
+                root.Q<DropdownField>("agent-style").SetValueWithoutNotify(AgentLocalProfile.Styles[profile.style]);
+            }
+        }
+
+        private void SaveAgentProfile()
+        {
+            var selected = SelectedAgentForProfile();
+            if (selected == null) return;
+            var style = root.Q<DropdownField>("agent-style");
+            AgentLocalProfile.Save(selectedProjectId, selected.SessionKey, selected.AgentKey,
+                root.Q<TextField>("agent-alias").value, Mathf.Max(0, style.index));
+            profileDirty = false;
+            RefreshProject();
+        }
+
+        private void ClearAgentProfile()
+        {
+            var selected = SelectedAgentForProfile();
+            if (selected == null) return;
+            AgentLocalProfile.Clear(selectedProjectId, selected.SessionKey, selected.AgentKey);
+            profileDirty = false;
+            RefreshProject();
+        }
+
+        private AgentProjectionRecord SelectedAgentForProfile()
+        {
+            if (snapshot == null || string.IsNullOrEmpty(selectedProjectId) || navigation == null) return null;
+            return AgentProjection.ForProject(snapshot, selectedProjectId, HasCurrentData)
+                .Find(item => item.AgentKey == navigation.SelectedAgentKey && !item.Ended);
         }
 
         private void ShowSessionSource(AgentProjectionRecord agent)

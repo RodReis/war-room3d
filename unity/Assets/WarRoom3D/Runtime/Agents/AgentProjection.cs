@@ -18,6 +18,9 @@ namespace WarRoom3D
         public bool Failure;
         public string Detail;
         public string Label;
+        public string DisplayName;
+        public string LabelOrigin;
+        public int Style;
     }
 
     // Única fonte de verdade para árvore textual e corpos na sala.
@@ -65,15 +68,20 @@ namespace WarRoom3D
                     ? "Trabalhando" : agent.presence == "aguardando" ? "Aguardando" : "Presente";
                 string role = child ? linked ? "Subagente" : "Subagente · vínculo pendente" : "Principal";
                 string alias = agent.agentKey.Length > 6 ? agent.agentKey.Substring(agent.agentKey.Length - 6) : agent.agentKey;
+                var local = AgentLocalProfile.Load(projectId, agent.sessionKey, agent.agentKey);
+                string displayName = string.IsNullOrEmpty(local.alias) ? "Agente " + alias : local.alias;
+                string labelOrigin = string.IsNullOrEmpty(local.alias) ? "identificador observado" : "apelido local";
                 var row = new AgentProjectionRecord {
                     AgentKey = agent.agentKey, SessionKey = agent.sessionKey, ParentAgentKey = agent.parentAgentKey,
                     ParentStatus = child ? linked ? "vinculado" : "vinculo_pendente" : "principal",
                     Provider = session.provider, Presence = agent.presence, DisplayState = state,
                     LastSeen = session.lastSeen, Uncertain = uncertain, Ended = ended, Failure = failed,
-                    Label = (child ? "↳ " : "") + role + " · " + provider + " · " + alias + " · " + state +
+                    DisplayName = displayName, LabelOrigin = labelOrigin, Style = local.style,
+                    Label = (child ? "↳ " : "") + displayName + " · " + role + " · " + provider + " · " + state +
                         (failed && !uncertain ? " · falha observada" : "")
                 };
-                row.Detail = "Agente: " + agent.agentKey + "\nSessão: " + agent.sessionKey + "\nProvedor: " + provider +
+                row.Detail = "Nome: " + displayName + " (" + labelOrigin + ")\nAparência: " + AgentLocalProfile.Styles[local.style] +
+                    "\nAgente: " + agent.agentKey + "\nSessão: " + agent.sessionKey + "\nProvedor: " + provider +
                     "\nRelação: " + role + "\nEstado: " + state + "\nÚltimo sinal: " +
                     (string.IsNullOrEmpty(session.lastSeen) ? "não observado" : session.lastSeen) +
                     "\nFonte: " + (string.IsNullOrEmpty(session.sourceId) ? "não informada" : session.sourceId) +

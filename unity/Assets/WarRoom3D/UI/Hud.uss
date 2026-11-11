@@ -35,6 +35,9 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .agent-list { max-height: 146px; }
 .agent-button { min-height: 34px; margin-bottom: 3px; background-color: rgb(22, 49, 61); color: white; font-size: 14px; -unity-text-align: middle-left; }
 .agent-selected { background-color: rgb(17, 125, 145); border-left-width: 3px; border-left-color: white; }
+.agent-profile { display: none; margin-top: 8px; margin-bottom: 8px; padding: 8px; background-color: rgb(17, 39, 50); }
+.agent-profile-actions { flex-direction: row; margin-top: 6px; }
+.agent-profile-actions Button { flex-grow: 1; min-height: 32px; margin-right: 4px; }
 .room-tabs { display: none; flex-direction: row; flex-shrink: 0; margin-top: 9px; }
 .room-tabs Button { flex-grow: 1; min-height: 36px; margin-right: 2px; padding-left: 3px; padding-right: 3px; background-color: rgb(22, 49, 61); color: white; font-size: 14px; }
 .room-tabs .tab-selected { background-color: rgb(17, 125, 145); border-bottom-width: 3px; border-bottom-color: white; }

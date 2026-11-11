@@ -325,8 +325,9 @@ namespace WarRoom3D
             activityChart.Refresh(snapshot, currentSectorId, HasCurrentData);
             root.Q<Label>("overview-sector").text = currentSectorId.ToUpperInvariant().Replace("-", " ") + "   /   VISÃO DE OPERAÇÕES";
             RefreshGlobalSearch();
-            root.Q("overview-empty").style.display = root.Q("overview-cards").childCount == 0
-                ? DisplayStyle.Flex : DisplayStyle.None;
+            var hasCards = root.Q("overview-cards").childCount > 0;
+            root.Q("overview-empty").style.display = hasCards ? DisplayStyle.None : DisplayStyle.Flex;
+            root.Q("overview-scroll").style.display = hasCards ? DisplayStyle.Flex : DisplayStyle.None;
             root.Q<Label>("overview-empty").text = snapshot == null
                 ? client.ConnectionMessage : "Nenhum projeto vinculado neste setor.";
             root.Q<Label>("overview-service").text = IsPreview ? "Serviço local · fora da demonstração" :

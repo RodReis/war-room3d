@@ -33,7 +33,7 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .room-summary { flex-grow: 1; }
 .agent-list-section { display: none; max-height: 180px; }
 .agent-list { max-height: 146px; }
-.agent-button { min-height: 34px; margin-bottom: 3px; background-color: rgb(22, 49, 61); color: white; font-size: 14px; -unity-text-align: middle-left; }
+.agent-button { width: 100%; min-height: 48px; margin-bottom: 3px; background-color: rgb(22, 49, 61); color: white; font-size: 14px; white-space: normal; -unity-text-align: middle-left; }
 .agent-selected { background-color: rgb(17, 125, 145); border-left-width: 3px; border-left-color: white; }
 .agent-profile { display: none; margin-top: 8px; margin-bottom: 8px; padding: 8px; background-color: rgb(17, 39, 50); }
 .agent-profile-actions { flex-direction: row; margin-top: 6px; }

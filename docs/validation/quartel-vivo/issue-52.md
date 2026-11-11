@@ -66,8 +66,8 @@ O pré voo do build anterior, em 1280×720 e sem sessões, conectou ao serviço,
 | Critério | Estado atual |
 |---|---|
 | Build Windows único, hash do executável e versão de fontes | **parcial**: ambos os builds têm manifesto e origem identificados; ação live no primeiro, revisão visual final em replay no segundo. |
-| ArenaHub e rrb-forjaOS simultâneos no Player, ação real isolada por cartão, avatar e gráfico | **parcial**: duas salas e séries reais; ação Codex refletida no cartão e na linha ForjaOS sem alterar ArenaHub. Avatar ForjaOS comprovado em replay dos metadados nativos, sem vídeo de movimento ao vivo. |
-| Capturas comparadas ao protótipo, vídeo de movimento e matriz de legibilidade | **parcial**: comparação estrutural com conceito local e inspeção em três resoluções; vídeo de movimento e escala física `not_run`. |
+| ArenaHub e rrb-forjaOS simultâneos no Player, ação real isolada por cartão, avatar e gráfico | **parcial**: duas salas e séries reais; ação Codex refletida no cartão e na linha ForjaOS sem alterar ArenaHub. Avatar ForjaOS comprovado em replay. Atualização sem recarregar o mesmo Player `not_run`. |
+| Capturas comparadas ao protótipo, vídeo de movimento e matriz de legibilidade | **parcial**: comparação estrutural com conceito local e inspeção em três resoluções; vídeo com movimento e avatares masculinos/femininos distintos, e escala física `not_run`. |
 | Perda, recuperação e reinício sem duplicação no mesmo build | **parcial**: perda da cópia sanitizada, estado indisponível e recuperação com novo sinal real no Player; reinício sem duplicatas. Perda do plugin real `not_run`. |
 | RNF-01/02 no build da prova | `not_run` |
 | Revisão e aceite funcional explícito do PI | `not_run` |

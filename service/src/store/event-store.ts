@@ -13,6 +13,7 @@ import { OperationsStore } from '../operations/operations-store.ts';
 import { createHash } from 'node:crypto';
 import type { SessionSource } from '../sessions/adapters.ts';
 import { ConversationStore, type ObservedMessage } from '../sessions/conversation-store.ts';
+import { ActivityProjection } from '../activity/activity-projection.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -39,7 +40,7 @@ export interface NormalizedEvent {
   agentKey?: string;
   provenance: string;
   ingestionMode: string;
-  payload: { parentAgentKey?: string; parentStatus?: 'vinculo_pendente'; taskId?: string; invocationId?: string; messageId?: string; workspaceKey?: string; title?: string; name?: string; reason?: string; errorCode?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string };
+  payload: { parentAgentKey?: string; parentStatus?: 'vinculo_pendente'; taskId?: string; invocationId?: string; messageId?: string; workspaceKey?: string; title?: string; name?: string; reason?: string; errorCode?: string; repositoryId?: string; entityType?: 'pull_request' | 'workflow'; entityId?: string; transition?: string; coverageStart?: string; coverageEnd?: string };
   evidenceRefs: string[];
   [key: string]: unknown;
 }
@@ -68,6 +69,7 @@ export class EventStore {
   readonly commands: CommandAudit;
   readonly operations: OperationsStore;
   readonly conversations: ConversationStore;
+  readonly activity: ActivityProjection;
 
   constructor(databasePath: string) {
     if (!databasePath) throw new Error('Caminho do banco obrigatório');
@@ -77,7 +79,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 21) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 22) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -142,11 +144,15 @@ export class EventStore {
     if (schemaVersion < 21) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0021_workspace_presence.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 22) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0022_activity.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
     this.commands = new CommandAudit(this.db);
     this.operations = new OperationsStore(this.db);
     this.conversations = new ConversationStore(this.db);
+    this.activity = new ActivityProjection(this.db);
   }
 
   close(): void { this.db.close(); }
@@ -322,11 +328,18 @@ export class EventStore {
       const boundProject = event?.projectId && this.db.prepare('SELECT project_id,source_version,provider FROM session_source_bindings WHERE source_id = ?')
         .get(event.sourceId) as { project_id: string;source_version:string;provider:string } | undefined;
       const sessionEvent = event && /^(workspace|session|agent|task|tool|skill|message|request)\./.test(event.type);
-      if (!event || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
+      const coverage = event?.type === 'source.covered' ? event : null;
+      const coverageStart = coverage ? Date.parse(coverage.payload.coverageStart!) : NaN;
+      const coverageEnd = coverage ? Date.parse(coverage.payload.coverageEnd!) : NaN;
+      const invalidCoverage = Boolean(coverage && (!boundProject || boundProject.project_id !== coverage.projectId ||
+        boundProject.source_version !== coverage.sourceVersion || !Number.isFinite(coverageStart) || !Number.isFinite(coverageEnd) ||
+        coverageEnd <= coverageStart || coverageEnd - coverageStart > 24 * 60 * 60 * 1000 ||
+        coverageEnd > Date.parse(coverage.observedAt)));
+      if (!event || invalidCoverage || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
         (!trustedReplay && ((boundProject && (boundProject.project_id !== event.projectId || (sessionEvent &&
           (boundProject.source_version !== event.sourceVersion || (event.provider && boundProject.provider !== event.provider))))) ||
         (sessionEvent && !boundProject && (event.type.startsWith('workspace.') || this.number('session_source_authorization_enabled') === 1))))))) {
-        const reason = !event ? 'schema_invalid' : 'unknown_project';
+        const reason = !event || invalidCoverage ? 'schema_invalid' : 'unknown_project';
         this.db.prepare('INSERT OR IGNORE INTO quarantine(source_id, file_key, generation, offset, reason, recorded_at) VALUES (?, ?, ?, ?, ?, ?)')
           .run(cursor.sourceId, cursor.fileKey, cursor.generation, cursor.offset, reason, new Date().toISOString());
         this.advanceCursor(cursor);
@@ -344,6 +357,7 @@ export class EventStore {
       this.db.prepare('INSERT INTO events(event_id, source_id, dedupe_key, stream_sequence, event_json) VALUES (?, ?, ?, ?, ?)')
         .run(event.eventId, event.sourceId, dedupeKey, sequence, JSON.stringify(event));
       this.applyState(event);
+      if (event.ingestionMode === 'live' && event.type !== 'source.covered') {
       const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at, last_error_code, last_evidence_at FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null; last_error_code: string | null; last_evidence_at: string | null } | undefined;
       const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) >= 0;
       const status = statusIsNewer ? (event.type === 'source.unavailable' ? 'indisponivel' : 'atual') : priorSource.status;
@@ -360,6 +374,7 @@ export class EventStore {
           last_received = excluded.last_received, last_applied = excluded.last_applied, last_error_code = excluded.last_error_code,
           last_evidence_at = excluded.last_evidence_at`)
         .run(event.sourceId, event.sourceVersion, status, statusAt, lastUnavailableAt, event.receivedAt, event.receivedAt, errorCode,lastEvidenceAt);
+      }
       this.advanceCursor(cursor);
       return { applied: true, revision: this.next('revision'), streamSequence: sequence };
     });

@@ -34,6 +34,7 @@ namespace WarRoom3D
         private ChatPresenter chat;
         private RoomLogPresenter logs;
         private QuartelOverview overview;
+        private ActivityChartPresenter activityChart;
         private string overviewRoomsKey;
         private string profileKey;
         private bool profileDirty;
@@ -51,6 +52,8 @@ namespace WarRoom3D
             dataCenter.UseNeutralIndicators();
             root.Q<Label>("stage-eyebrow").text = "WAR-ROOM3D   /   DESENVOLVIMENTO";
             overview = new QuartelOverview(root.Q("overview-cards"), OpenOverviewProject);
+            activityChart = gameObject.AddComponent<ActivityChartPresenter>();
+            activityChart.Configure(root, client);
             root.Q<Button>("overview-center").clicked += ShowDataCenter;
             root.Q<Button>("overview-tools").clicked += () =>
                 root.EnableInClassList("overview-tools-open", !root.ClassListContains("overview-tools-open"));
@@ -319,6 +322,7 @@ namespace WarRoom3D
             var placements = snapshot?.roomPlacements;
             sector.ApplyOverviewPlacements(placements, currentSectorId);
             overview.Render(snapshot, HasCurrentData, selectedProjectId, currentSectorId);
+            activityChart.Refresh(snapshot, currentSectorId, HasCurrentData);
             root.Q<Label>("overview-sector").text = currentSectorId.ToUpperInvariant().Replace("-", " ") + "   /   VISÃO DE OPERAÇÕES";
             RefreshGlobalSearch();
             root.Q("overview-empty").style.display = root.Q("overview-cards").childCount == 0

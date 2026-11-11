@@ -13,7 +13,7 @@
     "sourceVersion": { "$ref": "#/$defs/id" },
     "sourceSequence": { "type": "integer", "minimum": 0 },
     "streamSequence": { "type": "integer", "minimum": 1 },
-    "type": { "enum": ["workspace.opened", "workspace.closed", "session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "resource.observed", "github.observed"] },
+    "type": { "enum": ["workspace.opened", "workspace.closed", "session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "source.covered", "resource.observed", "github.observed"] },
     "observedAt": { "$ref": "#/$defs/time" },
     "occurredAt": { "$ref": "#/$defs/time" },
     "receivedAt": { "$ref": "#/$defs/time" },
@@ -44,7 +44,9 @@
         "repositoryId": { "$ref": "#/$defs/id" },
         "entityType": { "enum": ["pull_request", "workflow"] },
         "entityId": { "$ref": "#/$defs/id" },
-        "transition": { "$ref": "#/$defs/id" }
+        "transition": { "$ref": "#/$defs/id" },
+        "coverageStart": { "$ref": "#/$defs/time" },
+        "coverageEnd": { "$ref": "#/$defs/time" }
       }
     },
     "evidenceRefs": { "type": "array", "items": { "$ref": "#/$defs/id" }, "maxItems": 16 }
@@ -59,6 +61,7 @@
     { "if": { "properties": { "type": { "type": "string", "pattern": "^(message|request)\\." } } }, "then": { "properties": { "payload": { "type": "object", "required": ["messageId"] } } } },
     { "if": { "properties": { "type": { "const": "resource.observed" } } }, "then": { "required": ["resourceId", "environmentId"] } },
     { "if": { "properties": { "type": { "const": "github.observed" } } }, "then": { "required": ["projectId"], "properties": { "payload": { "type": "object", "required": ["repositoryId", "entityType", "entityId", "transition"] } } } },
+    { "if": { "properties": { "type": { "const": "source.covered" } } }, "then": { "required": ["projectId", "sourceEventId"], "properties": { "provenance": { "const": "observed" }, "evidenceRefs": { "type": "array", "minItems": 1 }, "payload": { "type": "object", "required": ["coverageStart", "coverageEnd"] } } } },
     { "if": { "properties": { "ingestionMode": { "const": "demo" } } }, "then": { "properties": { "provenance": { "const": "illustrative" } } } },
     { "if": { "properties": { "ingestionMode": { "enum": ["live", "backfill", "resync"] } } }, "then": { "properties": { "provenance": { "not": { "const": "illustrative" } } } } }
   ],

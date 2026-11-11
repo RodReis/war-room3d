@@ -46,9 +46,10 @@ store.configureSessionSources([
 ], sources);
 const collector = new SessionFileCollector(store, sources);
 function tailArena(): void {
-  const bytes = readFileSync(arenaSource);
-  if (bytes.length < offset || createHash('sha256').update(bytes.subarray(0, baseline)).digest('hex').toLowerCase() !== prefixHash.toLowerCase() ||
-      (offset > baseline && !existsSync(arenaCopy)))
+  let bytes: Buffer;
+  try { bytes = readFileSync(arenaSource); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error; }
+  if (bytes.length < offset || createHash('sha256').update(bytes.subarray(0, baseline)).digest('hex').toLowerCase() !== prefixHash.toLowerCase())
     throw new Error('Spool ArenaHub foi substituído ou truncado; não reutilizar o baseline');
   const added = bytes.subarray(offset);
   const lastLine = added.lastIndexOf(10);

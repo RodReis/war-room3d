@@ -132,27 +132,28 @@ namespace WarRoom3D
             foreach (var renderer in bodyRenderers)
             {
                 if (renderer == null) continue;
+                var meshName = MeshName(renderer.name);
                 Color color = baseColors[renderer];
-                if (renderer.name == "Distintivo provedor") color = providerColor;
-                else if (renderer.name == "Jaqueta facetada" || renderer.name.StartsWith("Braco ", StringComparison.Ordinal) ||
-                    renderer.name.StartsWith("Antebraco ", StringComparison.Ordinal)) color = Cloth[Style];
-                else if (renderer.name == "Placa toracica" || renderer.name == "Cinto" ||
-                    renderer.name.StartsWith("Ombreira ", StringComparison.Ordinal) || renderer.name == "Gola") color = Panel[Style];
-                else if (renderer.name == "Quadril" || renderer.name.StartsWith("Coxa ", StringComparison.Ordinal) ||
-                    renderer.name.StartsWith("Canela ", StringComparison.Ordinal)) color = Trousers[Style];
-                else if (renderer.name.StartsWith("Cabelo", StringComparison.Ordinal) || renderer.name.StartsWith("Franja", StringComparison.Ordinal))
+                if (meshName == "Distintivo provedor") color = providerColor;
+                else if (meshName == "Jaqueta facetada" || meshName.StartsWith("Braco ", StringComparison.Ordinal) ||
+                    meshName.StartsWith("Antebraco ", StringComparison.Ordinal)) color = Cloth[Style];
+                else if (meshName == "Placa toracica" || meshName == "Cinto" ||
+                    meshName.StartsWith("Ombreira ", StringComparison.Ordinal) || meshName == "Gola") color = Panel[Style];
+                else if (meshName == "Quadril" || meshName.StartsWith("Coxa ", StringComparison.Ordinal) ||
+                    meshName.StartsWith("Canela ", StringComparison.Ordinal)) color = Trousers[Style];
+                else if (meshName.StartsWith("Cabelo", StringComparison.Ordinal) || meshName.StartsWith("Franja", StringComparison.Ordinal))
                     color = (identityHash & 1) == 0 ? new Color(.035f, .055f, .075f) : new Color(.16f, .095f, .07f);
-                else if (renderer.name == "Cabeca" || renderer.name.StartsWith("Orelha", StringComparison.Ordinal) || renderer.name == "Nariz")
+                else if (meshName == "Cabeca" || meshName.StartsWith("Orelha", StringComparison.Ordinal) || meshName == "Nariz")
                     color = (identityHash & 2) == 0 ? new Color(.72f, .48f, .34f) : new Color(.42f, .27f, .19f);
                 var originalScale = baseScales[renderer];
                 var feminine = Style == 0 || Style == 2;
-                if (renderer.name == "Jaqueta facetada")
+                if (meshName == "Jaqueta facetada")
                     renderer.transform.localScale = Vector3.Scale(originalScale, new Vector3(feminine ? .84f : 1.13f, 1f, 1f));
-                else if (renderer.name == "Quadril")
+                else if (meshName == "Quadril")
                     renderer.transform.localScale = Vector3.Scale(originalScale, new Vector3(feminine ? 1.16f : .92f, 1f, 1f));
-                else if (renderer.name.StartsWith("Ombreira ", StringComparison.Ordinal))
+                else if (meshName.StartsWith("Ombreira ", StringComparison.Ordinal))
                     renderer.transform.localScale = Vector3.Scale(originalScale, new Vector3(feminine ? .82f : 1.16f, 1f, 1f));
-                else if (renderer.name == "Cabelo superior")
+                else if (meshName == "Cabelo superior")
                     renderer.transform.localScale = Vector3.Scale(originalScale, new Vector3(1f, Style == 2 ? 1.46f : Style == 1 ? .60f : 1f, 1f));
                 else renderer.transform.localScale = originalScale;
                 if (uncertain) color *= .42f;
@@ -209,7 +210,16 @@ namespace WarRoom3D
             accessoryMaterial.SetColor("_BaseColor", uncertain ? Panel[Style] * .42f : Panel[Style]);
         }
 
-        private void Update()
+        private static string MeshName(string name)
+        {
+            var dot = name.LastIndexOf('.');
+            if (dot < 0 || dot == name.Length - 1) return name;
+            for (var i = dot + 1; i < name.Length; i++)
+                if (name[i] < '0' || name[i] > '9') return name;
+            return name.Substring(0, dot);
+        }
+
+        private void LateUpdate()
         {
             if (nameLabel != null && Camera.main != null) nameLabel.transform.rotation = Camera.main.transform.rotation;
             if (reduced || Uncertain) return;

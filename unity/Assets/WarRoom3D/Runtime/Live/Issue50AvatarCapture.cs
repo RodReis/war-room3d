@@ -16,19 +16,22 @@ namespace WarRoom3D
         };
         private string output;
         private UIDocument document;
+        private bool verifyRestart;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
         {
             var args = Environment.GetCommandLineArgs();
             if (Array.IndexOf(args, "-wr3d-quartel-demo") < 0) return;
-            var index = Array.IndexOf(args, "-wr3d-avatar-capture");
+            var verifyRestart = Array.IndexOf(args, "-wr3d-avatar-verify-restart") >= 0;
+            var index = Array.IndexOf(args, verifyRestart ? "-wr3d-avatar-verify-restart" : "-wr3d-avatar-capture");
             if (index < 0 || index + 1 >= args.Length) return;
             var hud = FindAnyObjectByType<LiveHudPresenter>();
             if (hud == null) return;
             var capture = hud.gameObject.AddComponent<Issue50AvatarCapture>();
             capture.document = hud.GetComponent<UIDocument>();
             capture.output = args[index + 1];
+            capture.verifyRestart = verifyRestart;
         }
 
         private IEnumerator Start()
@@ -50,6 +53,19 @@ namespace WarRoom3D
             if (presenter == null || presenter.VisibleCount != 4 || root.Q<Label>("project-name").text != "Plataforma Atlas" ||
                 !root.Q<Label>("demo-seal").text.Contains("DADOS ILUSTRATIVOS"))
             { Fail("quatro avatares e selo de demonstração não encontrados"); yield break; }
+            if (verifyRestart)
+            {
+                var profile = AgentLocalProfile.Load("preview-atlas", "atlas-1", Keys[0]);
+                var restored = presenter.FindAgent(Keys[0])?.GetComponent<AgentView>();
+                if (profile.alias != "Joana Demo" || profile.style != 0 || restored == null ||
+                    restored.Style != 0 || !restored.LabelText.Contains("Joana Demo"))
+                { Fail("apelido ou aparência não persistiram após reinício do Player"); yield break; }
+                AgentLocalProfile.Clear("preview-atlas", "atlas-1", Keys[0]);
+                File.WriteAllText(Path.Combine(output, "resultado-reinicio.txt"),
+                    "pass | apelido e aparência restaurados após reinício | preferência sintética removida");
+                Application.Quit(0);
+                yield break;
+            }
             var styles = new HashSet<int>();
             var first = presenter.FindAgent(Keys[0]);
             var start = first != null ? first.localPosition : Vector3.zero;
@@ -92,8 +108,29 @@ namespace WarRoom3D
             if (still == null) { Fail("captura reduzida indisponível"); yield break; }
             try { File.WriteAllBytes(Path.Combine(output, "reduzido.png"), still.EncodeToPNG()); }
             finally { Destroy(still); }
+            var alias = root.Q<TextField>("agent-alias");
+            var style = root.Q<DropdownField>("agent-style");
+            if (alias == null || style == null || root.Q<VisualElement>("agent-profile").resolvedStyle.display == DisplayStyle.None)
+            { Fail("controles de apelido e aparência indisponíveis"); yield break; }
+            alias.value = "Joana Demo";
+            style.value = AgentLocalProfile.Styles[0];
+            var save = root.Q<Button>("agent-profile-save");
+            using (var submit = NavigationSubmitEvent.GetPooled())
+            {
+                submit.target = save;
+                save.SendEvent(submit);
+            }
+            yield return new WaitForEndOfFrame();
+            var changed = presenter.FindAgent(Keys[0])?.GetComponent<AgentView>();
+            if (changed == null || changed.Style != 0 || !changed.LabelText.Contains("Joana Demo"))
+            { Fail("controles locais não atualizaram o avatar"); yield break; }
+            root.Q<ScrollView>("room-content").scrollOffset = new Vector2(0, 250);
+            yield return new WaitForEndOfFrame();
+            var aliasImage = ScreenCapture.CaptureScreenshotAsTexture();
+            try { File.WriteAllBytes(Path.Combine(output, "apelido.png"), aliasImage.EncodeToPNG()); }
+            finally { Destroy(aliasImage); }
             File.WriteAllText(Path.Combine(output, "resultado.txt"),
-                $"pass | Player {Application.unityVersion} | {Screen.width}x{Screen.height} | fixture | estilos=4 | deslocamento={Vector3.Distance(start, end.localPosition):F2}m");
+                $"pass | Player {Application.unityVersion} | {Screen.width}x{Screen.height} | fixture | estilos=4 | deslocamento={Vector3.Distance(start, end.localPosition):F2}m | edição local=pass");
             Application.Quit(0);
         }
 

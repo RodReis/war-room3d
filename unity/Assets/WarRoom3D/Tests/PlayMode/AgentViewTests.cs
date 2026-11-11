@@ -101,8 +101,9 @@ namespace WarRoom3D.Tests
                     view.Bind("synthetic-" + style, "session", "Pessoa " + style, style,
                         "claude", "aguardando", false, false, false, true);
                     var jacket = System.Array.Find(instance.GetComponentsInChildren<Renderer>(),
-                        renderer => renderer.name == "Jaqueta facetada");
-                    Assert.That(jacket, Is.Not.Null);
+                        renderer => renderer.name.StartsWith("Jaqueta facetada"));
+                    Assert.That(jacket, Is.Not.Null, string.Join(", ", System.Array.ConvertAll(
+                        instance.GetComponentsInChildren<Renderer>(), renderer => renderer.name)));
                     var block = new MaterialPropertyBlock();
                     jacket.GetPropertyBlock(block);
                     colors.Add(block.GetColor("_BaseColor"));

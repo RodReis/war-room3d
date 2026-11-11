@@ -18,8 +18,9 @@ if (!existsSync(playerPath)) throw new Error('Player não encontrado');
 mkdirSync(output, { recursive:true });
 const imagePath = path.join(output, `${name}.png`);
 const reportPath = path.join(output, `${name}.json`);
+const logPath = path.join(output, `${name}.log`);
 if (existsSync(imagePath) || existsSync(reportPath)) throw new Error('Captura anterior existe; escolha outro nome');
-const child = spawn(playerPath, ['-screen-width',String(width),'-screen-height',String(height),'-logFile','-'], {
+const child = spawn(playerPath, ['-screen-width',String(width),'-screen-height',String(height),'-logFile',logPath], {
   env:{...process.env,WR3D_SERVICE_URL:config.url,WR3D_SERVICE_TOKEN:config.token,WR3D_COMMAND_TOKEN:'',
     WR3D_VALIDATION_CAPTURE_DIR:output,WR3D_VALIDATION_CAPTURE_NAME:name,
     WR3D_VALIDATION_VIEW:view,WR3D_VALIDATION_DURATION_SECONDS:String(duration)},

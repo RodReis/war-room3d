@@ -58,7 +58,7 @@
             </ui:VisualElement>
             <ui:VisualElement name="agent-list-section" class="agent-list-section">
               <ui:Label name="agents-heading" text="AGENTES ILUSTRATIVOS" class="eyebrow section-space" />
-              <ui:ScrollView name="agent-list" class="agent-list" />
+              <ui:ScrollView name="agent-list" class="agent-list" scroll-view-mode="Vertical" horizontal-scroller-visibility="Hidden" />
               <ui:Label name="agent-empty" text="○ Nenhum agente observado nesta sala" class="hint" />
             </ui:VisualElement>
             <ui:VisualElement name="room-tabs" class="room-tabs">
@@ -68,7 +68,7 @@
               <ui:Button name="tab-sources" text="○ Fontes" />
             </ui:VisualElement>
             <ui:Button name="expand-toggle" text="Ampliar leitura" class="secondary-button" />
-            <ui:ScrollView name="room-content" class="room-content">
+            <ui:ScrollView name="room-content" class="room-content" scroll-view-mode="Vertical" horizontal-scroller-visibility="Hidden">
               <ui:VisualElement name="page-activity">
                 <ui:Label name="selected-agent" text="Selecione agente" class="hint" />
                 <ui:Label name="activity-heading" text="ATIVIDADE ILUSTRATIVA" class="eyebrow section-space" />

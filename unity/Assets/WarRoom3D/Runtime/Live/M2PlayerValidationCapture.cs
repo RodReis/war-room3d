@@ -254,6 +254,20 @@ namespace WarRoom3D
                 if (scroll != null) scroll.scrollOffset = new Vector2(0, 100000);
                 yield return new WaitForEndOfFrame();
             }
+            if (captureView == "project" && client.Snapshot.mode == "live")
+            {
+                var activity = GetComponent<ActivityChartPresenter>();
+                var until = Time.realtimeSinceStartup + 10f;
+                while (activity != null && activity.CurrentHour == null && Time.realtimeSinceStartup < until)
+                    yield return null;
+                if (activity == null || activity.CurrentHour == null)
+                {
+                    Debug.LogError("M2 Player: série de atividade não chegou antes do limite");
+                    Application.Quit(16);
+                    yield break;
+                }
+            }
+            yield return new WaitForEndOfFrame();
 
             var report = new CaptureReport();
             try

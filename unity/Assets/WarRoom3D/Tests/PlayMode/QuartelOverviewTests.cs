@@ -51,6 +51,38 @@ namespace WarRoom3D.Tests
         }
 
         [Test]
+        public void RecoveredProjectDoesNotKeepOldSessionSourceWarning()
+        {
+            var container = new VisualElement();
+            var overview = new QuartelOverview(container, _ => { });
+            var state = new LiveSnapshot
+            {
+                projects = new[] { new LiveProject { projectId = "forja", name = "ForjaOS" } },
+                roomPlacements = new[]
+                {
+                    new LiveRoomPlacement { projectId = "forja", sectorId = "setor-01", slotId = "slot-01", status = "active" }
+                },
+                sessions = new[]
+                {
+                    new LiveSession { projectId = "forja", sessionKey = "antiga", presence = "desconhecida", freshness = "desatualizada" }
+                },
+                agents = new LiveAgent[0]
+            };
+
+            overview.Render(state, true, null);
+            var card = container.Q<Button>("overview-card-slot-01");
+            Assert.That(card.Q<Label>("overview-alert").text, Does.Contain("Verificar fonte"));
+            state.sessions = new[]
+            {
+                state.sessions[0],
+                new LiveSession { projectId = "forja", sessionKey = "nova", presence = "aguardando", freshness = "atual" }
+            };
+            overview.Render(state, true, null);
+            Assert.That(card.Q<Label>("overview-status").text, Does.Contain("Aguardando"));
+            Assert.That(card.Q<Label>("overview-alert").text, Is.EqualTo("Sem alertas observados"));
+        }
+
+        [Test]
         public void GlobalSearchFindsActiveProjectInSecondSectorAndKeepsHomonymsDistinct()
         {
             var state = new LiveSnapshot

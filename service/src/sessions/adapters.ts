@@ -82,9 +82,15 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
   const capturedAt = string(input.capturedAt);
   const observedAt = capturedAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(capturedAt) && Number.isFinite(Date.parse(capturedAt)) ? capturedAt : receivedAt;
   const item = source.provider === 'codex' && !codexHook ? object(params.item) : null;
+  const hookTurnId = source.provider === 'codex' && codexHook ? string(input.turn_id) : null;
   const stableNativeId = source.provider === 'codex' && !codexHook
     ? string(item?.id) ?? string(params.turnId) ?? string(object(params.turn)?.id)
-    : string(input.tool_use_id) ?? string(input.task_id) ?? string(input.agent_id) ?? string(input.turn_id) ?? string(input.prompt_id);
+    : source.provider === 'claude'
+      ? string(input.tool_use_id) ?? string(input.task_id) ?? string(input.agent_id) ?? string(input.turn_id) ??
+        (string(input.prompt_id) && method === 'UserPromptSubmit' && capturedAt
+          ? `${string(input.prompt_id)}:${capturedAt}` : string(input.prompt_id))
+      : string(input.tool_use_id) ?? string(input.task_id) ?? string(input.agent_id) ?? string(input.prompt_id) ??
+        (hookTurnId && capturedAt ? `${hookTurnId}:${capturedAt}` : null);
   const eventRecordId = stableNativeId ? `native-${id(nativeSessionId,method,stableNativeId)}` : recordId;
   const key = sessionKey(source.provider, source.accountRef, nativeSessionId);
   const base = (type: string, suffix: string, payload: NormalizedEvent['payload'] = {}, agentKey?: string): NormalizedEvent => ({
@@ -101,8 +107,11 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
     const currentAgent = subagentId ? agent(subagentId) : mainAgent;
     if (method === 'SessionStart') return [base('session.observed','session',input.source === 'resume' ? {reason:'source_recovered'} : {}),base('agent.observed','main-agent',input.source === 'resume' ? {reason:'source_recovered'} : {},mainAgent)];
     if (method === 'SessionEnd') return [base('session.ended','session')];
-    if (method === 'UserPromptSubmit') return [base('session.working','session'),base('message.observed','message',{messageId:`m-${id(key,eventRecordId)}`})];
-    if (method === 'Stop') return [base('session.waiting','session')];
+    if (method === 'UserPromptSubmit') return [base('session.working','session'),
+      base('agent.working','main-agent',{},mainAgent),
+      base('message.observed','message',{messageId:`m-${id(key,eventRecordId)}`})];
+    if (method === 'Stop') return [base('session.waiting','session'),
+      base('agent.waiting','main-agent',{},mainAgent)];
     if (method === 'UserPromptExpansion') {
       const command = safeName(input.command_name);
       if (input.expansion_type !== 'slash_command' || !command || !source.skillCommands?.includes(command)) return [];
@@ -118,13 +127,14 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
       const toolUseId = string(input.tool_use_id);
       if (!toolName || !toolUseId) return [];
       const invocationId = `i-${id(key,toolUseId)}`;
+      const agentEvidence = subagentId ? [base('agent.observed','tool-agent',{parentStatus:'vinculo_pendente'},currentAgent)] : [];
       if (source.provider === 'claude' && toolName === 'Skill' && method === 'PreToolUse') {
         const skill = safeName(object(input.tool_input)?.skill);
-        return skill ? [base('skill.observed','skill',{invocationId,name:skill},currentAgent)] : [];
+        return skill ? [...agentEvidence,base('skill.observed','skill',{invocationId,name:skill},currentAgent)] : [];
       }
       if (toolName === 'Skill') return [];
       const type = method === 'PreToolUse' ? 'tool.observed' : method === 'PostToolUse' ? 'tool.result' : 'tool.failed';
-      return [base(type,'tool',{invocationId,name:toolName},currentAgent)];
+      return [...agentEvidence,base(type,'tool',{invocationId,name:toolName},currentAgent)];
     }
     if (method === 'TaskCreated' || method === 'TaskCompleted') {
       const nativeTaskId = string(input.task_id);

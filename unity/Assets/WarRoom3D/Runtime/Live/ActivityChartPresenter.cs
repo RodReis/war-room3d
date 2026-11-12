@@ -91,7 +91,7 @@ namespace WarRoom3D
             client.GetActivity("/v1/activity", (status, json) =>
             {
                 if (this == null || expected != requestId) return;
-                if (status != 200) { ShowStatus("Série indisponível no serviço local."); return; }
+                if (status != 200) { Debug.LogWarning("Atividade: resposta HTTP " + status); ShowStatus("Série indisponível no serviço local."); return; }
                 AcceptActivity(json);
             });
         }
@@ -100,8 +100,8 @@ namespace WarRoom3D
         {
             ActivityHourView parsed;
             try { parsed = JsonUtility.FromJson<ActivityHourView>(json); }
-            catch (Exception) { ShowStatus("Contrato de atividade inválido."); return false; }
-            if (!Valid(parsed)) { ShowStatus("Contrato de atividade inválido."); return false; }
+            catch (Exception error) { Debug.LogWarning("Atividade: JSON inválido (" + error.GetType().Name + ")"); ShowStatus("Contrato de atividade inválido."); return false; }
+            if (!Valid(parsed)) { Debug.LogWarning("Atividade: contrato inválido; séries=" + (parsed?.series?.Length ?? -1)); ShowStatus("Contrato de atividade inválido."); return false; }
             hour = parsed;
             Render();
             return true;

@@ -126,7 +126,7 @@ namespace WarRoom3D
                 workingAgents > 0 ? "● Trabalhando" :
                 workingSession ? "● Sessão em atividade" :
                 waiting ? "○ Aguardando" :
-                unknown ? "◇ Fonte indisponível" :
+                unknown && !present ? "◇ Fonte indisponível" :
                 present ? "○ Sessão observada" : "○ Workspace aberto";
             var incidents = 0;
             foreach (var incident in state.incidents ?? Array.Empty<LiveIncident>())
@@ -144,8 +144,8 @@ namespace WarRoom3D
                 ? "Último sinal  " + latest.Value.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)
                 : "Sem sinal registrado";
             var alert = card.Q<Label>("overview-alert");
-            alert.text = incidents > 0 ? $"!  {incidents} incidente(s) observado(s)" : unknown || !current ? "!  Verificar fonte" : "Sem alertas observados";
-            alert.EnableInClassList("status-attention", incidents > 0 || unknown || !current);
+            alert.text = incidents > 0 ? $"!  {incidents} incidente(s) observado(s)" : (unknown && !present) || !current ? "!  Verificar fonte" : "Sem alertas observados";
+            alert.EnableInClassList("status-attention", incidents > 0 || (unknown && !present) || !current);
             card.tooltip = project.name + " · " + project.projectId + " · " + status;
         }
     }

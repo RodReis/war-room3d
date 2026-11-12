@@ -6,29 +6,33 @@ import { startReadOnlyServer } from '../src/http/server.ts';
 import { SessionFileCollector } from '../src/sessions/file-source.ts';
 import { normalizeProjectPath } from '../src/domain/identity.ts';
 
-// Read-only local lab. The ArenaHub source is already sanitized; copy only records
+// Read-only local lab. The Claude source is already sanitized; copy only records
 // appended after the approved baseline so an older session cannot count for #52.
-const [output, arenaSource, arenaProject, codexSource, codexProject, baselineText, prefixHash] = process.argv.slice(2);
+const [output, arenaSource, arenaProject, codexSource, codexProject, baselineText, prefixHash,
+  primaryProjectId = 'issue52-arenahub', primaryProjectName = 'ArenaHub'] = process.argv.slice(2);
 const baseline = Number(baselineText);
 if (!output || !arenaSource || !arenaProject || !codexSource || !codexProject || !prefixHash ||
     [output, arenaSource, arenaProject, codexSource, codexProject].some(value => !path.isAbsolute(value)) ||
-    !Number.isSafeInteger(baseline) || baseline < 0 || !/^[a-fA-F0-9]{64}$/.test(prefixHash)) {
-  throw new Error('Uso: issue52-live-lab.ts <saída> <spool Claude> <projeto ArenaHub> <spool Codex> <projeto ForjaOS> <bytes-base> <sha256-prefixo>');
+    !Number.isSafeInteger(baseline) || baseline < 0 || !/^[a-fA-F0-9]{64}$/.test(prefixHash) ||
+    !['issue52-arenahub', 'issue52-lootrust'].includes(primaryProjectId) ||
+    !['ArenaHub', 'Lootrust'].includes(primaryProjectName) ||
+    (primaryProjectId === 'issue52-lootrust') !== (primaryProjectName === 'Lootrust')) {
+  throw new Error('Uso: issue52-live-lab.ts <saída> <spool Claude> <projeto Claude> <spool Codex> <projeto ForjaOS> <bytes-base> <sha256-prefixo> [id Claude] [nome Claude]');
 }
 
 mkdirSync(output, { recursive: true });
-const arenaCopy = path.join(output, 'arena-new.ndjson');
-const offsetFile = path.join(output, 'arena-offset.txt');
+const arenaCopy = path.join(output, primaryProjectId === 'issue52-lootrust' ? 'lootrust-new.ndjson' : 'arena-new.ndjson');
+const offsetFile = path.join(output, primaryProjectId === 'issue52-lootrust' ? 'lootrust-offset.txt' : 'arena-offset.txt');
 const codexCopy = path.join(output, 'codex-new.ndjson');
 const codexOffsetFile = path.join(output, 'codex-offset.txt');
-if (existsSync(arenaCopy) !== existsSync(offsetFile)) throw new Error('Cópia e cursor ArenaHub divergentes');
+if (existsSync(arenaCopy) !== existsSync(offsetFile)) throw new Error('Cópia e cursor Claude divergentes');
 if (existsSync(codexCopy) !== existsSync(codexOffsetFile)) throw new Error('Cópia e cursor Codex divergentes');
 if (!existsSync(arenaCopy)) {
   writeFileSync(arenaCopy, '', { mode:0o600, flag:'wx' });
   writeFileSync(offsetFile, String(baseline), { mode:0o600, flag:'wx' });
 }
 let offset = existsSync(offsetFile) ? Number(readFileSync(offsetFile, 'utf8')) : baseline;
-if (!Number.isSafeInteger(offset) || offset < baseline) throw new Error('Cursor ArenaHub inválido');
+if (!Number.isSafeInteger(offset) || offset < baseline) throw new Error('Cursor Claude inválido');
 if (!existsSync(codexCopy)) {
   writeFileSync(codexCopy, '', { mode:0o600, flag:'wx' });
   writeFileSync(codexOffsetFile, '0', { mode:0o600, flag:'wx' });
@@ -51,13 +55,13 @@ for (const line of readFileSync(codexCopy, 'utf8').split('\n').filter(Boolean)) 
 }
 const store = new EventStore(path.join(output, 'state.sqlite'));
 const sources = [
-  { sourceId:'issue52-claude-arenahub', sourceVersion:'2.1.322', provider:'claude' as const,
-    projectId:'issue52-arenahub', accountRef:'vscode-local', filePath:arenaCopy, staleAfterMs:600000 },
+  { sourceId:`issue52-claude-${primaryProjectId.slice('issue52-'.length)}`, sourceVersion:'2.1.322', provider:'claude' as const,
+    projectId:primaryProjectId, accountRef:'vscode-local', filePath:arenaCopy, staleAfterMs:600000 },
   { sourceId:'issue52-codex-forjaos', sourceVersion:'0.167.0-alpha.4.1', provider:'codex' as const,
     projectId:'issue52-forjaos', accountRef:'vscode-local', filePath:codexCopy, staleAfterMs:600000 }
 ];
 store.configureSessionSources([
-  {projectId:'issue52-arenahub', name:'ArenaHub', canonicalPath:arenaProject},
+  {projectId:primaryProjectId, name:primaryProjectName, canonicalPath:arenaProject},
   {projectId:'issue52-forjaos', name:'ForjaOS', canonicalPath:codexProject}
 ], sources);
 const collector = new SessionFileCollector(store, sources);
@@ -67,7 +71,7 @@ function tailArena(): void {
   try { bytes = readFileSync(arenaSource); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error; }
   if (bytes.length < offset || createHash('sha256').update(bytes.subarray(0, baseline)).digest('hex').toLowerCase() !== prefixHash.toLowerCase())
-    throw new Error('Spool ArenaHub foi substituído ou truncado; não reutilizar o baseline');
+    throw new Error('Spool Claude foi substituído ou truncado; não reutilizar o baseline');
   const added = bytes.subarray(offset);
   const lastLine = added.lastIndexOf(10);
   if (lastLine >= 0) {

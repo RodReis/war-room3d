@@ -13,6 +13,7 @@ namespace WarRoom3D
     {
         private const int FrameCount = 20;
         private string output;
+        private string projectId;
         private LiveStateClient client;
 
         [Serializable]
@@ -20,6 +21,7 @@ namespace WarRoom3D
         {
             public string status;
             public string reason;
+            public string projectId;
             public int processId;
             public int projectCount;
             public int visibleAgents;
@@ -38,10 +40,15 @@ namespace WarRoom3D
             var output = Environment.GetEnvironmentVariable("WR3D_ISSUE52_AVATAR_DIR");
             if (string.IsNullOrWhiteSpace(output)) return;
             if (!Path.IsPathRooted(output)) { Application.Quit(7); return; }
+            var projectId = Environment.GetEnvironmentVariable("WR3D_ISSUE52_AVATAR_PROJECT");
+            if (string.IsNullOrWhiteSpace(projectId)) projectId = "issue52-arenahub";
+            if (projectId != "issue52-arenahub" && projectId != "issue52-lootrust" && projectId != "issue52-forjaos")
+            { Application.Quit(7); return; }
             var client = FindAnyObjectByType<LiveStateClient>();
             if (client == null) { Application.Quit(7); return; }
             var capture = client.gameObject.AddComponent<Issue52AvatarMotionCapture>();
             capture.output = output;
+            capture.projectId = projectId;
             capture.client = client;
             Application.runInBackground = true;
         }
@@ -49,7 +56,7 @@ namespace WarRoom3D
         private IEnumerator Start()
         {
             Directory.CreateDirectory(output);
-            var result = new Result { processId = System.Diagnostics.Process.GetCurrentProcess().Id,
+            var result = new Result { projectId = projectId, processId = System.Diagnostics.Process.GetCurrentProcess().Id,
                 width = Screen.width, height = Screen.height, capturedAt = DateTimeOffset.UtcNow.ToString("O") };
             var deadline = Time.realtimeSinceStartup + 30f;
             LiveHudPresenter hud = null;
@@ -69,13 +76,14 @@ namespace WarRoom3D
             yield return new WaitForEndOfFrame();
             SaveFrame("overview.png");
 
-            hud.SendMessage("SelectProjectForValidation", "issue52-arenahub");
+            hud.SendMessage("SelectProjectForValidation", projectId);
             hud.SendMessage("EnterRoom");
             yield return null;
             var presenter = GetComponent<AgentPresenter>();
             var views = FindObjectsByType<AgentView>(FindObjectsSortMode.None);
-            if (presenter == null || presenter.VisibleCount < 2 || views.Length < 2)
-            { Fail(result, "avatares reais insuficientes na sala ArenaHub"); yield break; }
+            var requiredAgents = projectId == "issue52-arenahub" ? 2 : 1;
+            if (presenter == null || presenter.VisibleCount < requiredAgents || views.Length < requiredAgents)
+            { Fail(result, "avatares reais insuficientes na sala selecionada"); yield break; }
             result.visibleAgents = presenter.VisibleCount;
             var initial = new Dictionary<string, Vector3>();
             foreach (var view in views)
@@ -85,7 +93,7 @@ namespace WarRoom3D
                 if (view.Style % 2 == 0) result.feminineStyles++;
                 else result.masculineStyles++;
             }
-            if (result.feminineStyles == 0 || result.masculineStyles == 0)
+            if (projectId == "issue52-arenahub" && (result.feminineStyles == 0 || result.masculineStyles == 0))
             { Fail(result, "estilos femininos e masculinos não apareceram juntos"); yield break; }
 
             for (var frame = 0; frame < FrameCount; frame++)

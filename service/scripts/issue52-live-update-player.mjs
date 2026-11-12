@@ -6,8 +6,8 @@ const [configPath, playerPath, output, changedProject = 'issue52-arenahub',
   stableProject = 'issue52-forjaos'] = process.argv.slice(2);
 if ([configPath, playerPath, output].some(value => !value || !path.isAbsolute(value)) ||
     !existsSync(configPath) || !existsSync(playerPath) ||
-    !['issue52-arenahub', 'issue52-forjaos'].includes(changedProject) ||
-    !['issue52-arenahub', 'issue52-forjaos'].includes(stableProject) || changedProject === stableProject)
+    !['issue52-arenahub', 'issue52-lootrust', 'issue52-forjaos'].includes(changedProject) ||
+    !['issue52-arenahub', 'issue52-lootrust', 'issue52-forjaos'].includes(stableProject) || changedProject === stableProject)
   throw new Error('Uso: issue52-live-update-player.mjs <service.json> <Player.exe> <saída nova> [projeto alterado] [projeto estável]');
 if (existsSync(output) && readdirSync(output).length)
   throw new Error('Saída já contém arquivos; escolha outro diretório');

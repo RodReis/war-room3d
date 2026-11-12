@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const logs = path.join(root, 'Logs');
-const [output, visual, reduced, sector] = process.argv.slice(2).map(value => value && path.resolve(value));
+const [output, visual, reduced, sector, manifestInput] = process.argv.slice(2).map(value => value && path.resolve(value));
 const insideLogs = value => value && value.toLowerCase().startsWith((logs + path.sep).toLowerCase());
-if (![output, visual, reduced, sector].every(insideLogs) || existsSync(output))
-  throw new Error('Informe saída nova e diretórios visual/reduced/sector absolutos dentro de Logs/');
+const manifestPath = manifestInput ?? path.join(logs, 'issue52-avatar-build-manifest.json');
+if (![output, visual, reduced, sector, manifestPath].every(insideLogs) || existsSync(output) || !existsSync(manifestPath))
+  throw new Error('Informe saída nova, diretórios visual/reduced/sector e manifesto existentes dentro de Logs/');
 
-const manifest = JSON.parse(readFileSync(path.join(logs, 'issue52-avatar-build-manifest.json'), 'utf8'));
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const build = path.join(root, 'unity/Builds/WarRoom3D-Quartel/WarRoom3D.exe');
 const requiredValidity = ['allSequencesCovered', 'burstRate100PerSecond', 'clockStable',
   'fullDuration', 'playerConnected', 'backgroundExecutionEnabled', 'resolution1080p', 'referenceRoom'];

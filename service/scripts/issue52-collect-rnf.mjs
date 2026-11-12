@@ -46,6 +46,8 @@ for (const [profile, directory] of Object.entries({ visual, reduced, sector })) 
       !requiredValidity.every(key => result.validity?.[key] === true && internal.validity?.[key] === true) ||
       !result.fullDuration || !external.fullDuration || external.capturedSpanSeconds < 599.9 ||
       external.source !== 'PresentMon 2.6.0 ETW' ||
+      !Number.isFinite(result.propagationP95Ms) || result.propagationP95Ms < 0 || result.propagationP95Ms > 2000 ||
+      !Number.isFinite(result.presentP95Ms) || result.presentP95Ms < 0 ||
       result.presentP95Ms !== external.intervalMs.p95 || result.presentP95Ms > target ||
       !Number.isSafeInteger(environment.processWorkingSetPointInTimeBytes))
     throw new Error(`Cenário inválido: ${profile}`);

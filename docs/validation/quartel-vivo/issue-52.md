@@ -115,6 +115,8 @@ O PI restaurou 100% no `DISPLAY1`, confirmado novamente por 96 DPI. No **mesmo b
 
 O Player do manifesto `Logs/issue52-dpi-layout-build2-manifest.json`, árvore SHA-256 `1F29CD24D6957DCD5A9A5A802A7DB2F5BC0F2C7ADF594D106A4236B3A3C5DF52`, completou os três perfis de 600 s em 1920×1080 após a matriz física RNF-06. O lançador elevado `issue-35-run-profile-elevated.ps1` terminou com código 0. `service/scripts/issue52-collect-rnf.mjs` conferiu EXE e DLL contra esse manifesto, 7.000 eventos aceitos e cobertos por perfil, duração integral, validade interna, intervalo externo do PresentMon 2.6.0 e limites de p95. O consolidado local `Logs/issue52-rnf-finalbuild-summary.json` tem SHA-256 `242974682C1F6BC70FF5B215A8406B3A82226A91BB21047204D2E5FB60190F5E` e guarda os hashes dos CSVs e resultados brutos.
 
+Na revisão, o consolidador passou a rejeitar propagação p95 acima de 2.000 ms e p95 ausente ou não numérico; antes ele apenas registrava a propagação sem aplicar o limite RNF-01. Reexecutado sobre os três artefatos medidos, `Logs/issue52-rnf-finalbuild-summary-reviewed.json` reproduziu exatamente o SHA-256 `242974682C1F6BC70FF5B215A8406B3A82226A91BB21047204D2E5FB60190F5E`. Um resultado visual de laboratório com propagação alterada para 2.001 ms foi rejeitado como `Cenário inválido: visual` e não criou consolidado. Os arquivos medidos originais não foram modificados.
+
 | Perfil | Eventos aceitos/cobertos | Propagação p95 | Apresentação p95 | Limite | Janela PresentMon | Intervalos sem amostra de exibição |
 |---|---:|---:|---:|---:|---:|---:|
 | Visual | 7.000/7.000 | 256 ms | 4,0406 ms | 16,67 ms | 599,997 s | 5.750 de 294.624 apresentações |

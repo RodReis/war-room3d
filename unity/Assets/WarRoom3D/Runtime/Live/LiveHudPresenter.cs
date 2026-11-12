@@ -47,6 +47,7 @@ namespace WarRoom3D
         {
             root = document.rootVisualElement;
             if (styleSheet != null) root.styleSheets.Add(styleSheet);
+            root.RegisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
             orbit.SetHud(this);
             dataCenter = sector.GetComponentInChildren<DataCenterBuilder>();
             dataCenter.UseNeutralIndicators();
@@ -110,6 +111,7 @@ namespace WarRoom3D
 
         private void OnDestroy()
         {
+            if (root != null) root.UnregisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
             var history = GetComponent<HistoryHudPresenter>();
             if (history != null) { history.ReplayChanged -= OnReplayChanged; history.ReplayStateChanged -= RenderReplayState; }
             ClearReplayMarkers();
@@ -120,6 +122,13 @@ namespace WarRoom3D
             if (client == null) return;
             client.SnapshotChanged -= Render;
             client.ConnectionChanged -= OnConnection;
+        }
+
+        private void OnRootGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (evt.newRect.height <= 0) return;
+            root.EnableInClassList("overview-compact", evt.newRect.height < 700f);
+            root.EnableInClassList("overview-ultra", evt.newRect.height < 560f);
         }
 
         private void ShowEmpty()

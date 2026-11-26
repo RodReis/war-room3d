@@ -5,6 +5,7 @@ import type { EventStore, Cursor, NormalizedEvent } from '../store/event-store.t
 import { adaptSessionRecord, adaptConversationRecord, type SessionSource } from './adapters.ts';
 import { normalizeProjectPath, type ProjectRecord } from '../domain/identity.ts';
 import { sessionKey } from '../domain/identity.ts';
+import { isSessionOrigin, matchesSourceOrigin } from './source-origin.ts';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const MAX_READ = 1024 * 1024;
@@ -35,7 +36,8 @@ export function parseSessionSources(input: unknown): {projects:ProjectRecord[];s
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Fonte de sessão inválida');
     const source = value as Record<string,unknown>;
     const content = source.conversationContent;
-    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs','conversationContent','skillCommands'].includes(key)) ||
+    if (Object.keys(source).some(key => !['sourceId','sourceVersion','provider','projectId','accountRef','filePath','staleAfterMs','conversationContent','skillCommands','origin'].includes(key)) ||
+      (source.origin !== undefined && (source.provider !== 'codex' || !isSessionOrigin(source.origin))) ||
       !['claude','codex'].includes(String(source.provider)) ||
       !['sourceId','sourceVersion','projectId','accountRef'].every(key => typeof source[key] === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(source[key] as string)) ||
       typeof source.filePath !== 'string' || !path.isAbsolute(source.filePath) ||
@@ -145,6 +147,7 @@ export class SessionFileCollector {
           if (length > MAX_LINE) throw new SourceInputError('read_error');
           try {
             const record = JSON.parse(rawLine) as unknown;
+            if (!matchesSourceOrigin(source.origin,record)) throw new SourceInputError('invalid_scope');
             if (source.provider === 'claude' && (!record || typeof record !== 'object' || Array.isArray(record) ||
                 typeof (record as {cwdHash?:unknown}).cwdHash !== 'string' ||
                 !this.store.matchesProjectPathHash(source.projectId,(record as {cwdHash:string}).cwdHash)))

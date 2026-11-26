@@ -25,6 +25,10 @@ Em 26/11/2026, cafeteria e sala de reunião do PI receberam prefabs, circulaçã
 
 Em 26/11/2026, a descoberta opt-in passou a observar pastas locais autorizadas com fonte separada de Claude/Codex, sem inferir atividade de agente. [Provas da #54](validation/quartel-vivo/issue-54.md): contratos 19/19, serviço 201/201 e tipos, VS Code 1.148.0 nativo em perfis descartáveis (multi-root/homônimos, fechamento, perda/retomada, revogação e recusa sem trust) e duas salas no Player sem agentes. A integração com VS Code Chat e fontes de agente não é inferida. Instalação permanente e projetos pessoais não foram habilitados; integração/CI e aceite do PI ficam na [issue #54](https://github.com/RodReis/war-room3d/issues/54).
 
+## Preparação #55 — Codex Desktop
+
+Em 26/11/2026, a preparação da [#55](https://github.com/RodReis/war-room3d/issues/55) acrescentou origem declarada/transportes restritos, captura de metadados por projeto e tratamento de interrupção. [Relatório e matriz](validation/quartel-vivo/codex-desktop.md): serviço 207/207, contratos 19/19 e tipos; pacote Windows 26.1117.4957.0 inspecionado. **Prova de sessão no aplicativo, trust, coexistência e Player: `not_run`**. Autorização específica de projeto/sessão solicitada; nenhum hook instalado. Preparação ainda não integrada e card em execução; conferir a PR/issue remota.
+
 ## Entrega anterior — sala de referência
 
 Direção autorizada pelo PI em 08/11/2026: [#28](https://github.com/RodReis/war-room3d/issues/28), [especificação](specs/2026-11-08-sala-referencia-design.md) e [plano](superpowers/plans/2026-11-08-sala-referencia-player.md). #29 arte/luz, #30 layout, #31 hooks/observação, #32 avatares/atividade, #33 chat, #34 logs e #35 Player/aceite. Uma sala acabada e funcional deve passar por revisão visual inicial e aceite final no Player; replicação do acabamento fica bloqueada até decisão explícita do PI.

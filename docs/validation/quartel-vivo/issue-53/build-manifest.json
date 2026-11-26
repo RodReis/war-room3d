@@ -1,0 +1,21 @@
+{
+  "issue": 53,
+  "date": "2026-11-26",
+  "sourceCommit": "47fa7e748a9121df0e82f03850a80e2fddf91940",
+  "buildReportedBytes": 175823867,
+  "unityVersion": "6000.3.27f1",
+  "platform": "Windows x64 Development",
+  "captureGraphicsApi": "Direct3D 11",
+  "data": "Fixture local explicitamente sintética; sem fonte real",
+  "playerPath": "unity/Builds/WarRoom3D-FixedSpaces/WarRoom3D.exe",
+  "playerSha256": "93043E47ABFCE89AE9D048DBF34108E101EDB367150E6203E0BCEE27CD5A623D",
+  "runtimeAssemblySha256": "9F02AAD0314B42CB1DC45FE8CBFEFAC04FC49D5D7D6C8EA61F4D4A67E56458B5",
+  "sceneLevel0Sha256": "B335950576B695AB73316A329AE1F867EF604CCBCF220B0805DEE3F3F992CDC4",
+  "identityNote": "O launcher exe pode ser idêntico entre builds; runtime e level0 identificam código e cena desta prova.",
+  "resolutions": ["1920x1080", "1440x900", "1366x768"],
+  "playModeTests": { "passed": 36, "failed": 0 },
+  "editModeTests": { "passed": 15, "failed": 0 },
+  "rnf600Seconds": "not_run",
+  "physicalDpiMatrix": "not_run",
+  "piFunctionalAcceptance": "pending"
+}

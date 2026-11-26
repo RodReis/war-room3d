@@ -118,6 +118,15 @@ Button:focus { border-top-width: 2px; border-bottom-width: 2px; border-left-widt
 .overview-search-results { max-height: 118px; width: 270px; }
 .overview-search-results Button { min-height: 30px; white-space: normal; background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); }
 .overview-actions { position: absolute; flex-direction: row; top: 82px; right: 22px; }
+.fixed-space-panel { display: none; position: absolute; top: 126px; right: 22px; width: 310px; padding: 18px; background-color: rgba(7, 19, 27, 0.95); border-top-width: 3px; border-top-color: rgb(69, 201, 190); }
+.fixed-space-panel Label { white-space: normal; }
+.fixed-space-panel .activity { margin-top: 10px; font-size: 15px; }
+.fixed-space-actions { flex-direction: row; }
+.fixed-space-actions Button { flex-grow: 1; margin-right: 4px; }
+.fixed-space-mode #control-panel { display: none; }
+.fixed-space-mode #effect-banner { display: none; }
+.overview-compact .overview-actions { top: 74px; }
+.overview-ultra .fixed-space-panel { top: 118px; width: 285px; padding: 12px; }
 .overview-tool { height: 34px; padding-left: 13px; padding-right: 13px; margin-left: 8px; background-color: rgb(15, 34, 44); color: rgb(223, 244, 242); font-size: 13px; border-color: rgb(66, 110, 118); border-radius: 5px; }
 .overview-activity { position: absolute; left: 24px; bottom: 190px; width: 720px; height: 252px; padding: 10px 12px; background-color: rgba(7, 19, 27, 0.94); border-left-width: 2px; border-left-color: rgb(61, 178, 175); }
 .activity-series { height: 124px; min-height: 124px; flex-grow: 0; margin-top: 5px; }

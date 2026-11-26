@@ -15,6 +15,8 @@
                 <ui:ScrollView name="overview-search-results" class="overview-search-results" />
             </ui:VisualElement>
             <ui:VisualElement name="overview-actions" class="overview-actions">
+                <ui:Button name="visit-cafeteria" text="Cafeteria" class="overview-tool" />
+                <ui:Button name="visit-pi-meeting" text="Sala de reunião do PI" class="overview-tool" />
                 <ui:Button name="overview-center" text="Data center" class="overview-tool" />
                 <ui:Button name="overview-tools" text="Câmera e ações" class="overview-tool" />
             </ui:VisualElement>
@@ -38,6 +40,18 @@
                     <ui:VisualElement name="overview-cards" class="overview-cards" />
                 </ui:ScrollView>
             </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="fixed-space-panel" class="fixed-space-panel">
+            <ui:Label text="ESPAÇO PERMANENTE" class="overview-kicker" />
+            <ui:Label name="fixed-space-title" class="overview-title" />
+            <ui:Label name="fixed-space-description" class="activity" />
+            <ui:Label name="fixed-space-place" class="hint" />
+            <ui:Label text="Arraste com o botão direito para orbitar · scroll para aproximar · F8 para modo reduzido." class="hint" />
+            <ui:VisualElement class="fixed-space-actions">
+                <ui:Button name="fixed-space-angle" text="Ângulo oposto" class="secondary-button" />
+                <ui:Button name="fixed-space-reset" text="Restaurar câmera" class="secondary-button" />
+            </ui:VisualElement>
+            <ui:Button name="fixed-space-back" text="Voltar ao quartel · Esc" class="primary-button" />
         </ui:VisualElement>
         <ui:Label name="effect-banner" text="" class="effect-banner" />
         <ui:Label name="room-label" text="SELECIONE UMA SALA" class="room-label" />

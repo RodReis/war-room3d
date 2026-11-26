@@ -11,6 +11,8 @@ namespace WarRoom3D
         [SerializeField] private Material glassMaterial;
         [SerializeField] private Material goldMaterial;
         [SerializeField] private GameObject referenceRoomPrefab;
+        [SerializeField] private GameObject cafeteriaPrefab;
+        [SerializeField] private GameObject meetingRoomPrefab;
         [SerializeField] private bool overviewLayout;
         private static readonly Vector3[] Positions = {
             new Vector3(-14, 0, 9), new Vector3(0, 0, 11), new Vector3(14, 0, 9),
@@ -32,6 +34,8 @@ namespace WarRoom3D
         private readonly Dictionary<string, Transform> rooms = new Dictionary<string, Transform>();
         private Transform roomsRoot;
         public IReadOnlyDictionary<string, Transform> Rooms => rooms;
+        private readonly Dictionary<string, FixedSpaceView> fixedSpaces = new Dictionary<string, FixedSpaceView>();
+        public IReadOnlyDictionary<string, FixedSpaceView> FixedSpaces => fixedSpaces;
 
         private void Awake() => Build();
 
@@ -119,8 +123,15 @@ namespace WarRoom3D
         public void GetOverviewBounds(out Vector3 center, out float width, out float depth)
         {
             var bounds = new Bounds(new Vector3(0, 0, 0.5f), new Vector3(8, 0, 9));
+            foreach (var space in fixedSpaces.Values)
+            {
+                if (space == null) continue;
+                bounds.Encapsulate(space.transform.position + new Vector3(-5.6f, 0, -4.7f));
+                bounds.Encapsulate(space.transform.position + new Vector3(5.6f, 0, 4.7f));
+            }
             foreach (var slot in occupied)
             {
+                if (rooms[slot] == null) continue;
                 var position = rooms[slot].position;
                 bounds.Encapsulate(position + new Vector3(-5.6f, 0, -4.7f));
                 bounds.Encapsulate(position + new Vector3(5.6f, 0, 4.7f));
@@ -150,6 +161,13 @@ namespace WarRoom3D
             Cube("Reserva oeste", transform, new Vector3(-11f, -.025f, -2.3f), new Vector3(1.4f, .05f, .08f), gold);
             Cube("Reserva leste", transform, new Vector3(11f, -.025f, -2.3f), new Vector3(1.4f, .05f, .08f), gold);
             core.gameObject.AddComponent<DataCenterBuilder>();
+            // O acesso aos espaços permanentes não depende do piso de uma sala de projeto.
+            Cube("Circulação central permanente", transform, new Vector3(0, -.18f, 7.4f), new Vector3(2.6f, .3f, 6.3f), graphite);
+            Cube("Piso central permanente", transform, new Vector3(0, -.015f, 7.4f), new Vector3(2.4f, .04f, 6.3f), floor);
+            Cube("Circulação transversal permanente", transform, new Vector3(0, -.18f, 10.4f), new Vector3(17.2f, .3f, 2.4f), graphite);
+            Cube("Piso transversal permanente", transform, new Vector3(0, -.015f, 10.4f), new Vector3(17f, .04f, 2.2f), floor);
+            BuildFixedSpace(cafeteriaPrefab, new Vector3(-7f, 0, 16.5f), graphite, floor, gold);
+            BuildFixedSpace(meetingRoomPrefab, new Vector3(7f, 0, 16.5f), graphite, floor, cyan);
             roomsRoot = new GameObject("Salas").transform;
             roomsRoot.SetParent(transform, false);
             for (var index = 0; index < OverviewPositions.Length; index++)
@@ -170,6 +188,18 @@ namespace WarRoom3D
             Cube("Acesso", room, new Vector3(0, -.12f, -4.6f), new Vector3(3.25f, .15f, 1.2f), overviewFloor);
             var reference = Instantiate(referenceRoomPrefab, room);
             reference.name = "ReferenceRoom";
+        }
+
+        private void BuildFixedSpace(GameObject prefab, Vector3 position, Material graphite, Material floor, Material accent)
+        {
+            if (prefab == null) return;
+            var space = Instantiate(prefab, transform).GetComponent<FixedSpaceView>();
+            space.name = space.Title;
+            space.transform.localPosition = position;
+            fixedSpaces.Add(space.SpaceId, space);
+            Cube("Passarela " + space.Title, transform, new Vector3(position.x, -.18f, 10.4f), new Vector3(3.2f, .3f, 4.5f), graphite);
+            Cube("Piso acesso " + space.Title, transform, new Vector3(position.x, -.015f, 10.4f), new Vector3(3f, .04f, 4.5f), floor);
+            Cube("Guia " + space.Title, transform, new Vector3(position.x - 1.5f, .02f, 10.4f), new Vector3(.05f, .04f, 4.5f), accent);
         }
 
         private static void Disc(string name, Transform parent, float height, float diameter, float thickness, Material material)

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { sessionKey, type Provider } from '../domain/identity.ts';
 import type { NormalizedEvent } from '../store/event-store.ts';
 import type { ObservedMessage } from './conversation-store.ts';
+import { matchesSourceOrigin, type SessionOrigin } from './source-origin.ts';
 
 export interface SessionSource {
   sourceId: string;
@@ -13,6 +14,7 @@ export interface SessionSource {
   staleAfterMs?: number;
   skillCommands?: string[];
   conversationContent?: { consentRef: string; retentionDays: number };
+  origin?: SessionOrigin;
 }
 
 type RecordValue = Record<string, unknown>;
@@ -26,6 +28,7 @@ const safeName = (value: unknown): string | null => {
 
 // Conteúdo fica fora do evento M1 e só é persistido quando a fonte foi autorizada por configuração.
 export function adaptConversationRecord(source: SessionSource, raw: unknown, recordId: string, receivedAt: string): ObservedMessage | null {
+  if (!matchesSourceOrigin(source.origin,raw)) return null;
   if (!source.conversationContent?.consentRef) return null;
   const input = object(raw);
   if (!input) return null;
@@ -70,6 +73,7 @@ export function adaptConversationRecord(source: SessionSource, raw: unknown, rec
 }
 
 export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId: string, receivedAt: string): NormalizedEvent[] {
+  if (!matchesSourceOrigin(source.origin,raw)) return [];
   const input = object(raw);
   if (!input || !recordId) return [];
   const codexHook = source.provider === 'codex' && typeof input.hook_event_name === 'string';
@@ -112,6 +116,8 @@ export function adaptSessionRecord(source: SessionSource, raw: unknown, recordId
       base('message.observed','message',{messageId:`m-${id(key,eventRecordId)}`})];
     if (method === 'Stop') return [base('session.waiting','session'),
       base('agent.waiting','main-agent',{},mainAgent)];
+    if (source.provider === 'codex' && method === 'Interrupt') return [
+      base('session.waiting','session',{reason:'explicit'}),base('agent.waiting','main-agent',{reason:'explicit'},mainAgent)];
     if (method === 'UserPromptExpansion') {
       const command = safeName(input.command_name);
       if (input.expansion_type !== 'slash_command' || !command || !source.skillCommands?.includes(command)) return [];

@@ -1,0 +1,16 @@
+{
+  "observedOn": "2026-11-26",
+  "evidenceKind": "installed-package-metadata-and-version-command",
+  "desktopSessionProof": "not_run",
+  "package": "OpenAI.Codex",
+  "packageVersion": "26.1117.4957.0",
+  "manifestExecutable": "app/ChatGPT.exe",
+  "files": [
+    {"path":"app/ChatGPT.exe","sha256":"21C2EAC7703B43611392234738F669A8AF23907585B231EBDE54CA3CB104CC82"},
+    {"path":"app/Codex.exe","sha256":"A559F472864005394F59D222AC5B88806AE0EC06286CD851849FDD57E2A214B4"},
+    {"path":"app/resources/codex.exe","sha256":"4069ACDD8D101830F63EA5E2775883BFECF8A152AE87EE1B0EF9F14204F850F9","versionOutput":"codex-cli 0.171.0-alpha.13"}
+  ],
+  "hooksInstalled": false,
+  "personalHistoryRead": false,
+  "agentTurnsSent": 0
+}

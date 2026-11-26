@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 26/11/2026 para a expansão #53 dos espaços fixos; o aceite da #52 e os resultados anteriores mantêm as datas e limites de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
+Atualizado em 26/11/2026 para as expansões #53 (espaços fixos) e #54 (workspaces VS Code); o aceite da #52 e os resultados anteriores mantêm as datas e limites de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
 
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
@@ -20,6 +20,10 @@ Primeira entrega: [#47](https://github.com/RodReis/war-room3d/issues/47) quartel
 ## Expansão #53 — espaços fixos
 
 Em 26/11/2026, cafeteria e sala de reunião do PI receberam prefabs, circulação permanente e navegação independente de projetos. [Provas da #53](validation/quartel-vivo/issue-53.md): 36 PlayMode, 15 EditMode, build Windows próprio e ensaio sintético em 1920×1080, 1440×900 e 1366×768. A placa do PI não afirma presença. Integração/CI são verificadas na [issue #53](https://github.com/RodReis/war-room3d/issues/53); aceite funcional do PI permanece separado. RNF longo e matriz física de DPI não foram repetidos neste build.
+
+## Expansão #54 — workspaces locais do VS Code
+
+Em 26/11/2026, a descoberta opt-in passou a observar pastas locais autorizadas com fonte separada de Claude/Codex, sem inferir atividade de agente. [Provas da #54](validation/quartel-vivo/issue-54.md): contratos 19/19, serviço 201/201 e tipos, VS Code 1.148.0 nativo em perfis descartáveis (multi-root/homônimos, fechamento, perda/retomada, revogação e recusa sem trust) e duas salas no Player sem agentes. A integração com VS Code Chat e fontes de agente não é inferida. Instalação permanente e projetos pessoais não foram habilitados; integração/CI e aceite do PI ficam na [issue #54](https://github.com/RodReis/war-room3d/issues/54).
 
 ## Entrega anterior — sala de referência
 

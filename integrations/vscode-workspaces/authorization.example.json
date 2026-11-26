@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "vscodeVersion": "1.148.0",
+  "projects": [
+    {"projectId": "projeto-autorizado", "name": "Projeto autorizado", "canonicalPath": "C:\\Projetos\\autorizado"}
+  ],
+  "sources": [
+    {"sourceId": "vscode-projeto-autorizado", "projectId": "projeto-autorizado", "directory": "C:\\WarRoomLocal\\spool\\projeto-autorizado", "staleAfterMs": 15000}
+  ]
+}

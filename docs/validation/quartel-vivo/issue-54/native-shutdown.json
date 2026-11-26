@@ -1,0 +1,35 @@
+{
+  "result": "pass",
+  "mode": "shutdown",
+  "native": {
+    "result": "pass",
+    "mode": "shutdown",
+    "version": "1.148.0",
+    "trusted": true
+  },
+  "changes": [
+    {
+      "phase": "opened",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "active",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 0,
+      "agents": 0
+    },
+    {
+      "phase": "shutdown",
+      "projects": []
+    }
+  ]
+}

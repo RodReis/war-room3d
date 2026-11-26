@@ -1,0 +1,30 @@
+{
+  "name": "war-room3d-workspaces",
+  "displayName": "War-Room3D · Workspaces locais",
+  "description": "Presença opt-in de workspaces locais autorizados, sem captura de conteúdo ou atividade de agentes.",
+  "version": "0.1.0",
+  "publisher": "rodreis",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {"vscode": "^1.148.0"},
+  "main": "./extension.cjs",
+  "extensionKind": ["ui"],
+  "activationEvents": ["onStartupFinished"],
+  "capabilities": {
+    "virtualWorkspaces": false,
+    "untrustedWorkspaces": {"supported": "limited", "description": "A captura só começa em workspace confiável e com configuração de usuário explícita."}
+  },
+  "contributes": {
+    "commands": [
+      {"command": "warRoom3D.workspace.status", "title": "War-Room3D: Estado da descoberta de workspaces"},
+      {"command": "warRoom3D.workspace.refresh", "title": "War-Room3D: Reconciliar workspaces autorizados"}
+    ],
+    "configuration": {
+      "title": "War-Room3D · Workspaces",
+      "properties": {
+        "warRoom3D.workspace.configPath": {"type": "string", "default": "", "scope": "machine", "restricted": true,
+          "description": "Arquivo absoluto de autorização local. Somente a configuração de usuário é aceita; vazio mantém a captura desligada."}
+      }
+    }
+  }
+}

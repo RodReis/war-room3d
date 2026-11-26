@@ -13,7 +13,7 @@
     "sourceVersion": { "$ref": "#/$defs/id" },
     "sourceSequence": { "type": "integer", "minimum": 0 },
     "streamSequence": { "type": "integer", "minimum": 1 },
-    "type": { "enum": ["workspace.opened", "workspace.closed", "session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "source.covered", "resource.observed", "github.observed"] },
+    "type": { "enum": ["workspace.opened", "workspace.closed", "workspace.unavailable", "session.observed", "session.working", "session.waiting", "session.ended", "agent.observed", "agent.working", "agent.waiting", "agent.ended", "task.observed", "task.working", "task.waiting", "task.completed", "tool.observed", "tool.result", "tool.failed", "skill.observed", "message.observed", "request.observed", "source.unavailable", "source.recovered", "source.covered", "resource.observed", "github.observed"] },
     "observedAt": { "$ref": "#/$defs/time" },
     "occurredAt": { "$ref": "#/$defs/time" },
     "receivedAt": { "$ref": "#/$defs/time" },

@@ -16,6 +16,8 @@ test('vínculo de workspace exige projeto e chave opaca sem caminho bruto', () =
   assert.equal(validateEvent({...event,payload:{}}),false);
   assert.equal(validateEvent({...event,payload:{workspaceKey:'workspace-a',path:'C:\\segredo'}}),false);
   assert.equal(validateEvent({...event,projectId:undefined}),false);
+  assert.equal(validateEvent({...event,type:'workspace.unavailable',payload:{workspaceKey:'workspace-a',reason:'source_lost',errorCode:'stale'}}),true);
+  assert.equal(validateEvent({...event,type:'workspace.unavailable',payload:{reason:'source_lost'}}),false);
 });
 
 test('snapshot distingue sala ativa e incerta em setores sem reservar espaço fixo', () => {

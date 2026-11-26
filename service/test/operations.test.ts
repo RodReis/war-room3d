@@ -2,13 +2,19 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { test, type TestContext } from 'node:test';
+import { beforeEach, test, type TestContext } from 'node:test';
 import { randomBytes } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { EventStore } from '../src/store/event-store.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
 import { createDockerLogsCollector, createHttpNetworkSink } from '../src/operations/operation-collector.ts';
 import type { Observation, OperationSource } from '../src/operations/operations-store.ts';
+
+// A retenção não deve apagar as observações sintéticas conforme o calendário avança.
+beforeEach(t => {
+  assert.ok('mock' in t, 'Relógio da fixture exige contexto de teste');
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-07T12:10:00Z') });
+});
 
 function setup(t:TestContext) {
   const directory=mkdtempSync(path.join(os.tmpdir(),'wr3d-m5-'));

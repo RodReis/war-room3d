@@ -59,6 +59,17 @@ namespace WarRoom3D
             ApplyPose();
         }
 
+        public void FocusFixedSpace(FixedSpaceView space)
+        {
+            if (space == null) return;
+            focus = space.transform.position + Vector3.up;
+            yaw = 25f;
+            pitch = 48f;
+            distance = 14f;
+            dragging = false;
+            ApplyPose();
+        }
+
         public void FocusAgent(Transform agent)
         {
             if (agent == null) return;

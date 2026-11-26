@@ -1,6 +1,6 @@
 # Estado do projeto
 
-Atualizado em 12/11/2026 para o aceite funcional da jornada #52 do quartel vivo com limites; resultados anteriores mantêm as datas de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
+Atualizado em 26/11/2026 para a expansão #53 dos espaços fixos; o aceite da #52 e os resultados anteriores mantêm as datas e limites de suas provas. Fonte de produto: [PRD](../PRD.md) e [GDD](../GDD.md). Este resumo descreve o estado verificado do checkout; a issue remota deve ser consultada antes de afirmar seu estado atual.
 
 | Etapa | Issue | Plano | Entrega técnica | Aceite do PI |
 |---|---|---|---|---|
@@ -16,6 +16,10 @@ Atualizado em 12/11/2026 para o aceite funcional da jornada #52 do quartel vivo 
 Planejamento autorizado em 09/11/2026 no [épico #46](https://github.com/RodReis/war-room3d/issues/46). [Especificação](specs/2026-11-09-quartel-vivo-design.md) · [Plano](superpowers/plans/2026-11-09-quartel-vivo-player.md). As [provas dos avatares](validation/quartel-vivo/issue-50.md) e do [gráfico](validation/quartel-vivo/issue-51.md) são sintéticas. A [jornada integrada #52](validation/quartel-vivo/issue-52.md) foi aceita pelo PI **com dois limites técnicos explícitos**: o vídeo não vincula o movimento ao último prompt no mesmo take e a ação isolada Lootrust só foi capturada no build anterior. O PI autorizou merge da PR #63 e fechamento da issue; verificar o estado remoto antes de afirmar integração.
 
 Primeira entrega: [#47](https://github.com/RodReis/war-room3d/issues/47) quartel, [#48](https://github.com/RodReis/war-room3d/issues/48) salas dinâmicas, [#49](https://github.com/RodReis/war-room3d/issues/49) primeira fonte real ([dois projetos Claude Code no VS Code até o mesmo Player, com perda/reconexão; aceite funcional do PI registrado](validation/quartel-vivo/claude-dual-arenahub-forja.md); ensaio anterior [Codex no VS Code sem evento](validation/quartel-vivo/codex-vscode.md)), [#50](https://github.com/RodReis/war-room3d/issues/50) avatares e [#51](https://github.com/RodReis/war-room3d/issues/51) gráfico. [#52](https://github.com/RodReis/war-room3d/issues/52) valida a jornada de dois projetos no mesmo executável. Expansão: [#53](https://github.com/RodReis/war-room3d/issues/53) espaços fixos, [#54](https://github.com/RodReis/war-room3d/issues/54) descoberta de workspaces VS Code, [#55](https://github.com/RodReis/war-room3d/issues/55) Codex Desktop e [#59](https://github.com/RodReis/war-room3d/issues/59) Claude Code Desktop, após o aceite.
+
+## Expansão #53 — espaços fixos
+
+Em 26/11/2026, cafeteria e sala de reunião do PI receberam prefabs, circulação permanente e navegação independente de projetos. [Provas da #53](validation/quartel-vivo/issue-53.md): 36 PlayMode, 15 EditMode, build Windows próprio e ensaio sintético em 1920×1080, 1440×900 e 1366×768. A placa do PI não afirma presença. Integração/CI são verificadas na [issue #53](https://github.com/RodReis/war-room3d/issues/53); aceite funcional do PI permanece separado. RNF longo e matriz física de DPI não foram repetidos neste build.
 
 ## Entrega anterior — sala de referência
 

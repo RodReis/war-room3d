@@ -22,6 +22,7 @@ namespace WarRoom3D
         private string selectedResourceId;
         private bool insideRoom;
         private bool insideDataCenter;
+        private FixedSpaceView visitedSpace;
         private bool filterProject;
         private bool replayMode;
         private Transform replayMarkers;
@@ -40,7 +41,7 @@ namespace WarRoom3D
         private bool profileDirty;
 
         private bool IsPreview => snapshot?.mode == "demo";
-        private bool AtOverview => !insideRoom && !insideDataCenter && !replayMode;
+        private bool AtOverview => !insideRoom && !insideDataCenter && visitedSpace == null && !replayMode;
         private bool HasCurrentData => replayMode || IsPreview || client.Connected;
 
         private void Start()
@@ -56,6 +57,11 @@ namespace WarRoom3D
             activityChart = gameObject.AddComponent<ActivityChartPresenter>();
             activityChart.Configure(root, client);
             root.Q<Button>("overview-center").clicked += ShowDataCenter;
+            root.Q<Button>("visit-cafeteria").clicked += () => OpenFixedSpace("cafeteria");
+            root.Q<Button>("visit-pi-meeting").clicked += () => OpenFixedSpace("pi-meeting");
+            root.Q<Button>("fixed-space-back").clicked += ReturnToSector;
+            root.Q<Button>("fixed-space-reset").clicked += () => orbit.FocusFixedSpace(visitedSpace);
+            root.Q<Button>("fixed-space-angle").clicked += () => orbit.Orbit(180f, 0);
             root.Q<Button>("overview-tools").clicked += () =>
                 root.EnableInClassList("overview-tools-open", !root.ClassListContains("overview-tools-open"));
             root.Q<TextField>("overview-search").RegisterValueChangedCallback(_ => RefreshOverview());
@@ -74,6 +80,7 @@ namespace WarRoom3D
             root.Q<Button>("reset-button").clicked += () =>
             {
                 if (insideDataCenter) orbit.FocusCore();
+                else if (visitedSpace != null) orbit.FocusFixedSpace(visitedSpace);
                 else if (AtOverview) FocusOverview();
                 else FocusSelectedRoom();
             };
@@ -151,7 +158,7 @@ namespace WarRoom3D
 
         private void OnConnection(bool connected, string message)
         {
-            if (root == null) return;
+            if (root == null || sector == null || !sector.isActiveAndEnabled) return;
             if (replayMode) return;
             if (snapshot == null) root.Q<Label>("activity").text = message;
             else { RefreshProject(); RefreshResources(); }
@@ -360,6 +367,16 @@ namespace WarRoom3D
         private void SetOverviewVisible()
         {
             root.EnableInClassList("quartel-mode", AtOverview);
+            root.EnableInClassList("fixed-space-mode", visitedSpace != null);
+            root.Q("fixed-space-panel").style.display = visitedSpace != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (visitedSpace != null)
+            {
+                root.Q<Label>("breadcrumb").text = "Quartel / " + visitedSpace.Title;
+                root.Q<Label>("room-label").text = "ESPAÇO FIXO · " + visitedSpace.Title;
+                root.Q("project-panel").style.display = DisplayStyle.None;
+                root.Q("resource-panel").style.display = DisplayStyle.None;
+                root.Q("summary-toggle").style.display = DisplayStyle.None;
+            }
             if (AtOverview)
             {
                 root.Q("project-panel").style.display = DisplayStyle.None;
@@ -484,6 +501,7 @@ namespace WarRoom3D
         private void EnterRoom()
         {
             if (snapshot == null || selectedProjectId == null || PlacementFor(selectedProjectId) == null) return;
+            visitedSpace = null;
             insideRoom = true;
             insideDataCenter = false;
             FocusSelectedRoom();
@@ -499,6 +517,8 @@ namespace WarRoom3D
 
         private void ReturnToSector()
         {
+            var returnSpaceId = visitedSpace?.SpaceId;
+            visitedSpace = null;
             insideRoom = false;
             insideDataCenter = false;
             navigation.SetSummaryCollapsed(false);
@@ -511,10 +531,29 @@ namespace WarRoom3D
             navigation.SetView(false, null);
             root.EnableInClassList("overview-tools-open", false);
             SetOverviewVisible();
+            if (returnSpaceId != null) root.Q<Button>("visit-" + returnSpaceId).Focus();
+        }
+
+        public bool OpenFixedSpace(string spaceId)
+        {
+            if (root == null || !sector.FixedSpaces.TryGetValue(spaceId, out var space)) return false;
+            visitedSpace = space;
+            insideRoom = false;
+            insideDataCenter = false;
+            navigation.SetView(false, null);
+            root.Q<Label>("fixed-space-title").text = space.Title;
+            root.Q<Label>("fixed-space-description").text = space.Description;
+            root.Q<Label>("fixed-space-place").text = spaceId == "pi-meeting" ? "Lugar do PI identificado na cabeceira." : "Balcão de café e mesas de convivência.";
+            root.EnableInClassList("overview-tools-open", false);
+            SetOverviewVisible();
+            orbit.FocusFixedSpace(space);
+            root.Q<Button>("fixed-space-back").Focus();
+            return true;
         }
 
         private void ShowDataCenter()
         {
+            visitedSpace = null;
             insideRoom = false;
             insideDataCenter = true;
             orbit.FocusCore();
@@ -618,13 +657,13 @@ namespace WarRoom3D
             var picked = root.panel.Pick(point);
             for (var element = picked; element != null; element = element.parent)
                 if (element.name == "header" || element.name == "project-panel" || element.name == "resource-panel" ||
-                    element.name == "overview-heading" || element.name == "overview-dock" || element.name == "overview-actions" ||
+                    element.name == "overview-heading" || element.name == "overview-dock" || element.name == "overview-actions" || element.name == "fixed-space-panel" ||
                     element.name == "control-panel" || element.name == "summary-toggle" || element.name == "evidence-detail" ||
                     element.name == "history-panel" || element.name == "history-mask" || element.name == "operations-panel" ||
                     element.name == "operations-mask" || element.name == "command-panel" || element.name == "command-mask") return true;
             return Contains("header", point) || Contains("project-panel", point) || Contains("resource-panel", point) ||
                 (AtOverview && (Contains("overview-heading", point) || Contains("overview-dock", point) || Contains("overview-actions", point))) || Contains("control-panel", point) ||
-                Contains("summary-toggle", point) || Contains("evidence-detail", point) ||
+                Contains("summary-toggle", point) || Contains("evidence-detail", point) || Contains("fixed-space-panel", point) ||
                 Contains("history-panel", point) || Contains("history-mask", point) ||
                 Contains("operations-panel", point) || Contains("operations-mask", point) ||
                 Contains("command-panel", point) || Contains("command-mask", point);
@@ -649,14 +688,17 @@ namespace WarRoom3D
                 if (GetComponent<CommandPresenter>()?.HandleEscape() == true) return;
                 if (GetComponent<HistoryHudPresenter>()?.HandleEscape() == true) return;
                 if (operations?.HandleEscape() == true) return;
+                if (visitedSpace != null) { ReturnToSector(); return; }
                 if (navigation.HandleEscape()) return;
             }
             if (insideRoom && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame &&
                 !IsPointerOverHud(Mouse.current.position.ReadValue()) &&
                 agentPresenter.TryPick(Camera.main, Mouse.current.position.ReadValue(), out var picked))
             { navigation.SelectAgent(picked); return; }
-            if (insideRoom || insideDataCenter || snapshot == null) return;
-            if (!RoomSceneSelection.TryPickSlot(Camera.main, sector, this, out var slotId)) return;
+            if (insideRoom || insideDataCenter || visitedSpace != null) return;
+            if (!RoomSceneSelection.TryPickTarget(Camera.main, sector, this, out var slotId, out var fixedSpace)) return;
+            if (fixedSpace) { OpenFixedSpace(slotId); return; }
+            if (snapshot == null) return;
             foreach (var placement in snapshot.roomPlacements)
                 if (placement.slotId == slotId && placement.sectorId == currentSectorId)
                 {

@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -10,6 +10,12 @@ import { GitHubClient, GitHubRateLimitError, normalizeWorkflowRun } from '../src
 import { configureGithub } from '../src/github/github-config.ts';
 import { pollLinkedRepositories } from '../src/github/github-poller.ts';
 import { startReadOnlyServer } from '../src/http/server.ts';
+
+// Retenção e replay usam o mesmo calendário das fixtures; timers de rede continuam reais.
+beforeEach(t => {
+  assert.ok('mock' in t, 'Relógio da fixture exige contexto de teste');
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-08T16:00:00Z') });
+});
 
 function storeFor(t: { after: (fn: () => void) => void }): EventStore {
   const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-'));
@@ -306,6 +312,8 @@ test('migração v12 não projeta posição legada antes de conhecê-la',t=>{
 });
 
 test('migração v9 registra presença de projeto antigo só a partir da migração',t=>{
+  // A migração usa strftime('now') do SQLite: este caso relativo deve compartilhar o relógio real do banco.
+  t.mock.timers.reset();
   const dir=mkdtempSync(path.join(tmpdir(),'wr3d-m3-presence-'));
   const dbPath=path.join(dir,'db.sqlite');
   let store=new EventStore(dbPath);

@@ -1,8 +1,14 @@
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { collectDockerApiLogs, collectDockerSnapshot, startDockerSnapshotProxy, type DockerEngineReader, type DockerScope } from '../src/infra/connectors/docker-proxy.ts';
 import { dockerContainerProbe } from '../src/infra/connectors/docker.ts';
+
+// As fixtures exercitam a janela de sete dias, independentemente do dia da execução.
+beforeEach(t => {
+  assert.ok('mock' in t, 'Relógio da fixture exige contexto de teste');
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-08T15:00:00Z') });
+});
 
 const scope: DockerScope = { composeProject: 'laboratorio', composeWorkingDir: 'C:\\Projetos\\laboratorio' };
 const at = '2026-11-06T16:00:00.000Z';

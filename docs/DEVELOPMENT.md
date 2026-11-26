@@ -38,6 +38,10 @@ As dependências não exigem um único PR por etapa. Cada fatia deve produzir co
 
 Se Compose for introduzido, registrar aqui nome, comandos, portas, volumes, política de backup/restauração e usuários autorizados antes de ativar fontes reais. Nunca copiar credenciais para este documento.
 
+## Descoberta opt-in de workspaces VS Code
+
+A #54 acrescenta `WR3D_WORKSPACES_CONFIG_PATH` ao serviço de leitura. A autorização absoluta contém projetos, aliases explícitos, versão do VS Code e spool privado por fonte; a migração 23 mantém bindings separados de Claude/Codex. [Formato, limites e remoção](../integrations/vscode-workspaces/README.md) · [provas do laboratório](validation/quartel-vivo/issue-54.md). Sem configuração, nenhuma fonte workspace é iniciada. O ensaio usa perfis descartáveis e projetos sintéticos, sem instalar extensão no perfil habitual.
+
 ## Registro por entrega
 
 Ao concluir uma fatia, adicionar data, issue/PR, SHA de merge, prova executada e limitação em [STATUS-ARQUIVO](STATUS-ARQUIVO.md); atualizar o resumo em [STATUS](STATUS.md). Aceite funcional do PI é registrado separadamente do merge técnico.

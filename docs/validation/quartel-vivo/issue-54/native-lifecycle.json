@@ -1,0 +1,125 @@
+{
+  "result": "pass",
+  "mode": "lifecycle",
+  "native": {
+    "result": "pass",
+    "mode": "lifecycle",
+    "version": "1.148.0",
+    "trusted": true
+  },
+  "changes": [
+    {
+      "phase": "opened",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "active",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 0,
+      "agents": 0
+    },
+    {
+      "phase": "removed-b",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "active",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 1,
+      "agents": 0
+    },
+    {
+      "phase": "restored-b",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "active",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 1,
+      "agents": 0
+    },
+    {
+      "phase": "transport-loss",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "uncertain",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 1,
+      "agents": 0
+    },
+    {
+      "phase": "transport-recovered",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [
+        {
+          "projectId": "lab-a",
+          "status": "active",
+          "slotId": "slot-01"
+        },
+        {
+          "projectId": "lab-b",
+          "status": "active",
+          "slotId": "slot-02"
+        }
+      ],
+      "sessions": 1,
+      "agents": 0
+    },
+    {
+      "phase": "revoked",
+      "vscodeVersion": "1.148.0",
+      "trusted": true,
+      "projects": [],
+      "sessions": 1,
+      "agents": 0
+    }
+  ],
+  "player": {
+    "connected": true,
+    "sessions": 0,
+    "agents": 0,
+    "avatars": 0,
+    "width": 1920,
+    "height": 1080,
+    "playerSha256": "93043e47abfce89ae9d048dbf34108e101edb367150e6203e0bcee27cd5a623d",
+    "runtimeSha256": "9f02aad0314b42cb1dc45fe8cbfefac04fc49d5d7d6c8ea61f4d4a67e56458b5"
+  }
+}

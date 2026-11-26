@@ -1,0 +1,20 @@
+{
+  "result": "pass",
+  "mode": "untrusted",
+  "native": {
+    "result": "pass",
+    "mode": "untrusted",
+    "version": "1.148.0",
+    "trusted": false
+  },
+  "changes": [
+    {
+      "phase": "untrusted",
+      "vscodeVersion": "1.148.0",
+      "trusted": false,
+      "projects": [],
+      "sessions": 0,
+      "agents": 0
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "issue": 54,
+  "date": "2026-11-26",
+  "sourceCommit": "4058605c69c4fcef70921098e294b55e34581a99",
+  "sourceMode": "VS Code desktop local · Extension Development Host · workspaces sintéticos",
+  "vscodeVersion": "1.148.0",
+  "vscodeCommit": "661626d0e72f97806550790a98fb87116c9db825",
+  "vscodeExecutableSha256": "163A7899997BB1B791A7327E925D6DD58780AF1AC28A96745243D5C18433B503",
+  "adapterVersion": "vscode-workspace-1",
+  "extensionVersion": "0.1.0",
+  "serviceSchemaVersion": 23,
+  "contractTestsPassed": 19,
+  "serviceTestsPassed": 201,
+  "player": {
+    "build": "BuildWindowsFixedSpaces da #53; cliente C# sem alterações na #54",
+    "unityVersion": "6000.3.27f1",
+    "resolution": "1920x1080",
+    "graphicsApi": "Direct3D 11",
+    "executableSha256": "93043E47ABFCE89AE9D048DBF34108E101EDB367150E6203E0BCEE27CD5A623D",
+    "runtimeSha256": "9F02AAD0314B42CB1DC45FE8CBFEFAC04FC49D5D7D6C8EA61F4D4A67E56458B5",
+    "observedProjects": 2,
+    "observedSessions": 0,
+    "observedAgents": 0,
+    "observedAvatars": 0
+  },
+  "personalProjectsEnabled": false,
+  "permanentInstallation": false,
+  "piFunctionalAcceptance": "pending"
+}

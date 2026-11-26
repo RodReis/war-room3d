@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 import type { SessionSource } from '../sessions/adapters.ts';
 import { ConversationStore, type ObservedMessage } from '../sessions/conversation-store.ts';
 import { ActivityProjection } from '../activity/activity-projection.ts';
+import type { WorkspaceSource } from '../sessions/workspace-source.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../../../contracts/schemas/event.v1.schema.json', import.meta.url), 'utf8'));
 const validateEvent = new Ajv2020({ allErrors: true, strict: true, strictRequired: false }).compile(schema);
@@ -79,7 +80,7 @@ export class EventStore {
     this.db.pragma('busy_timeout = 5000');
     this.db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));
     const schemaVersion = this.number('schema_version');
-    if (schemaVersion > 22) throw new Error('Banco criado por versão mais recente do serviço');
+    if (schemaVersion > 23) throw new Error('Banco criado por versão mais recente do serviço');
     if (schemaVersion < 2) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0002_infrastructure.sql', import.meta.url), 'utf8'));
     })();
@@ -147,6 +148,9 @@ export class EventStore {
     if (schemaVersion < 22) this.db.transaction(() => {
       this.db.exec(readFileSync(new URL('./migrations/0022_activity.sql', import.meta.url), 'utf8'));
     })();
+    if (schemaVersion < 23) this.db.transaction(() => {
+      this.db.exec(readFileSync(new URL('./migrations/0023_workspace_sources.sql', import.meta.url), 'utf8'));
+    })();
     this.infrastructure = new InfrastructureStore(this.db);
     this.history = new HistoryStore(this.db);
     this.commands = new CommandAudit(this.db);
@@ -159,14 +163,56 @@ export class EventStore {
 
   configureSessionSources(projects: readonly ProjectRecord[], sources: readonly SessionSource[]): void {
     this.db.transaction(() => {
-      const existing = new Map((this.snapshot().projects as {projectId:string;name:string}[]).map(project => [project.projectId,project.name]));
-      for (const project of projects) {
-        if (existing.has(project.projectId) && (existing.get(project.projectId) !== project.name || this.resolveProject(project.canonicalPath) !== project.projectId))
-          throw new Error('Projeto de sessões diverge do registro');
-        if (!existing.has(project.projectId)) this.registerProject(project);
-      }
+      this.registerConfiguredProjects(projects);
       this.reconcileSessionSourceBindings(sources);
     })();
+  }
+
+  private registerConfiguredProjects(projects:readonly ProjectRecord[]):void {
+    const existing=new Map((this.snapshot().projects as {projectId:string;name:string}[]).map(project=>[project.projectId,project.name]));
+    for(const project of projects) {
+      if(existing.has(project.projectId) && (existing.get(project.projectId)!==project.name ||
+          [project.canonicalPath,...(project.aliases ?? [])].some(p=>this.resolveProject(p)!==project.projectId)))
+        throw new Error('Projeto configurado diverge do registro');
+      if(!existing.has(project.projectId)) this.registerProject(project);
+    }
+  }
+
+  configureWorkspaceSources(projects:readonly ProjectRecord[], sources:readonly WorkspaceSource[]):void {
+    this.db.transaction(()=>{
+      this.registerConfiguredProjects(projects);
+      const current=this.db.prepare('SELECT source_id,source_version,project_id FROM workspace_source_bindings').all() as
+        {source_id:string;source_version:string;project_id:string}[];
+      for(const row of current) {
+        const next=sources.find(source=>source.sourceId===row.source_id);
+        if(next && (next.projectId!==row.project_id || next.sourceVersion!==row.source_version)) throw new Error('Fonte workspace mudou de identidade');
+        if(!next) {
+          const fileKey='workspace-revocation',offset=(this.getCursor(row.source_id,fileKey)?.offset ?? 0)+1;
+          const observedAt=new Date().toISOString();
+          this.apply({schemaVersion:'1.0',eventId:'e-'+createHash('sha256').update(`${row.source_id}:${fileKey}:${offset}`).digest('hex'),
+            sourceEventId:`workspace-revocation-${offset}`,sourceId:row.source_id,sourceVersion:row.source_version,projectId:row.project_id,
+            type:'source.unavailable',observedAt,receivedAt:observedAt,provenance:'observed',ingestionMode:'live',
+            payload:{reason:'source_lost',errorCode:'revoked'},evidenceRefs:[]},{sourceId:row.source_id,fileKey,generation:0,offset});
+          this.db.prepare('DELETE FROM workspace_source_bindings WHERE source_id=?').run(row.source_id);
+        }
+      }
+      for(const source of sources) {
+        if(!projects.some(project=>project.projectId===source.projectId) || this.db.prepare('SELECT 1 FROM session_source_bindings WHERE source_id=?').get(source.sourceId))
+          throw new Error('Fonte workspace sem projeto ou com identidade de sessão');
+        this.db.prepare('INSERT OR IGNORE INTO workspace_source_bindings(source_id,source_version,project_id) VALUES(?,?,?)')
+          .run(source.sourceId,source.sourceVersion,source.projectId);
+      }
+    })();
+  }
+
+  isWorkspaceSourceAuthorized(source:Pick<WorkspaceSource,'sourceId'|'sourceVersion'|'projectId'>):boolean {
+    return Boolean(this.db.prepare('SELECT 1 FROM workspace_source_bindings WHERE source_id=? AND source_version=? AND project_id=?')
+      .get(source.sourceId,source.sourceVersion,source.projectId));
+  }
+
+  workspacePresence(sourceId:string):{workspaceKey:string;status:string;observedAt:string}[] {
+    return this.db.prepare('SELECT workspace_key AS workspaceKey,status,observed_at AS observedAt FROM workspace_presence WHERE source_id=?')
+      .all(sourceId) as {workspaceKey:string;status:string;observedAt:string}[];
   }
 
   reconcileSessionSourceBindings(configured: readonly SessionSource[]): void {
@@ -193,8 +239,11 @@ export class EventStore {
           this.db.prepare('DELETE FROM session_source_bindings WHERE source_id = ?').run(row.source_id);
         }
       }
-      for (const source of configured) this.db.prepare(`INSERT INTO session_source_bindings(source_id,source_version,project_id,provider,account_ref) VALUES(?,?,?,?,?)
+      for (const source of configured) {
+        if(this.db.prepare('SELECT 1 FROM workspace_source_bindings WHERE source_id=?').get(source.sourceId)) throw new Error('Fonte de sessão colide com workspace');
+        this.db.prepare(`INSERT INTO session_source_bindings(source_id,source_version,project_id,provider,account_ref) VALUES(?,?,?,?,?)
         ON CONFLICT(source_id) DO UPDATE SET source_version=excluded.source_version`).run(source.sourceId,source.sourceVersion,source.projectId,source.provider,source.accountRef);
+      }
       this.conversations.retainAuthorizedSources(configured);
     })();
   }
@@ -325,8 +374,14 @@ export class EventStore {
     if (event?.ingestionMode === 'demo') throw new Error('Demonstração não entra no store live');
     const operation = this.db.transaction((): ApplyResult => {
       const state = (): ApplyResult => ({ applied: false, revision: this.number('revision'), streamSequence: this.number('stream_sequence') });
-      const boundProject = event?.projectId && this.db.prepare('SELECT project_id,source_version,provider FROM session_source_bindings WHERE source_id = ?')
+      const sessionBinding = event?.projectId && this.db.prepare('SELECT project_id,source_version,provider FROM session_source_bindings WHERE source_id = ?')
         .get(event.sourceId) as { project_id: string;source_version:string;provider:string } | undefined;
+      const workspaceBinding=event && this.db.prepare('SELECT project_id,source_version FROM workspace_source_bindings WHERE source_id=?')
+        .get(event.sourceId) as {project_id:string;source_version:string;provider?:string}|undefined;
+      const boundProject=event?.type.startsWith('workspace.') ? workspaceBinding ?? sessionBinding : sessionBinding;
+      const invalidWorkspaceSource=Boolean(workspaceBinding && (workspaceBinding.source_version!==event?.sourceVersion ||
+        (event.projectId && workspaceBinding.project_id!==event.projectId) || (event?.provider || event?.sessionKey || event?.agentKey) ||
+        (!event?.type.startsWith('workspace.') && event?.type!=='source.unavailable')));
       const sessionEvent = event && /^(workspace|session|agent|task|tool|skill|message|request)\./.test(event.type);
       const coverage = event?.type === 'source.covered' ? event : null;
       const coverageStart = coverage ? Date.parse(coverage.payload.coverageStart!) : NaN;
@@ -335,7 +390,7 @@ export class EventStore {
         boundProject.source_version !== coverage.sourceVersion || !Number.isFinite(coverageStart) || !Number.isFinite(coverageEnd) ||
         coverageEnd <= coverageStart || coverageEnd - coverageStart > 24 * 60 * 60 * 1000 ||
         coverageEnd > Date.parse(coverage.observedAt)));
-      if (!event || invalidCoverage || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
+      if (!event || invalidCoverage || invalidWorkspaceSource || (event.projectId && (!this.db.prepare('SELECT 1 FROM projects WHERE project_id = ?').get(event.projectId) ||
         (!trustedReplay && ((boundProject && (boundProject.project_id !== event.projectId || (sessionEvent &&
           (boundProject.source_version !== event.sourceVersion || (event.provider && boundProject.provider !== event.provider))))) ||
         (sessionEvent && !boundProject && (event.type.startsWith('workspace.') || this.number('session_source_authorization_enabled') === 1))))))) {
@@ -357,7 +412,7 @@ export class EventStore {
       this.db.prepare('INSERT INTO events(event_id, source_id, dedupe_key, stream_sequence, event_json) VALUES (?, ?, ?, ?, ?)')
         .run(event.eventId, event.sourceId, dedupeKey, sequence, JSON.stringify(event));
       this.applyState(event);
-      if (event.ingestionMode === 'live' && event.type !== 'source.covered') {
+      if (event.ingestionMode === 'live' && event.type !== 'source.covered' && event.type !== 'workspace.unavailable') {
       const priorSource = this.db.prepare('SELECT status, status_at, last_unavailable_at, last_error_code, last_evidence_at FROM sources WHERE source_id = ?').get(event.sourceId) as { status: string; status_at: string; last_unavailable_at: string | null; last_error_code: string | null; last_evidence_at: string | null } | undefined;
       const statusIsNewer = !priorSource || compareTimestamp(event.observedAt, priorSource.status_at) >= 0;
       const status = statusIsNewer ? (event.type === 'source.unavailable' ? 'indisponivel' : 'atual') : priorSource.status;
@@ -384,7 +439,7 @@ export class EventStore {
   private applyState(event: NormalizedEvent): void {
     if (event.type === 'github.observed') {
       this.history.recordGithubObservation({eventId:event.eventId,sourceId:event.sourceId,projectId:event.projectId!,repositoryId:event.payload.repositoryId!,entityType:event.payload.entityType!,entityId:event.payload.entityId!,transition:event.payload.transition!,observedAt:event.observedAt});
-    } else if (event.type === 'workspace.opened' || event.type === 'workspace.closed') {
+    } else if (event.type.startsWith('workspace.')) {
       if (this.isOlderThanSourceLoss(event)) return;
       const row = this.db.prepare('SELECT project_id,observed_at FROM workspace_presence WHERE source_id=? AND workspace_key=?')
         .get(event.sourceId,event.payload.workspaceKey) as {project_id:string;observed_at:string}|undefined;
@@ -392,7 +447,7 @@ export class EventStore {
       if (row && compareTimestamp(event.observedAt,row.observed_at) < 0) return;
       this.db.prepare(`INSERT INTO workspace_presence(source_id,workspace_key,project_id,status,observed_at) VALUES(?,?,?,?,?)
         ON CONFLICT(source_id,workspace_key) DO UPDATE SET status=excluded.status,observed_at=excluded.observed_at`)
-        .run(event.sourceId,event.payload.workspaceKey,event.projectId,event.type === 'workspace.opened'?'open':'closed',event.observedAt);
+        .run(event.sourceId,event.payload.workspaceKey,event.projectId,event.type === 'workspace.opened'?'open':event.type==='workspace.closed'?'closed':'uncertain',event.observedAt);
       if (event.type === 'workspace.opened') this.ensurePlacement(event.projectId!,event.observedAt);
     } else if (event.type.startsWith('session.')) {
       if (this.isOlderThanSourceLoss(event)) return;

@@ -6,6 +6,7 @@ import { GitHubClient } from '../github/github-client.ts';
 import { pollLinkedRepositories } from '../github/github-poller.ts';
 import { configureGithub } from '../github/github-config.ts';
 import { parseSessionSources, SessionFileCollector } from '../sessions/file-source.ts';
+import { readWorkspaceConfig, WorkspaceFileCollector } from '../sessions/workspace-source.ts';
 
 const databasePath = process.env.WR3D_DATABASE_PATH;
 const token = process.env.WR3D_SERVICE_TOKEN;
@@ -32,6 +33,10 @@ try {
   const sessionConfig = sessionConfigPath ? parseSessionSources(JSON.parse(readFileSync(sessionConfigPath,'utf8')) as unknown) : null;
   store.configureSessionSources(sessionConfig?.projects ?? [],sessionConfig?.sources ?? []);
   const sessions = sessionConfig ? new SessionFileCollector(store,sessionConfig.sources) : null;
+  const workspaceConfigPath=process.env.WR3D_WORKSPACES_CONFIG_PATH;
+  const workspaceConfig=workspaceConfigPath ? readWorkspaceConfig(workspaceConfigPath) : null;
+  store.configureWorkspaceSources(workspaceConfig?.projects ?? [],workspaceConfig?.sources ?? []);
+  const workspaces=workspaceConfig ? new WorkspaceFileCollector(store,workspaceConfig) : null;
   const githubConfigPath = process.env.WR3D_GITHUB_CONFIG_PATH;
   if (githubConfigPath) configureGithub(store, JSON.parse(readFileSync(githubConfigPath, 'utf8')) as unknown);
   const commandToken=process.env.WR3D_COMMAND_TOKEN;
@@ -42,6 +47,8 @@ try {
   if(monitoring?.dockerLogs&&dockerLogInterval)monitoring.dockerLogs.start(dockerLogInterval);
   sessions?.poll();
   const sessionsTimer = sessions ? setInterval(() => sessions.poll(),1000) : null;
+  workspaces?.poll();
+  const workspacesTimer=workspaces ? setInterval(()=>workspaces.poll(),1000) : null;
   const githubToken = process.env.WR3D_GITHUB_TOKEN;
   let githubTimer: NodeJS.Timeout | null = null;
   let pollRunning = false;
@@ -68,6 +75,7 @@ try {
     clearInterval(retentionTimer);
     if (githubTimer) clearInterval(githubTimer);
     if (sessionsTimer) clearInterval(sessionsTimer);
+    if (workspacesTimer) clearInterval(workspacesTimer);
     await monitoring?.runner.stop();
     await monitoring?.dockerLogs?.stop();
     server.closeAllConnections();

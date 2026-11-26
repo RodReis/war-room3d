@@ -13,6 +13,7 @@ docs/superpowers/specs/
 *.db-wal
 *.monitoring.local.json
 *.github.local.json
+*.workspaces.local.json
 
 # Unity, IDE e builds.
 [Ll]ibrary/

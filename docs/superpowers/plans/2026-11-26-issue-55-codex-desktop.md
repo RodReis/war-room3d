@@ -13,7 +13,7 @@
 - [x] Implementar `service/src/sessions/source-origin.ts`: contrato de configuração e restrição de transporte; usar em parser, adaptadores e coletor. Fontes legadas permanecem sem origem declarada.
 - [x] Implementar captura exclusiva de metadados em `service/src/sessions/capture-codex-desktop.ts`, selecionando uma fonte e seu projeto na configuração; limitar entrada a 64 KiB e verificar hash do cwd antes de gravar.
 - [x] Mapear `Interrupt` para espera explícita da sessão/agente, preservando presença. Não inventar evento de tarefa ou skill.
-- [ ] Rodar `npx --yes node@24 --test` e tipos em `service`, revisar diff e publicar PR. Sem prova real, manter draft e #55 em doing.
+- [x] Rodar `npx --yes node@24 --test` e tipos em `service`, revisar diff e publicar [PR #67 em draft](https://github.com/RodReis/war-room3d/pull/67). Sem prova real, manter draft e #55 em doing.
 - [ ] Após autorização específica, preparar hook local revisável, obter trust pelo aplicativo para o hash exato, observar sessão, interrupção, retomada e reinício e verificar Player. Remover somente os artefatos próprios e conferir restauração.
 - [ ] Com critérios atendidos: CI verde no HEAD, merge, CI main, comentário de encerramento e done. Sem acesso autorizado/suporte comprovado, registrar impedimento real e preservar PR/branch.
 

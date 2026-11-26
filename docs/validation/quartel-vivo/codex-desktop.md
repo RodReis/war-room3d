@@ -1,6 +1,6 @@
 # #55 — Codex Desktop Windows
 
-Estado em 26/11/2026: **preparação técnica com testes sintéticos; prova real `not_run`**. A #55 permanece em execução. Nenhum hook foi instalado, nenhuma sessão pessoal foi lida e nenhum turno foi enviado a agentes neste ensaio.
+Estado em 26/11/2026: **preparação técnica com testes sintéticos; prova real `not_run`**. A #55 permanece em execução na [PR #67 em draft](https://github.com/RodReis/war-room3d/pull/67), código `1c23c96b5859adb2703178f7b0ffc46cf1ae538b`. Nenhum hook foi instalado, nenhuma sessão pessoal foi lida e nenhum turno foi enviado a agentes neste ensaio.
 
 ## Instalação inspecionada
 

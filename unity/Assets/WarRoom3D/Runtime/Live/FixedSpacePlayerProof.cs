@@ -48,11 +48,11 @@ namespace WarRoom3D
                 var space = sector.FixedSpaces[entry];
                 var originalPosition = space.transform.position;
                 var focus = orbit.Focus;
+                yield return Capture(entry + "-visual");
                 if (root.Q<Label>("fixed-space-title").text != space.Title ||
                     root.Q("project-panel").resolvedStyle.display != DisplayStyle.None ||
                     !Visible(root, root.Q<Button>("fixed-space-back")))
-                { Fail("visita sem projetos: " + entry); yield break; }
-                yield return Capture(entry + "-visual");
+                { Fail($"visita sem projetos: {entry}; título={root.Q<Label>("fixed-space-title").text}; projeto={root.Q("project-panel").resolvedStyle.display}; retorno={root.Q("fixed-space-back").worldBound}; tela={root.worldBound}"); yield break; }
                 space.GetComponent<ReferenceRoomView>().SetReduced(true);
                 yield return Capture(entry + "-reduzido");
                 space.GetComponent<ReferenceRoomView>().SetReduced(false);
